@@ -1,14 +1,13 @@
-const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = "gemini-3.5-flash-lite";
 
 function languageSchema() {
   return {
     type: "OBJECT",
     properties: {
       translation: { type: "STRING" },
-      script: { type: "STRING" },
       pronunciation: { type: "STRING" },
     },
-    required: ["translation", "script", "pronunciation"],
+    required: ["translation", "pronunciation"],
   };
 }
 
@@ -37,7 +36,7 @@ export default async function handler(req, res) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     res.status(500).json({
-      error: "Server is missing GEMINI_API_KEY. Add it in your Vercel project's environment variables.",
+      error: "Server is missing GEMINI_API_KEY. Add it to your .env file locally, or your Vercel project's environment variables in production.",
     });
     return;
   }
@@ -45,7 +44,6 @@ export default async function handler(req, res) {
   const prompt = `Translate the following English text into Kannada, Malayalam, and Tamil.
 For each language provide:
 - "translation": the translated sentence written in the language's native script.
-- "script": the same translated sentence written in the language's native script.
 - "pronunciation": a romanized (English letters) phonetic transliteration of the translation, easy for an English speaker to read aloud.
 
 English text: "${text}"

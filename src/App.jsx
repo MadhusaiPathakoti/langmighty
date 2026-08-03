@@ -1,19 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import TranslateForm from "./components/TranslateForm.jsx";
-import ResultsTable from "./components/ResultsTable.jsx";
+import ChatInput from "./components/ChatInput.jsx";
+import ChatTurn from "./components/ChatTurn.jsx";
 import ExportTemplate from "./components/ExportTemplate.jsx";
-import HistoryList from "./components/HistoryList.jsx";
 import ThemeToggle from "./components/ThemeToggle.jsx";
 import { useSpeechVoices } from "./hooks/useSpeechVoices.js";
 import { exportNodeToPdf } from "./utils/pdfExport.js";
 
-const HISTORY_KEY = "langlearn_history";
+const CONVERSATION_KEY = "langlearn_conversation";
 const THEME_KEY = "langlearn_theme";
-const MAX_HISTORY = 5;
 
-function loadHistory() {
+function loadConversation() {
   try {
-    const raw = localStorage.getItem(HISTORY_KEY);
+    const raw = localStorage.getItem(CONVERSATION_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -26,32 +24,46 @@ function loadTheme() {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
+let turnCounter = 0;
+function nextTurnId() {
+  turnCounter += 1;
+  return `turn-${Date.now()}-${turnCounter}`;
+}
+
 export default function App() {
   const [inputText, setInputText] = useState("");
-  const [submittedText, setSubmittedText] = useState("");
-  const [results, setResults] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [history, setHistory] = useState(loadHistory);
+  const [conversation, setConversation] = useState(loadConversation);
   const [theme, setTheme] = useState(loadTheme);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const voices = useSpeechVoices();
   const exportRef = useRef(null);
+  const bottomRef = useRef(null);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
     localStorage.setItem(THEME_KEY, theme);
   }, [theme]);
 
+  useEffect(() => {
+    localStorage.setItem(CONVERSATION_KEY, JSON.stringify(conversation));
+  }, [conversation]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [conversation]);
+
   async function handleSubmit() {
     const text = inputText.trim();
-    if (!text) {
-      setError("Please type an English sentence or phrase first.");
-      return;
-    }
+    if (!text || isSubmitting) return;
 
-    setLoading(true);
-    setError("");
+    const turnId = nextTurnId();
+    setConversation((prev) => [
+      ...prev,
+      { id: turnId, englishText: text, status: "loading", results: null, error: null },
+    ]);
+    setInputText("");
+    setIsSubmitting(true);
 
     try {
       const res = await fetch("/api/translate", {
@@ -59,92 +71,84 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),
       });
-
       const data = await res.json();
 
-      if (!res.ok) {
-        setError(data.error || "Translation failed. Please try again.");
-        setResults(null);
-        return;
-      }
-
-      setResults(data);
-      setSubmittedText(text);
-
-      const entry = { englishText: text, results: data, timestamp: Date.now() };
-      const nextHistory = [entry, ...history.filter((h) => h.englishText !== text)].slice(0, MAX_HISTORY);
-      setHistory(nextHistory);
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(nextHistory));
+      setConversation((prev) =>
+        prev.map((t) =>
+          t.id === turnId
+            ? res.ok
+              ? { ...t, status: "done", results: data }
+              : { ...t, status: "error", error: data.error || "Translation failed. Please try again." }
+            : t
+        )
+      );
     } catch {
-      setError("Could not reach the translation service. Check your connection and try again.");
-      setResults(null);
+      setConversation((prev) =>
+        prev.map((t) =>
+          t.id === turnId
+            ? {
+                ...t,
+                status: "error",
+                error: "Could not reach the translation service. Check your connection and try again.",
+              }
+            : t
+        )
+      );
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
-  }
-
-  function handleHistorySelect(item) {
-    setInputText(item.englishText);
-    setSubmittedText(item.englishText);
-    setResults(item.results);
-    setError("");
   }
 
   async function handleExport() {
     if (!exportRef.current) return;
-    const timestamp = Date.now();
-    await exportNodeToPdf(exportRef.current, `translation_${timestamp}.pdf`);
+    await exportNodeToPdf(exportRef.current, `translation_${Date.now()}.pdf`);
   }
 
+  const hasContent = conversation.some((t) => t.status === "done");
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
-      <div className="max-w-3xl mx-auto px-4 py-10">
-        <header className="flex items-start justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">LangLearn AI</h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
-              Translate English into Kannada, Malayalam &amp; Tamil — with pronunciation and voice.
-            </p>
-          </div>
-          <ThemeToggle theme={theme} onToggle={() => setTheme((t) => (t === "dark" ? "light" : "dark"))} />
-        </header>
-
-        <TranslateForm value={inputText} onChange={setInputText} onSubmit={handleSubmit} loading={loading} />
-
-        {error && (
-          <p className="mt-4 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 rounded-lg px-4 py-3">
-            {error}
+    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+      <header className="flex items-start justify-between px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+        <div>
+          <h1 className="text-2xl font-bold">LangLearn AI</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">
+            English to Kannada, Malayalam &amp; Tamil — with pronunciation and voice.
           </p>
-        )}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={!hasContent}
+            className="rounded-lg border border-indigo-600 text-indigo-600 dark:text-indigo-400
+                       dark:border-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed font-medium
+                       px-3 py-2 text-sm hover:bg-indigo-50 dark:hover:bg-indigo-950 transition-colors"
+          >
+            Export to PDF
+          </button>
+          <ThemeToggle theme={theme} onToggle={() => setTheme((t) => (t === "dark" ? "light" : "dark"))} />
+        </div>
+      </header>
 
-        {loading && (
-          <div className="mt-6 flex items-center gap-3 text-gray-500 dark:text-gray-400">
-            <span className="w-4 h-4 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
-            Translating...
-          </div>
-        )}
-
-        {!loading && results && (
-          <div className="mt-6">
-            <ResultsTable results={results} voices={voices} />
-            <div className="mt-4 flex justify-end">
-              <button
-                type="button"
-                onClick={handleExport}
-                className="rounded-lg border border-indigo-600 text-indigo-600 dark:text-indigo-400
-                           dark:border-indigo-400 font-medium px-4 py-2 hover:bg-indigo-50
-                           dark:hover:bg-indigo-950 transition-colors"
-              >
-                Export to PDF
-              </button>
-            </div>
-          </div>
-        )}
-
-        <HistoryList history={history} onSelect={handleHistorySelect} />
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
+        <div className="max-w-3xl mx-auto space-y-6">
+          {conversation.length === 0 && (
+            <p className="text-center text-gray-400 dark:text-gray-500 mt-16">
+              Type an English sentence below to get started.
+            </p>
+          )}
+          {conversation.map((turn) => (
+            <ChatTurn key={turn.id} turn={turn} voices={voices} />
+          ))}
+          <div ref={bottomRef} />
+        </div>
       </div>
 
-      {results && <ExportTemplate ref={exportRef} englishText={submittedText} results={results} />}
+      <footer className="border-t border-gray-200 dark:border-gray-800 px-4 sm:px-6 py-4">
+        <ChatInput value={inputText} onChange={setInputText} onSubmit={handleSubmit} loading={isSubmitting} />
+      </footer>
+
+      {hasContent && <ExportTemplate ref={exportRef} conversation={conversation} />}
     </div>
   );
 }

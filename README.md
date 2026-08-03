@@ -15,10 +15,9 @@ exceed it, the app will just show a friendly error until the quota resets.
 
 ## 2. Run locally
 
-Requires [Node.js](https://nodejs.org) 18+ and the [Vercel CLI](https://vercel.com/docs/cli):
+Requires [Node.js](https://nodejs.org) 18+.
 
 ```bash
-npm install -g vercel
 npm install
 ```
 
@@ -28,38 +27,30 @@ Create a `.env` file (copy `.env.example`) and paste in your key:
 GEMINI_API_KEY=your-key-here
 ```
 
-Run the app with `vercel dev` (this serves both the React frontend and the `/api/translate`
-serverless function together, exactly like production):
+Run:
 
 ```bash
-vercel dev
+npm run dev
 ```
 
-Open the URL it prints (usually `http://localhost:3000`).
-
-> Note: plain `npm run dev` (Vite only) will run the UI but `/api/translate` won't exist, so
-> translation requests will fail — always use `vercel dev` for the full app locally.
+Open `http://localhost:5173`. In dev mode, Vite serves `/api/translate` itself (see
+`vite.config.js`) by running the exact same handler used in production — no extra tooling needed.
 
 ## 3. Deploy for free on Vercel
 
-```bash
-vercel
-```
+The easiest way — no CLI required:
 
-Follow the prompts to link/create a project. Then add your API key as a project environment
-variable (only needs to be done once):
+1. Push this repo to GitHub (already done if you're reading this from your repo).
+2. Go to [vercel.com/new](https://vercel.com/new), sign in with GitHub, and import the repo.
+   Vercel auto-detects the Vite + serverless function setup.
+3. Before the first deploy, add an environment variable: `GEMINI_API_KEY` = your key.
+4. Click **Deploy**.
 
-```bash
-vercel env add GEMINI_API_KEY
-```
+You'll get a permanent `https://your-project.vercel.app` URL that's free to host and available any
+time. Every push to `main` redeploys automatically.
 
-Paste your key when prompted, select all environments, then deploy to production:
-
-```bash
-vercel --prod
-```
-
-You'll get a permanent `https://your-project.vercel.app` URL that's free to host and available any time.
+> Prefer the CLI? `npm install -g vercel` then `vercel` / `vercel --prod` works too, but the Vercel
+> CLI requires Node 20+ — if you're on an older Node locally, use the dashboard method above instead.
 
 ## Features
 

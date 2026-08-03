@@ -24,6 +24,10 @@ export function findVoiceForLang(voices, langCode) {
   );
 }
 
+// Kept outside the function so Chrome can't garbage-collect the utterance
+// mid-flight, which otherwise silently drops speech with no error.
+let activeUtterance = null;
+
 export function speakText(text, langCode, voices) {
   if (!("speechSynthesis" in window)) return;
 
@@ -33,6 +37,9 @@ export function speakText(text, langCode, voices) {
   const voice = findVoiceForLang(voices, langCode);
   if (voice) utterance.voice = voice;
 
+  activeUtterance = utterance;
+
   window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utterance);
+  // Calling speak() in the same tick as cancel() can silently no-op in Chrome.
+  setTimeout(() => window.speechSynthesis.speak(utterance), 50);
 }
