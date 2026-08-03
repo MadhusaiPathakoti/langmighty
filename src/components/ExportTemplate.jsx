@@ -1,0 +1,67 @@
+import { forwardRef } from "react";
+import { LANGUAGES } from "../languages.js";
+
+const ExportTemplate = forwardRef(function ExportTemplate({ englishText, results }, ref) {
+  return (
+    <div
+      ref={ref}
+      style={{
+        position: "absolute",
+        top: "-10000px",
+        left: 0,
+        width: "700px",
+        padding: "32px",
+        background: "#ffffff",
+        color: "#111827",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
+      <h1 style={{ fontSize: "22px", fontWeight: 700, marginBottom: "4px" }}>LangLearn AI</h1>
+      <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "20px" }}>
+        English-to-South-Indian-Languages Translation
+      </p>
+
+      <p style={{ fontSize: "14px", marginBottom: "16px" }}>
+        <strong>English:</strong> {englishText}
+      </p>
+
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+        <thead>
+          <tr>
+            {["Language", "Translation", "Native Script", "Pronunciation (Roman)"].map((h) => (
+              <th
+                key={h}
+                style={{
+                  border: "1px solid #d1d5db",
+                  background: "#f3f4f6",
+                  padding: "8px",
+                  textAlign: "left",
+                }}
+              >
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {LANGUAGES.map(({ key, label }) => {
+            const row = results[key];
+            if (!row) return null;
+            return (
+              <tr key={key}>
+                <td style={{ border: "1px solid #d1d5db", padding: "8px", fontWeight: 600 }}>{label}</td>
+                <td style={{ border: "1px solid #d1d5db", padding: "8px" }}>{row.translation}</td>
+                <td style={{ border: "1px solid #d1d5db", padding: "8px" }}>{row.script}</td>
+                <td style={{ border: "1px solid #d1d5db", padding: "8px", fontStyle: "italic" }}>
+                  {row.pronunciation}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+});
+
+export default ExportTemplate;
