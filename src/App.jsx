@@ -3,6 +3,7 @@ import ChatInput from "./components/ChatInput.jsx";
 import ChatTurn from "./components/ChatTurn.jsx";
 import CulturalBackground from "./components/CulturalBackground.jsx";
 import ExportTemplate from "./components/ExportTemplate.jsx";
+import IndiaFlagIcon from "./components/IndiaFlagIcon.jsx";
 import NavBar from "./components/NavBar.jsx";
 import RoadmapView from "./components/RoadmapView.jsx";
 import TypewriterText from "./components/TypewriterText.jsx";
@@ -179,8 +180,8 @@ export default function App() {
                     className="pointer-events-none absolute -bottom-20 -left-10 w-56 h-56 rounded-full bg-indigo-200/40 dark:bg-indigo-500/10 blur-3xl"
                   />
 
-                  <div className="relative w-14 h-14 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-2xl shadow-lg shadow-indigo-500/30">
-                    🇮🇳
+                  <div className="relative w-20 h-14 mx-auto mb-5 rounded-2xl overflow-hidden shadow-lg shadow-black/10 ring-1 ring-black/10 dark:ring-white/10">
+                    <IndiaFlagIcon className="w-full h-full" />
                   </div>
 
                   <TypewriterText
