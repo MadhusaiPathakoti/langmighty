@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import ChatInput from "./components/ChatInput.jsx";
 import ChatTurn from "./components/ChatTurn.jsx";
+import CulturalBackground from "./components/CulturalBackground.jsx";
 import ExportTemplate from "./components/ExportTemplate.jsx";
 import NavBar from "./components/NavBar.jsx";
 import RoadmapView from "./components/RoadmapView.jsx";
@@ -149,6 +150,7 @@ export default function App() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+      <CulturalBackground />
       <NavBar
         view={view}
         roadmapLanguage={roadmapLanguage}
@@ -164,7 +166,7 @@ export default function App() {
         <RoadmapView language={roadmapLanguage} onSelectLanguage={setRoadmapLanguage} />
       ) : (
         <>
-          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
+          <div className="relative z-10 flex-1 overflow-y-auto px-4 sm:px-6 py-6">
             <div className="max-w-3xl mx-auto space-y-6">
               {conversation.length === 0 ? (
                 <div className="relative overflow-hidden rounded-2xl border border-indigo-100 dark:border-indigo-950 bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-indigo-950 dark:via-gray-900 dark:to-purple-950 px-6 py-14 sm:py-20 text-center">
@@ -178,7 +180,7 @@ export default function App() {
                   />
 
                   <div className="relative w-14 h-14 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-2xl shadow-lg shadow-indigo-500/30">
-                    🌐
+                    🇮🇳
                   </div>
 
                   <TypewriterText
@@ -239,7 +241,7 @@ export default function App() {
             </div>
           </div>
 
-          <footer className="border-t border-gray-200 dark:border-gray-800 px-4 sm:px-6 py-4">
+          <footer className="relative z-10 border-t border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm px-4 sm:px-6 py-4">
             <ChatInput value={inputText} onChange={setInputText} onSubmit={handleSubmit} loading={isSubmitting} />
           </footer>
 
