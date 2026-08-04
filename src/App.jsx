@@ -4,7 +4,14 @@ import ChatTurn from "./components/ChatTurn.jsx";
 import ExportTemplate from "./components/ExportTemplate.jsx";
 import NavBar from "./components/NavBar.jsx";
 import RoadmapView from "./components/RoadmapView.jsx";
+import TypewriterText from "./components/TypewriterText.jsx";
 import { exportNodeToPdf } from "./utils/pdfExport.js";
+
+const TAGLINES = [
+  "English to Kannada, Malayalam & Tamil — with pronunciation and voice.",
+  "Learn to read, write, and speak South Indian languages.",
+  "Type in English. Hear it back instantly.",
+];
 
 const CONVERSATION_KEY = "langlearn_conversation";
 const THEME_KEY = "langlearn_theme";
@@ -130,9 +137,12 @@ export default function App() {
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
             <div className="max-w-3xl mx-auto space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <p className="text-gray-500 dark:text-gray-400 text-sm">
-                  English to Kannada, Malayalam &amp; Tamil — with pronunciation and voice.
-                </p>
+                <div>
+                  <TypewriterText phrases={TAGLINES} className="text-gray-500 dark:text-gray-400 text-sm" />
+                  <p className="text-gray-400 dark:text-gray-600 text-xs mt-0.5">
+                    Created by Madhusai Pathakoti
+                  </p>
+                </div>
                 {hasContent && (
                   <button
                     type="button"
