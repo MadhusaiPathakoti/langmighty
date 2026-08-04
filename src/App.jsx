@@ -106,14 +106,14 @@ export default function App() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
-      <header className="flex items-start justify-between px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-800">
         <div>
           <h1 className="text-2xl font-bold">LangLearn AI</h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">
             English to Kannada, Malayalam &amp; Tamil — with pronunciation and voice.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-end sm:self-auto">
           <button
             type="button"
             onClick={handleExport}
