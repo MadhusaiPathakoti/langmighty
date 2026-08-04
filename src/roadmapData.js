@@ -1,4 +1,6 @@
 export const ROADMAP_LANGUAGES = [
+  { key: "telugu", label: "Telugu", nativeName: "తెలుగు" },
+  { key: "hindi", label: "Hindi", nativeName: "हिन्दी" },
   { key: "kannada", label: "Kannada", nativeName: "ಕನ್ನಡ" },
   { key: "malayalam", label: "Malayalam", nativeName: "മലയാളം" },
   { key: "tamil", label: "Tamil", nativeName: "தமிழ்" },
@@ -137,6 +139,439 @@ export const ROADMAP_STAGES = [
 ];
 
 export const ROADMAP_CONTENT = {
+  telugu: {
+    alphabet: {
+      rows: [
+        { native: "అ ఆ ఇ ఈ ఉ ఊ ఋ", roman: "a aa i ii u uu ru", meaning: "vowels (part 1)" },
+        { native: "ఎ ఏ ఐ ఒ ఓ ఔ అం అః", roman: "e ee ai o oo au am ah", meaning: "vowels (part 2)" },
+        { native: "క ఖ గ ఘ ఙ", roman: "ka kha ga gha nga", meaning: "consonants (group 1)" },
+        { native: "చ ఛ జ ఝ ఞ", roman: "cha chha ja jha nya", meaning: "consonants (group 2)" },
+        { native: "ట ఠ డ ఢ ణ", roman: "Ta Tha Da Dha Na", meaning: "consonants (group 3)" },
+        { native: "త థ ద ధ న", roman: "ta tha da dha na", meaning: "consonants (group 4)" },
+        { native: "ప ఫ బ భ మ", roman: "pa pha ba bha ma", meaning: "consonants (group 5)" },
+        { native: "య ర ల వ శ ష స హ ళ", roman: "ya ra la va sha sha sa ha La", meaning: "consonants (group 6)" },
+      ],
+      note: "Practice one row at a time. Say each letter aloud as you write it.",
+    },
+    guninthalu: {
+      rows: [
+        { native: "క కా కి కీ కు కూ", roman: "ka kaa ki kii ku kuu", meaning: "క + vowels" },
+        { native: "కె కే కై కొ కో కౌ కం కః", roman: "ke kee kai ko koo kau kam kah", meaning: "క + vowels (cont.)" },
+        { native: "న నా ని నీ ను నూ నె నే", roman: "na naa ni nii nu nuu ne nee", meaning: "న + vowels" },
+        { native: "మ మా మి మీ ము మూ మె మే", roman: "ma maa mi mii mu muu me mee", meaning: "మ + vowels" },
+      ],
+      note: "This pattern is literally called గుణింతం (guninthamu) in Telugu — the origin of the term. Repeat it for every other consonant.",
+    },
+    words: {
+      rows: [
+        { native: "ఇల్లు", roman: "illu", meaning: "house" },
+        { native: "నీరు", roman: "neeru", meaning: "water" },
+        { native: "అమ్మ", roman: "amma", meaning: "mother" },
+        { native: "నాన్న", roman: "naanna", meaning: "father" },
+        { native: "పండు", roman: "pandu", meaning: "fruit" },
+        { native: "పుస్తకం", roman: "pusthakam", meaning: "book" },
+      ],
+    },
+    pronouns: {
+      rows: [
+        { native: "నేను", roman: "nenu", meaning: "I" },
+        { native: "నువ్వు", roman: "nuvvu", meaning: "you" },
+        { native: "అతను", roman: "athanu", meaning: "he" },
+        { native: "ఆమె", roman: "aame", meaning: "she" },
+        { native: "మేము", roman: "memu", meaning: "we" },
+        { native: "వాళ్ళు", roman: "vaallu", meaning: "they" },
+        { native: "ఇది", roman: "idi", meaning: "this" },
+        { native: "అది", roman: "adi", meaning: "that" },
+      ],
+    },
+    relations: {
+      rows: [
+        { native: "అమ్మ", roman: "amma", meaning: "mother" },
+        { native: "నాన్న", roman: "naanna", meaning: "father" },
+        { native: "అన్న", roman: "anna", meaning: "elder brother" },
+        { native: "అక్క", roman: "akka", meaning: "elder sister" },
+        { native: "తమ్ముడు", roman: "thammudu", meaning: "younger brother" },
+        { native: "చెల్లి", roman: "chelli", meaning: "younger sister" },
+        { native: "తాత", roman: "thaata", meaning: "grandfather" },
+        { native: "అమ్మమ్మ", roman: "ammamma", meaning: "grandmother" },
+        { native: "కొడుకు", roman: "koduku", meaning: "son" },
+        { native: "కూతురు", roman: "koothuru", meaning: "daughter" },
+        { native: "స్నేహితుడు", roman: "snehithudu", meaning: "friend" },
+      ],
+    },
+    bodyparts: {
+      rows: [
+        { native: "తల", roman: "thala", meaning: "head" },
+        { native: "కన్ను", roman: "kannu", meaning: "eye" },
+        { native: "ముక్కు", roman: "mukku", meaning: "nose" },
+        { native: "నోరు", roman: "noru", meaning: "mouth" },
+        { native: "చెయ్యి", roman: "cheyyi", meaning: "hand" },
+        { native: "కాలు", roman: "kaalu", meaning: "leg" },
+        { native: "చెవి", roman: "chevi", meaning: "ear" },
+        { native: "జుట్టు", roman: "juttu", meaning: "hair" },
+      ],
+    },
+    animals: {
+      rows: [
+        { native: "కుక్క", roman: "kukka", meaning: "dog" },
+        { native: "పిల్లి", roman: "pilli", meaning: "cat" },
+        { native: "ఆవు", roman: "aavu", meaning: "cow" },
+        { native: "ఏనుగు", roman: "yenugu", meaning: "elephant" },
+        { native: "పక్షి", roman: "pakshi", meaning: "bird" },
+        { native: "చేప", roman: "chepa", meaning: "fish" },
+        { native: "గుర్రం", roman: "gurram", meaning: "horse" },
+        { native: "పులి", roman: "puli", meaning: "tiger" },
+      ],
+    },
+    fruits: {
+      rows: [
+        { native: "మామిడి పండు", roman: "maamidi pandu", meaning: "mango" },
+        { native: "అరటి పండు", roman: "arati pandu", meaning: "banana" },
+        { native: "ఆపిల్", roman: "apple", meaning: "apple" },
+        { native: "ద్రాక్ష", roman: "draaksha", meaning: "grapes" },
+        { native: "నారింజ", roman: "naaringa", meaning: "orange" },
+        { native: "బొప్పాయి", roman: "boppaayi", meaning: "papaya" },
+      ],
+    },
+    vegetables: {
+      rows: [
+        { native: "బంగాళదుంప", roman: "bangaaladumpa", meaning: "potato" },
+        { native: "టమోటా", roman: "tomato", meaning: "tomato" },
+        { native: "ఉల్లిపాయ", roman: "ullipaaya", meaning: "onion" },
+        { native: "కారెట్", roman: "carrot", meaning: "carrot" },
+        { native: "వంకాయ", roman: "vankaaya", meaning: "brinjal" },
+        { native: "క్యాబేజీ", roman: "cabbage", meaning: "cabbage" },
+      ],
+    },
+    places: {
+      rows: [
+        { native: "పాఠశాల", roman: "paatashaala", meaning: "school" },
+        { native: "ఆసుపత్రి", roman: "aasupatri", meaning: "hospital" },
+        { native: "సంత", roman: "santha", meaning: "market" },
+        { native: "గుడి", roman: "gudi", meaning: "temple" },
+        { native: "పార్క్", roman: "park", meaning: "park" },
+        { native: "రైల్వే స్టేషన్", roman: "railway station", meaning: "railway station" },
+      ],
+    },
+    occupations: {
+      rows: [
+        { native: "ఉపాధ్యాయుడు", roman: "upaadhyaayudu", meaning: "teacher" },
+        { native: "డాక్టర్", roman: "doctor", meaning: "doctor" },
+        { native: "రైతు", roman: "raithu", meaning: "farmer" },
+        { native: "పోలీసు", roman: "police", meaning: "police officer" },
+        { native: "డ్రైవర్", roman: "driver", meaning: "driver" },
+        { native: "ఇంజనీర్", roman: "engineer", meaning: "engineer" },
+      ],
+    },
+    objects: {
+      rows: [
+        { native: "పుస్తకం", roman: "pusthakam", meaning: "book" },
+        { native: "పెన్ను", roman: "pennu", meaning: "pen" },
+        { native: "బల్ల", roman: "balla", meaning: "table" },
+        { native: "కుర్చీ", roman: "kurchi", meaning: "chair" },
+        { native: "ఫోన్", roman: "phone", meaning: "phone" },
+        { native: "బ్యాగ్", roman: "bag", meaning: "bag" },
+      ],
+    },
+    feelings: {
+      rows: [
+        { native: "సంతోషం", roman: "santosham", meaning: "happy" },
+        { native: "దుఃఖం", roman: "dukham", meaning: "sad" },
+        { native: "కోపం", roman: "kopam", meaning: "angry" },
+        { native: "భయం", roman: "bhayam", meaning: "afraid" },
+        { native: "అలసట", roman: "alasata", meaning: "tired" },
+        { native: "ఆకలి", roman: "aakali", meaning: "hungry" },
+      ],
+    },
+    verbs: {
+      rows: [
+        { native: "వెళ్ళు → వెళ్తున్నాను / వెళ్ళాను", roman: "vellu → velthunnaanu / vellaanu", meaning: "go → I go / I went" },
+        { native: "తిను → తింటున్నాను / తిన్నాను", roman: "thinu → thintunnaanu / thinnaanu", meaning: "eat → I eat / I ate" },
+        { native: "రా → వస్తున్నాను / వచ్చాను", roman: "raa → vasthunnaanu / vachaanu", meaning: "come → I come / I came" },
+      ],
+    },
+    prepositions: {
+      rows: [
+        { native: "లో", roman: "lo", meaning: "in" },
+        { native: "మీద", roman: "meeda", meaning: "on" },
+        { native: "కింద", roman: "kinda", meaning: "under" },
+        { native: "దగ్గర", roman: "daggara", meaning: "near" },
+        { native: "తో", roman: "tho", meaning: "with" },
+        { native: "లేకుండా", roman: "lekunda", meaning: "without" },
+      ],
+    },
+    adverbs: {
+      rows: [
+        { native: "త్వరగా", roman: "tvaragaa", meaning: "quickly" },
+        { native: "నెమ్మదిగా", roman: "nemmadigaa", meaning: "slowly" },
+        { native: "ఈరోజు", roman: "eeroju", meaning: "today" },
+        { native: "రేపు", roman: "repu", meaning: "tomorrow" },
+        { native: "ఇప్పుడు", roman: "ippudu", meaning: "now" },
+        { native: "ఎప్పుడూ", roman: "eppudu", meaning: "always" },
+      ],
+    },
+    conjunctions: {
+      rows: [
+        { native: "మరియు", roman: "mariyu", meaning: "and" },
+        { native: "కానీ", roman: "kaani", meaning: "but" },
+        { native: "లేదా", roman: "leda", meaning: "or" },
+        { native: "ఎందుకంటే", roman: "endukante", meaning: "because" },
+        { native: "అందుకే", roman: "anduke", meaning: "so" },
+      ],
+    },
+    sentences: {
+      rows: [
+        { native: "నేను ఇంటికి వెళ్తున్నాను.", roman: "Nenu intiki velthunnaanu.", meaning: "I am going home." },
+        { native: "ఆమె అన్నం తింటుంది.", roman: "Aame annam thintundi.", meaning: "She eats rice." },
+        { native: "ఇది నా పుస్తకం.", roman: "Idi naa pusthakam.", meaning: "This is my book." },
+      ],
+    },
+    questions: {
+      rows: [
+        { native: "మీ పేరు ఏమిటి? → నా పేరు ...", roman: "Mee peru emiti? → Naa peru ...", meaning: "What is your name? → My name is ..." },
+        { native: "ఇదేమిటి? → ఇది పుస్తకం.", roman: "Idemiti? → Idi pusthakam.", meaning: "What is this? → This is a book." },
+        { native: "మీరు ఎక్కడ నుండి వచ్చారు?", roman: "Meeru ekkada nundi vacharu?", meaning: "Where are you from?" },
+      ],
+    },
+    conversations: {
+      rows: [
+        { speaker: "A", native: "నమస్కారం! ఎలా ఉన్నారు?", roman: "Namaskaram! Elaa unnaaru?", meaning: "Hello! How are you?" },
+        {
+          speaker: "B",
+          native: "బాగున్నాను, ధన్యవాదాలు. మీరు ఎలా ఉన్నారు?",
+          roman: "Baagunnaanu, dhanyavaadaalu. Meeru elaa unnaaru?",
+          meaning: "I'm fine, thank you. How are you?",
+        },
+        { speaker: "A", native: "నేను కూడా బాగున్నాను.", roman: "Nenu kooda baagunnaanu.", meaning: "I'm fine too." },
+      ],
+    },
+    roleplay: {
+      note: "At a shop",
+      rows: [
+        { speaker: "Customer", native: "ఇది ఎంత?", roman: "Idi entha?", meaning: "How much is this?" },
+        { speaker: "Shopkeeper", native: "ఇది వంద రూపాయలు.", roman: "Idi vanda roopaayalu.", meaning: "This is 100 rupees." },
+        { speaker: "Customer", native: "కొంచెం తగ్గించండి.", roman: "Konchem thagginchandi.", meaning: "Please reduce it a little." },
+      ],
+    },
+  },
+
+  hindi: {
+    alphabet: {
+      rows: [
+        { native: "अ आ इ ई उ ऊ ऋ", roman: "a aa i ii u uu ri", meaning: "vowels (part 1)" },
+        { native: "ए ऐ ओ औ अं अः", roman: "e ai o au am ah", meaning: "vowels (part 2)" },
+        { native: "क ख ग घ ङ", roman: "ka kha ga gha nga", meaning: "consonants (group 1)" },
+        { native: "च छ ज झ ञ", roman: "cha chha ja jha nya", meaning: "consonants (group 2)" },
+        { native: "ट ठ ड ढ ण", roman: "Ta Tha Da Dha Na", meaning: "consonants (group 3)" },
+        { native: "त थ द ध न", roman: "ta tha da dha na", meaning: "consonants (group 4)" },
+        { native: "प फ ब भ म", roman: "pa pha ba bha ma", meaning: "consonants (group 5)" },
+        { native: "य र ल व श ष स ह", roman: "ya ra la va sha sha sa ha", meaning: "consonants (group 6)" },
+      ],
+      note: "Practice one row at a time. Say each letter aloud as you write it.",
+    },
+    guninthalu: {
+      rows: [
+        { native: "क का कि की कु कू", roman: "ka kaa ki kii ku kuu", meaning: "क + vowels" },
+        { native: "के कै को कौ कं कः", roman: "ke kai ko kau kam kah", meaning: "क + vowels (cont.)" },
+        { native: "न ना नि नी नु नू ने नै", roman: "na naa ni nii nu nuu ne nai", meaning: "न + vowels" },
+        { native: "म मा मि मी मु मू मे मै", roman: "ma maa mi mii mu muu me mai", meaning: "म + vowels" },
+      ],
+      note: "In Hindi this is usually called मात्रा (maatraa) rather than guninthalu, but it's the exact same idea. Repeat the pattern for every consonant.",
+    },
+    words: {
+      rows: [
+        { native: "घर", roman: "ghar", meaning: "house" },
+        { native: "पानी", roman: "paani", meaning: "water" },
+        { native: "माँ", roman: "maa", meaning: "mother" },
+        { native: "पिता", roman: "pita", meaning: "father" },
+        { native: "फल", roman: "phal", meaning: "fruit" },
+        { native: "किताब", roman: "kitaab", meaning: "book" },
+      ],
+    },
+    pronouns: {
+      rows: [
+        { native: "मैं", roman: "main", meaning: "I" },
+        { native: "तुम", roman: "tum", meaning: "you" },
+        { native: "वह", roman: "vah", meaning: "he" },
+        { native: "वह", roman: "vah", meaning: "she" },
+        { native: "हम", roman: "ham", meaning: "we" },
+        { native: "वे", roman: "ve", meaning: "they" },
+        { native: "यह", roman: "yah", meaning: "this" },
+        { native: "वह", roman: "vah", meaning: "that" },
+      ],
+      note: "Hindi doesn't have separate words for 'he' and 'she' — वह (vah) covers both (and also means 'that'); the sentence's verb shows gender instead.",
+    },
+    relations: {
+      rows: [
+        { native: "माँ", roman: "maa", meaning: "mother" },
+        { native: "पिता", roman: "pita", meaning: "father" },
+        { native: "बड़ा भाई", roman: "bada bhai", meaning: "elder brother" },
+        { native: "बड़ी बहन", roman: "badi bahan", meaning: "elder sister" },
+        { native: "छोटा भाई", roman: "chota bhai", meaning: "younger brother" },
+        { native: "छोटी बहन", roman: "chhoti bahan", meaning: "younger sister" },
+        { native: "दादा", roman: "dada", meaning: "grandfather" },
+        { native: "दादी", roman: "dadi", meaning: "grandmother" },
+        { native: "बेटा", roman: "beta", meaning: "son" },
+        { native: "बेटी", roman: "beti", meaning: "daughter" },
+        { native: "दोस्त", roman: "dost", meaning: "friend" },
+      ],
+    },
+    bodyparts: {
+      rows: [
+        { native: "सिर", roman: "sir", meaning: "head" },
+        { native: "आँख", roman: "aankh", meaning: "eye" },
+        { native: "नाक", roman: "naak", meaning: "nose" },
+        { native: "मुँह", roman: "muh", meaning: "mouth" },
+        { native: "हाथ", roman: "haath", meaning: "hand" },
+        { native: "पैर", roman: "pair", meaning: "leg" },
+        { native: "कान", roman: "kaan", meaning: "ear" },
+        { native: "बाल", roman: "baal", meaning: "hair" },
+      ],
+    },
+    animals: {
+      rows: [
+        { native: "कुत्ता", roman: "kutta", meaning: "dog" },
+        { native: "बिल्ली", roman: "billi", meaning: "cat" },
+        { native: "गाय", roman: "gaay", meaning: "cow" },
+        { native: "हाथी", roman: "haathi", meaning: "elephant" },
+        { native: "चिड़िया", roman: "chidiya", meaning: "bird" },
+        { native: "मछली", roman: "machhli", meaning: "fish" },
+        { native: "घोड़ा", roman: "ghoda", meaning: "horse" },
+        { native: "बाघ", roman: "baagh", meaning: "tiger" },
+      ],
+    },
+    fruits: {
+      rows: [
+        { native: "आम", roman: "aam", meaning: "mango" },
+        { native: "केला", roman: "kela", meaning: "banana" },
+        { native: "सेब", roman: "seb", meaning: "apple" },
+        { native: "अंगूर", roman: "angoor", meaning: "grapes" },
+        { native: "संतरा", roman: "santara", meaning: "orange" },
+        { native: "पपीता", roman: "papita", meaning: "papaya" },
+      ],
+    },
+    vegetables: {
+      rows: [
+        { native: "आलू", roman: "aloo", meaning: "potato" },
+        { native: "टमाटर", roman: "tamatar", meaning: "tomato" },
+        { native: "प्याज़", roman: "pyaaz", meaning: "onion" },
+        { native: "गाजर", roman: "gaajar", meaning: "carrot" },
+        { native: "बैंगन", roman: "baingan", meaning: "brinjal" },
+        { native: "पत्ता गोभी", roman: "patta gobhi", meaning: "cabbage" },
+      ],
+    },
+    places: {
+      rows: [
+        { native: "स्कूल", roman: "school", meaning: "school" },
+        { native: "अस्पताल", roman: "aspataal", meaning: "hospital" },
+        { native: "बाज़ार", roman: "baazaar", meaning: "market" },
+        { native: "मंदिर", roman: "mandir", meaning: "temple" },
+        { native: "पार्क", roman: "park", meaning: "park" },
+        { native: "रेलवे स्टेशन", roman: "railway station", meaning: "railway station" },
+      ],
+    },
+    occupations: {
+      rows: [
+        { native: "शिक्षक", roman: "shikshak", meaning: "teacher" },
+        { native: "डॉक्टर", roman: "doctor", meaning: "doctor" },
+        { native: "किसान", roman: "kisaan", meaning: "farmer" },
+        { native: "पुलिस", roman: "police", meaning: "police officer" },
+        { native: "ड्राइवर", roman: "driver", meaning: "driver" },
+        { native: "इंजीनियर", roman: "engineer", meaning: "engineer" },
+      ],
+    },
+    objects: {
+      rows: [
+        { native: "किताब", roman: "kitaab", meaning: "book" },
+        { native: "पेन", roman: "pen", meaning: "pen" },
+        { native: "मेज़", roman: "mez", meaning: "table" },
+        { native: "कुर्सी", roman: "kursi", meaning: "chair" },
+        { native: "फ़ोन", roman: "phone", meaning: "phone" },
+        { native: "बैग", roman: "bag", meaning: "bag" },
+      ],
+    },
+    feelings: {
+      rows: [
+        { native: "खुश", roman: "khush", meaning: "happy" },
+        { native: "दुखी", roman: "dukhi", meaning: "sad" },
+        { native: "गुस्सा", roman: "gussa", meaning: "angry" },
+        { native: "डर", roman: "dar", meaning: "afraid" },
+        { native: "थका हुआ", roman: "thaka hua", meaning: "tired" },
+        { native: "भूख", roman: "bhookh", meaning: "hungry" },
+      ],
+    },
+    verbs: {
+      rows: [
+        { native: "जाना → मैं जाता हूँ / मैं गया", roman: "jaana → main jaata hoon / main gaya", meaning: "go → I go / I went" },
+        { native: "खाना → मैं खाता हूँ / मैंने खाया", roman: "khaana → main khaata hoon / maine khaaya", meaning: "eat → I eat / I ate" },
+        { native: "आना → मैं आता हूँ / मैं आया", roman: "aana → main aata hoon / main aaya", meaning: "come → I come / I came" },
+      ],
+    },
+    prepositions: {
+      rows: [
+        { native: "में", roman: "mein", meaning: "in" },
+        { native: "पर", roman: "par", meaning: "on" },
+        { native: "नीचे", roman: "neeche", meaning: "under" },
+        { native: "पास", roman: "paas", meaning: "near" },
+        { native: "साथ", roman: "saath", meaning: "with" },
+        { native: "बिना", roman: "bina", meaning: "without" },
+      ],
+    },
+    adverbs: {
+      rows: [
+        { native: "जल्दी", roman: "jaldi", meaning: "quickly" },
+        { native: "धीरे", roman: "dheere", meaning: "slowly" },
+        { native: "आज", roman: "aaj", meaning: "today" },
+        { native: "कल", roman: "kal", meaning: "tomorrow" },
+        { native: "अभी", roman: "abhi", meaning: "now" },
+        { native: "हमेशा", roman: "hamesha", meaning: "always" },
+      ],
+    },
+    conjunctions: {
+      rows: [
+        { native: "और", roman: "aur", meaning: "and" },
+        { native: "लेकिन", roman: "lekin", meaning: "but" },
+        { native: "या", roman: "ya", meaning: "or" },
+        { native: "क्योंकि", roman: "kyonki", meaning: "because" },
+        { native: "इसलिए", roman: "isliye", meaning: "so" },
+      ],
+    },
+    sentences: {
+      rows: [
+        { native: "मैं घर जा रहा हूँ।", roman: "Main ghar ja raha hoon.", meaning: "I am going home." },
+        { native: "वह चावल खाती है।", roman: "Vah chaaval khaati hai.", meaning: "She eats rice." },
+        { native: "यह मेरी किताब है।", roman: "Yah meri kitaab hai.", meaning: "This is my book." },
+      ],
+    },
+    questions: {
+      rows: [
+        { native: "आपका नाम क्या है? → मेरा नाम ... है।", roman: "Aapka naam kya hai? → Mera naam ... hai.", meaning: "What is your name? → My name is ..." },
+        { native: "यह क्या है? → यह किताब है।", roman: "Yah kya hai? → Yah kitaab hai.", meaning: "What is this? → This is a book." },
+        { native: "आप कहाँ से हैं?", roman: "Aap kahaan se hain?", meaning: "Where are you from?" },
+      ],
+    },
+    conversations: {
+      rows: [
+        { speaker: "A", native: "नमस्ते! आप कैसे हैं?", roman: "Namaste! Aap kaise hain?", meaning: "Hello! How are you?" },
+        {
+          speaker: "B",
+          native: "मैं ठीक हूँ, धन्यवाद। आप कैसे हैं?",
+          roman: "Main theek hoon, dhanyavaad. Aap kaise hain?",
+          meaning: "I'm fine, thank you. How are you?",
+        },
+        { speaker: "A", native: "मैं भी ठीक हूँ।", roman: "Main bhi theek hoon.", meaning: "I'm fine too." },
+      ],
+    },
+    roleplay: {
+      note: "At a shop",
+      rows: [
+        { speaker: "Customer", native: "यह कितने का है?", roman: "Yah kitne ka hai?", meaning: "How much is this?" },
+        { speaker: "Shopkeeper", native: "यह सौ रुपये का है।", roman: "Yah sau rupaye ka hai.", meaning: "This is 100 rupees." },
+        { speaker: "Customer", native: "थोड़ा कम कर दो।", roman: "Thoda kam kar do.", meaning: "Please reduce it a little." },
+      ],
+    },
+  },
+
   kannada: {
     alphabet: {
       rows: [

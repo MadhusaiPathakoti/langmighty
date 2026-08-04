@@ -71,7 +71,7 @@ time. Every push to `main` redeploys automatically.
   every turn numbered in order (native scripts render correctly since the PDF is generated from the
   rendered page).
 - **Roadmap** — a top nav bar with a Roadmap menu offering a structured, 21-stage beginner-to-advanced
-  learning path for each language separately (Kannada / Malayalam / Tamil): alphabet → guninthalu
+  learning path for each language separately (Telugu / Hindi / Kannada / Malayalam / Tamil): alphabet → guninthalu
   (consonant-vowel combinations) → small words → pronouns → family & relations → body parts → animals
   → fruits → vegetables → places → occupations → everyday objects → feelings & emotions → verbs &
   verb forms → prepositions → adverbs → conjunctions → small sentences → questions & answers →

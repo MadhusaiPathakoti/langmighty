@@ -17,7 +17,7 @@ export default function RoadmapView({ language, onSelectLanguage }) {
     <div className="relative z-10 flex-1 overflow-y-auto px-4 sm:px-6 py-6">
       <div className="max-w-3xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {ROADMAP_LANGUAGES.map((lang) => (
               <button
                 key={lang.key}
