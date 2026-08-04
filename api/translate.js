@@ -1,4 +1,7 @@
+import { LANGUAGES, DEFAULT_LANGUAGE_KEYS } from "../src/languages.js";
+
 const GEMINI_MODEL = "gemini-3.5-flash-lite";
+const VALID_KEYS = new Set(LANGUAGES.map((l) => l.key));
 
 function languageSchema() {
   return {
@@ -11,15 +14,13 @@ function languageSchema() {
   };
 }
 
-const RESPONSE_SCHEMA = {
-  type: "OBJECT",
-  properties: {
-    kannada: languageSchema(),
-    malayalam: languageSchema(),
-    tamil: languageSchema(),
-  },
-  required: ["kannada", "malayalam", "tamil"],
-};
+function buildResponseSchema(keys) {
+  const properties = {};
+  keys.forEach((key) => {
+    properties[key] = languageSchema();
+  });
+  return { type: "OBJECT", properties, required: keys };
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -27,11 +28,14 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { text } = req.body || {};
+  const { text, languages } = req.body || {};
   if (!text || !text.trim()) {
     res.status(400).json({ error: "Please enter some text to translate." });
     return;
   }
+
+  let keys = Array.isArray(languages) ? languages.filter((k) => VALID_KEYS.has(k)) : [];
+  if (keys.length === 0) keys = DEFAULT_LANGUAGE_KEYS;
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -41,7 +45,9 @@ export default async function handler(req, res) {
     return;
   }
 
-  const prompt = `Translate the following English text into Kannada, Malayalam, and Tamil.
+  const languageNames = keys.map((key) => LANGUAGES.find((l) => l.key === key).label).join(", ");
+
+  const prompt = `Translate the following English text into ${languageNames}.
 For each language provide:
 - "translation": the translated sentence written in the language's native script.
 - "pronunciation": a romanized (English letters) phonetic transliteration of the translation, easy for an English speaker to read aloud.
@@ -60,7 +66,7 @@ Respond only with JSON matching the required schema.`;
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             responseMimeType: "application/json",
-            responseSchema: RESPONSE_SCHEMA,
+            responseSchema: buildResponseSchema(keys),
             temperature: 0.2,
           },
         }),

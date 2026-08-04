@@ -43,7 +43,7 @@ export default function TypewriterText({ phrases, className }) {
     <span className={className}>
       {text}
       {!prefersReducedMotion && (
-        <span className="inline-block w-[2px] h-[1em] bg-current ml-0.5 align-middle animate-pulse" />
+        <span className="inline-block w-[2px] h-[1em] bg-indigo-500 dark:bg-indigo-400 ml-0.5 align-middle animate-pulse" />
       )}
     </span>
   );

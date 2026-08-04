@@ -1,10 +1,11 @@
 # LangLearn AI
 
-A chat-style translator: type an English sentence and get back **Kannada**, **Malayalam**, and
-**Tamil** translations with romanized pronunciation, real spoken audio, and PDF export of the whole
-conversation. Frontend is React (Vite); translation runs through a serverless function backed by
-Google's **free-tier** Gemini API, and voice playback runs through Microsoft Edge's free neural TTS
-engine — so the whole thing costs nothing to run.
+A chat-style translator: type an English sentence and get back translations in **Telugu**, **Hindi**,
+**Kannada**, **Malayalam**, and **Tamil** — pick which of the five you want from Preferences — with
+romanized pronunciation, real spoken audio, and PDF export of the whole conversation. Frontend is
+React (Vite); translation runs through a serverless function backed by Google's **free-tier** Gemini
+API, and voice playback runs through Microsoft Edge's free neural TTS engine — so the whole thing
+costs nothing to run.
 
 ## 1. Get a free Gemini API key
 
@@ -59,7 +60,10 @@ time. Every push to `main` redeploys automatically.
 
 - **Chat-style conversation** — every sentence you translate becomes a turn in an ongoing thread
   (like a chat app), not a one-shot form. Conversation persists in your browser across reloads.
-- Each turn shows translation + romanized pronunciation for Kannada, Malayalam, and Tamil.
+- Each turn shows translation + romanized pronunciation for your selected languages.
+- **Preferences** — pick any subset of Telugu, Hindi, Kannada, Malayalam, and Tamil (at least one
+  required) from the nav bar. Only those languages are translated, shown, and included in the PDF
+  export; the selection persists across sessions.
 - 🔊 **Listen buttons play real, natural-sounding audio** generated server-side via Microsoft Edge's
   neural voices — no browser voice packs or OS language installs required, works the same on every
   device (desktop, tablet, mobile).
@@ -81,11 +85,11 @@ time. Every push to `main` redeploys automatically.
 - Vercel serverless function (`api/translate.js`) calling the Gemini API with a structured JSON
   response schema
 - Vercel serverless function (`api/tts.js`) using [`edge-tts-universal`](https://github.com/travisvn/edge-tts-universal)
-  to generate audio via Microsoft Edge's free neural TTS voices (`kn-IN-SapnaNeural`,
-  `ml-IN-SobhanaNeural`, `ta-IN-PallaviNeural`). This uses the same undocumented-but-widely-relied-on
-  protocol that powers Edge's built-in "Read Aloud" feature — it's not an officially published
-  Microsoft API, but the underlying method has been stable for years and is used by a large open-source
-  ecosystem.
+  to generate audio via Microsoft Edge's free neural TTS voices (`te-IN-ShrutiNeural`,
+  `hi-IN-SwaraNeural`, `kn-IN-SapnaNeural`, `ml-IN-SobhanaNeural`, `ta-IN-PallaviNeural`). This uses
+  the same undocumented-but-widely-relied-on protocol that powers Edge's built-in "Read Aloud" feature
+  — it's not an officially published Microsoft API, but the underlying method has been stable for
+  years and is used by a large open-source ecosystem.
 - `html2canvas` + `jspdf` for client-side PDF export
 
 ### Note on the `patches/` folder
