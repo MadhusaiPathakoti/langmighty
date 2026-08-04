@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import ChatInput from "./components/ChatInput.jsx";
 import ChatTurn from "./components/ChatTurn.jsx";
 import ExportTemplate from "./components/ExportTemplate.jsx";
-import ThemeToggle from "./components/ThemeToggle.jsx";
+import NavBar from "./components/NavBar.jsx";
+import RoadmapView from "./components/RoadmapView.jsx";
 import { exportNodeToPdf } from "./utils/pdfExport.js";
 
 const CONVERSATION_KEY = "langlearn_conversation";
@@ -30,6 +31,8 @@ function nextTurnId() {
 }
 
 export default function App() {
+  const [view, setView] = useState("chat"); // "chat" | "roadmap"
+  const [roadmapLanguage, setRoadmapLanguage] = useState("kannada");
   const [inputText, setInputText] = useState("");
   const [conversation, setConversation] = useState(loadConversation);
   const [theme, setTheme] = useState(loadTheme);
@@ -48,8 +51,8 @@ export default function App() {
   }, [conversation]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [conversation]);
+    if (view === "chat") bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [conversation, view]);
 
   async function handleSubmit() {
     const text = inputText.trim();
@@ -102,51 +105,66 @@ export default function App() {
     await exportNodeToPdf(exportRef.current, `translation_${Date.now()}.pdf`);
   }
 
+  function handleNavigateRoadmap(langKey) {
+    setRoadmapLanguage(langKey);
+    setView("roadmap");
+  }
+
   const hasContent = conversation.some((t) => t.status === "done");
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-        <div>
-          <h1 className="text-2xl font-bold">LangLearn AI</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">
-            English to Kannada, Malayalam &amp; Tamil — with pronunciation and voice.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 self-end sm:self-auto">
-          <button
-            type="button"
-            onClick={handleExport}
-            disabled={!hasContent}
-            className="rounded-lg border border-indigo-600 text-indigo-600 dark:text-indigo-400
-                       dark:border-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed font-medium
-                       px-3 py-2 text-sm hover:bg-indigo-50 dark:hover:bg-indigo-950 transition-colors"
-          >
-            Export to PDF
-          </button>
-          <ThemeToggle theme={theme} onToggle={() => setTheme((t) => (t === "dark" ? "light" : "dark"))} />
-        </div>
-      </header>
+      <NavBar
+        view={view}
+        roadmapLanguage={roadmapLanguage}
+        onNavigateChat={() => setView("chat")}
+        onNavigateRoadmap={handleNavigateRoadmap}
+        theme={theme}
+        onToggleTheme={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+      />
 
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
-        <div className="max-w-3xl mx-auto space-y-6">
-          {conversation.length === 0 && (
-            <p className="text-center text-gray-400 dark:text-gray-500 mt-16">
-              Type an English sentence below to get started.
-            </p>
-          )}
-          {conversation.map((turn) => (
-            <ChatTurn key={turn.id} turn={turn} />
-          ))}
-          <div ref={bottomRef} />
-        </div>
-      </div>
+      {view === "roadmap" ? (
+        <RoadmapView language={roadmapLanguage} onSelectLanguage={setRoadmapLanguage} />
+      ) : (
+        <>
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
+            <div className="max-w-3xl mx-auto space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <p className="text-gray-500 dark:text-gray-400 text-sm">
+                  English to Kannada, Malayalam &amp; Tamil — with pronunciation and voice.
+                </p>
+                {hasContent && (
+                  <button
+                    type="button"
+                    onClick={handleExport}
+                    className="self-start sm:self-auto rounded-lg border border-indigo-600 text-indigo-600
+                               dark:text-indigo-400 dark:border-indigo-400 font-medium px-3 py-2 text-sm
+                               hover:bg-indigo-50 dark:hover:bg-indigo-950 transition-colors"
+                  >
+                    Export to PDF
+                  </button>
+                )}
+              </div>
 
-      <footer className="border-t border-gray-200 dark:border-gray-800 px-4 sm:px-6 py-4">
-        <ChatInput value={inputText} onChange={setInputText} onSubmit={handleSubmit} loading={isSubmitting} />
-      </footer>
+              {conversation.length === 0 && (
+                <p className="text-center text-gray-400 dark:text-gray-500 mt-16">
+                  Type an English sentence below to get started.
+                </p>
+              )}
+              {conversation.map((turn) => (
+                <ChatTurn key={turn.id} turn={turn} />
+              ))}
+              <div ref={bottomRef} />
+            </div>
+          </div>
 
-      {hasContent && <ExportTemplate ref={exportRef} conversation={conversation} />}
+          <footer className="border-t border-gray-200 dark:border-gray-800 px-4 sm:px-6 py-4">
+            <ChatInput value={inputText} onChange={setInputText} onSubmit={handleSubmit} loading={isSubmitting} />
+          </footer>
+
+          {hasContent && <ExportTemplate ref={exportRef} conversation={conversation} />}
+        </>
+      )}
     </div>
   );
 }
