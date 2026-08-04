@@ -1,5 +1,5 @@
 export const LANGUAGES = [
-  { key: "kannada", label: "Kannada", ttsLang: "kn-IN" },
-  { key: "malayalam", label: "Malayalam", ttsLang: "ml-IN" },
-  { key: "tamil", label: "Tamil", ttsLang: "ta-IN" },
+  { key: "kannada", label: "Kannada", ttsVoice: "kn-IN-SapnaNeural" },
+  { key: "malayalam", label: "Malayalam", ttsVoice: "ml-IN-SobhanaNeural" },
+  { key: "tamil", label: "Tamil", ttsVoice: "ta-IN-PallaviNeural" },
 ];

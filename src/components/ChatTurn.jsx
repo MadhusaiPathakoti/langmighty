@@ -1,6 +1,6 @@
 import TranslationResults from "./TranslationResults.jsx";
 
-export default function ChatTurn({ turn, voices }) {
+export default function ChatTurn({ turn }) {
   return (
     <div className="space-y-2">
       <div className="flex justify-end">
@@ -24,7 +24,7 @@ export default function ChatTurn({ turn, voices }) {
             </div>
           )}
 
-          {turn.status === "done" && <TranslationResults results={turn.results} voices={voices} />}
+          {turn.status === "done" && <TranslationResults results={turn.results} />}
         </div>
       </div>
     </div>

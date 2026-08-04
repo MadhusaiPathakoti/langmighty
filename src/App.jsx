@@ -3,7 +3,6 @@ import ChatInput from "./components/ChatInput.jsx";
 import ChatTurn from "./components/ChatTurn.jsx";
 import ExportTemplate from "./components/ExportTemplate.jsx";
 import ThemeToggle from "./components/ThemeToggle.jsx";
-import { useSpeechVoices } from "./hooks/useSpeechVoices.js";
 import { exportNodeToPdf } from "./utils/pdfExport.js";
 
 const CONVERSATION_KEY = "langlearn_conversation";
@@ -36,7 +35,6 @@ export default function App() {
   const [theme, setTheme] = useState(loadTheme);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const voices = useSpeechVoices();
   const exportRef = useRef(null);
   const bottomRef = useRef(null);
 
@@ -138,7 +136,7 @@ export default function App() {
             </p>
           )}
           {conversation.map((turn) => (
-            <ChatTurn key={turn.id} turn={turn} voices={voices} />
+            <ChatTurn key={turn.id} turn={turn} />
           ))}
           <div ref={bottomRef} />
         </div>

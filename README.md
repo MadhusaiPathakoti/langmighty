@@ -1,8 +1,10 @@
 # LangLearn AI
 
-Translate English into **Kannada**, **Malayalam**, and **Tamil** — with native script, romanized
-pronunciation, text-to-speech, and PDF export. Frontend is React (Vite); translation runs through a
-serverless function backed by Google's **free-tier** Gemini API, so it costs nothing to run.
+A chat-style translator: type an English sentence and get back **Kannada**, **Malayalam**, and
+**Tamil** translations with romanized pronunciation, real spoken audio, and PDF export of the whole
+conversation. Frontend is React (Vite); translation runs through a serverless function backed by
+Google's **free-tier** Gemini API, and voice playback runs through Microsoft Edge's free neural TTS
+engine — so the whole thing costs nothing to run.
 
 ## 1. Get a free Gemini API key
 
@@ -33,8 +35,9 @@ Run:
 npm run dev
 ```
 
-Open `http://localhost:5173`. In dev mode, Vite serves `/api/translate` itself (see
-`vite.config.js`) by running the exact same handler used in production — no extra tooling needed.
+Open `http://localhost:5173`. In dev mode, Vite serves `/api/translate` and `/api/tts` itself (see
+`vite.config.js`) by running the exact same handlers used in production — no extra tooling needed.
+Voice playback needs no API key at all.
 
 ## 3. Deploy for free on Vercel
 
@@ -54,13 +57,15 @@ time. Every push to `main` redeploys automatically.
 
 ## Features
 
-- Single input box → structured translations for Kannada, Malayalam, and Tamil (translation, native
-  script, romanized pronunciation).
-- 🔊 Listen buttons use the browser's built-in speech synthesis (`kn-IN`, `ml-IN`, `ta-IN`). If your
-  browser/OS has no voice for a language, the button is disabled with a tooltip instead of failing.
-- **Export to PDF** — downloads a `translation_<timestamp>.pdf` with the English input and full
-  results table (native scripts render correctly since the PDF is generated from the rendered page).
-- Last 5 searches saved locally in your browser (click one to reload it instantly).
+- **Chat-style conversation** — every sentence you translate becomes a turn in an ongoing thread
+  (like a chat app), not a one-shot form. Conversation persists in your browser across reloads.
+- Each turn shows translation + romanized pronunciation for Kannada, Malayalam, and Tamil.
+- 🔊 **Listen buttons play real, natural-sounding audio** generated server-side via Microsoft Edge's
+  neural voices — no browser voice packs or OS language installs required, works the same on every
+  device (desktop, tablet, mobile).
+- **Export to PDF** — downloads a `translation_<timestamp>.pdf` with the **entire conversation**,
+  every turn numbered in order (native scripts render correctly since the PDF is generated from the
+  rendered page).
 - Light/dark mode toggle, copy-to-clipboard on translations.
 
 ## Tech stack
@@ -68,5 +73,18 @@ time. Every push to `main` redeploys automatically.
 - React + Vite, Tailwind CSS
 - Vercel serverless function (`api/translate.js`) calling the Gemini API with a structured JSON
   response schema
+- Vercel serverless function (`api/tts.js`) using [`edge-tts-universal`](https://github.com/travisvn/edge-tts-universal)
+  to generate audio via Microsoft Edge's free neural TTS voices (`kn-IN-SapnaNeural`,
+  `ml-IN-SobhanaNeural`, `ta-IN-PallaviNeural`). This uses the same undocumented-but-widely-relied-on
+  protocol that powers Edge's built-in "Read Aloud" feature — it's not an officially published
+  Microsoft API, but the underlying method has been stable for years and is used by a large open-source
+  ecosystem.
 - `html2canvas` + `jspdf` for client-side PDF export
-- Browser `SpeechSynthesis` API for voice output
+
+### Note on the `patches/` folder
+
+`edge-tts-universal@1.4.0` has a real bug: it mis-encodes any non-Latin-1 text (i.e. any Kannada,
+Malayalam, or Tamil script) before sending it for synthesis, so translated text silently produced no
+audio. `patches/edge-tts-universal+1.4.0.patch` (applied automatically via `postinstall` +
+[`patch-package`](https://github.com/ds300/patch-package)) fixes this along with a related bug in the
+SSML's declared language. No action needed — `npm install` reapplies it automatically.

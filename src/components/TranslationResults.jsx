@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { LANGUAGES } from "../languages.js";
 import SpeakerButton from "./SpeakerButton.jsx";
-import { findVoiceForLang, speakText } from "../hooks/useSpeechVoices.js";
 
-export default function TranslationResults({ results, voices }) {
+export default function TranslationResults({ results }) {
   const [copiedKey, setCopiedKey] = useState(null);
 
   function handleCopy(key, text) {
@@ -25,10 +24,9 @@ export default function TranslationResults({ results, voices }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-          {LANGUAGES.map(({ key, label, ttsLang }) => {
+          {LANGUAGES.map(({ key, label, ttsVoice }) => {
             const row = results[key];
             if (!row) return null;
-            const hasVoice = Boolean(findVoiceForLang(voices, ttsLang));
 
             return (
               <tr key={key} className="bg-white dark:bg-gray-900">
@@ -50,11 +48,7 @@ export default function TranslationResults({ results, voices }) {
                 </td>
                 <td className="px-3 py-2 text-gray-600 dark:text-gray-400 italic">{row.pronunciation}</td>
                 <td className="px-3 py-2 text-center">
-                  <SpeakerButton
-                    enabled={hasVoice}
-                    label={label}
-                    onClick={() => speakText(row.translation, ttsLang, voices)}
-                  />
+                  <SpeakerButton text={row.translation} voice={ttsVoice} label={label} />
                 </td>
               </tr>
             );

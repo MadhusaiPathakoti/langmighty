@@ -23,9 +23,29 @@ function readDotEnv() {
   return result;
 }
 
+async function prepareApiRequest(req, res) {
+  try {
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    const raw = Buffer.concat(chunks).toString("utf-8");
+    req.body = raw ? JSON.parse(raw) : {};
+  } catch {
+    req.body = {};
+  }
+
+  res.status = (code) => {
+    res.statusCode = code;
+    return res;
+  };
+  res.json = (data) => {
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify(data));
+  };
+}
+
 function localApiPlugin() {
   return {
-    name: "local-translate-api",
+    name: "local-api",
     configureServer(server) {
       server.middlewares.use("/api/translate", async (req, res) => {
         if (req.method !== "POST") {
@@ -33,23 +53,7 @@ function localApiPlugin() {
           res.end();
           return;
         }
-
-        try {
-          let raw = "";
-          for await (const chunk of req) raw += chunk;
-          req.body = raw ? JSON.parse(raw) : {};
-        } catch {
-          req.body = {};
-        }
-
-        res.status = (code) => {
-          res.statusCode = code;
-          return res;
-        };
-        res.json = (data) => {
-          res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify(data));
-        };
+        await prepareApiRequest(req, res);
 
         const key = readDotEnv().GEMINI_API_KEY;
         if (key) {
@@ -59,6 +63,18 @@ function localApiPlugin() {
         }
 
         const { default: handler } = await server.ssrLoadModule("/api/translate.js");
+        await handler(req, res);
+      });
+
+      server.middlewares.use("/api/tts", async (req, res) => {
+        if (req.method !== "POST") {
+          res.statusCode = 405;
+          res.end();
+          return;
+        }
+        await prepareApiRequest(req, res);
+
+        const { default: handler } = await server.ssrLoadModule("/api/tts.js");
         await handler(req, res);
       });
     },

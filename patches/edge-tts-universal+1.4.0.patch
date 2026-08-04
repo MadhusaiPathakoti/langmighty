@@ -1,0 +1,43 @@
+diff --git a/node_modules/edge-tts-universal/dist/index.js b/node_modules/edge-tts-universal/dist/index.js
+index 57650af..57df96d 100644
+--- a/node_modules/edge-tts-universal/dist/index.js
++++ b/node_modules/edge-tts-universal/dist/index.js
+@@ -144,7 +144,8 @@ function* splitTextByByteLength(text, byteLength) {
+ }
+ function mkssml(tc, escapedText) {
+   const text = Buffer.isBuffer(escapedText) ? escapedText.toString("utf-8") : escapedText;
+-  return `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'><voice name='${tc.voice}'><prosody pitch='${tc.pitch}' rate='${tc.rate}' volume='${tc.volume}'>${text}</prosody></voice></speak>`;
++  const lang = tc.voice.split('-').slice(0, 2).join('-');
++  return `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${lang}'><voice name='${tc.voice}'><prosody pitch='${tc.pitch}' rate='${tc.rate}' volume='${tc.volume}'>${text}</prosody></voice></speak>`;
+ }
+ function dateToString() {
+   return (/* @__PURE__ */ new Date()).toUTCString().replace("GMT", "GMT+0000 (Coordinated Universal Time)");
+@@ -354,7 +355,7 @@ var Communicate = class {
+       throw new TypeError("text must be a string");
+     }
+     this.texts = splitTextByByteLength(
+-      escape(removeIncompatibleCharacters(text)),
++      escape2(removeIncompatibleCharacters(text)),
+       // calcMaxMesgSize(this.ttsConfig),
+       4096
+     );
+@@ -824,7 +825,8 @@ function removeIncompatibleCharacters2(str) {
+ }
+ function mkssml2(tc, escapedText) {
+   const text = escapedText instanceof Uint8Array ? new TextDecoder().decode(escapedText) : escapedText;
+-  return `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'><voice name='${tc.voice}'><prosody pitch='${tc.pitch}' rate='${tc.rate}' volume='${tc.volume}'>${text}</prosody></voice></speak>`;
++  const lang = tc.voice.split('-').slice(0, 2).join('-');
++  return `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${lang}'><voice name='${tc.voice}'><prosody pitch='${tc.pitch}' rate='${tc.rate}' volume='${tc.volume}'>${text}</prosody></voice></speak>`;
+ }
+ function splitTextByByteLength2(text, byteLength) {
+   const encoder = new TextEncoder();
+@@ -1622,7 +1624,8 @@ ${JSON.stringify(config)}`;
+    * Creates the SSML (Speech Synthesis Markup Language) message.
+    */
+   createSSML() {
+-    const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'>
++    const lang = this.voice.split('-').slice(0, 2).join('-');
++    const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${lang}'>
+       <voice name='${this.voice}'>
+         <prosody pitch='${this.pitch}' rate='${this.rate}' volume='${this.volume}'>
+           ${this.escapeXml(this.text)}
