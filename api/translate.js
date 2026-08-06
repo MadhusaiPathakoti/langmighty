@@ -1,7 +1,8 @@
-import { LANGUAGES, DEFAULT_LANGUAGE_KEYS } from "../src/languages.js";
+import { LANGUAGES, INPUT_LANGUAGES, DEFAULT_LANGUAGE_KEYS, DEFAULT_INPUT_LANGUAGE_KEY } from "../src/languages.js";
 
 const GEMINI_MODEL = "gemini-3.5-flash-lite";
 const VALID_KEYS = new Set(LANGUAGES.map((l) => l.key));
+const VALID_INPUT_KEYS = new Set(INPUT_LANGUAGES.map((l) => l.key));
 
 function languageSchema() {
   return {
@@ -28,14 +29,17 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { text, languages } = req.body || {};
+  const { text, languages, sourceLanguage } = req.body || {};
   if (!text || !text.trim()) {
     res.status(400).json({ error: "Please enter some text to translate." });
     return;
   }
 
-  let keys = Array.isArray(languages) ? languages.filter((k) => VALID_KEYS.has(k)) : [];
-  if (keys.length === 0) keys = DEFAULT_LANGUAGE_KEYS;
+  const sourceKey = VALID_INPUT_KEYS.has(sourceLanguage) ? sourceLanguage : DEFAULT_INPUT_LANGUAGE_KEY;
+
+  let keys = Array.isArray(languages) ? languages.filter((k) => VALID_KEYS.has(k) && k !== sourceKey) : [];
+  if (keys.length === 0) keys = DEFAULT_LANGUAGE_KEYS.filter((k) => k !== sourceKey);
+  if (keys.length === 0) keys = LANGUAGES.map((l) => l.key).filter((k) => k !== sourceKey);
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -46,13 +50,14 @@ export default async function handler(req, res) {
   }
 
   const languageNames = keys.map((key) => LANGUAGES.find((l) => l.key === key).label).join(", ");
+  const sourceLabel = INPUT_LANGUAGES.find((l) => l.key === sourceKey).label;
 
-  const prompt = `Translate the following English text into ${languageNames}.
+  const prompt = `Translate the following ${sourceLabel} text into ${languageNames}.
 For each language provide:
 - "translation": the translated sentence written in the language's native script.
 - "pronunciation": a romanized (English letters) phonetic transliteration of the translation, easy for an English speaker to read aloud.
 
-English text: "${text}"
+${sourceLabel} text: "${text}"
 
 Respond only with JSON matching the required schema.`;
 

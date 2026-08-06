@@ -8,7 +8,13 @@ import NavBar from "./components/NavBar.jsx";
 import RoadmapView from "./components/RoadmapView.jsx";
 import TypewriterText from "./components/TypewriterText.jsx";
 import { exportNodeToPdf } from "./utils/pdfExport.js";
-import { DEFAULT_LANGUAGE_KEYS } from "./languages.js";
+import {
+  DEFAULT_LANGUAGE_KEYS,
+  DEFAULT_INPUT_LANGUAGE_KEY,
+  INPUT_LANGUAGES,
+  LANGUAGES,
+  matchesScript,
+} from "./languages.js";
 
 const TAGLINES = [
   "English to Telugu, Hindi, Kannada, Malayalam & Tamil — with pronunciation and voice.",
@@ -19,6 +25,7 @@ const TAGLINES = [
 const CONVERSATION_KEY = "langlearn_conversation";
 const THEME_KEY = "langlearn_theme";
 const LANGUAGE_PREFS_KEY = "langlearn_language_prefs";
+const INPUT_LANGUAGE_KEY = "langlearn_input_language";
 
 function loadConversation() {
   try {
@@ -46,6 +53,22 @@ function loadLanguagePrefs() {
   return DEFAULT_LANGUAGE_KEYS;
 }
 
+function loadInputLanguage() {
+  const saved = localStorage.getItem(INPUT_LANGUAGE_KEY);
+  if (saved && INPUT_LANGUAGES.some((l) => l.key === saved)) return saved;
+  return DEFAULT_INPUT_LANGUAGE_KEY;
+}
+
+// A language can't be translated into itself: strip the input language out of the
+// output selection, falling back to the first other available language if that
+// would otherwise leave no output languages selected.
+function ensureValidOutputs(outputKeys, inputKey) {
+  const filtered = outputKeys.filter((k) => k !== inputKey);
+  if (filtered.length > 0) return filtered;
+  const fallback = LANGUAGES.find((l) => l.key !== inputKey);
+  return fallback ? [fallback.key] : [];
+}
+
 let turnCounter = 0;
 function nextTurnId() {
   turnCounter += 1;
@@ -59,7 +82,11 @@ export default function App() {
   const [conversation, setConversation] = useState(loadConversation);
   const [theme, setTheme] = useState(loadTheme);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedLanguages, setSelectedLanguages] = useState(loadLanguagePrefs);
+  const [inputLanguage, setInputLanguage] = useState(loadInputLanguage);
+  const [selectedLanguages, setSelectedLanguages] = useState(() =>
+    ensureValidOutputs(loadLanguagePrefs(), loadInputLanguage())
+  );
+  const [inputError, setInputError] = useState(null);
 
   const exportRef = useRef(null);
   const bottomRef = useRef(null);
@@ -78,6 +105,10 @@ export default function App() {
   }, [selectedLanguages]);
 
   useEffect(() => {
+    localStorage.setItem(INPUT_LANGUAGE_KEY, inputLanguage);
+  }, [inputLanguage]);
+
+  useEffect(() => {
     if (view === "chat") bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [conversation, view]);
 
@@ -85,10 +116,29 @@ export default function App() {
     const text = inputText.trim();
     if (!text || isSubmitting) return;
 
+    const inputLang = INPUT_LANGUAGES.find((l) => l.key === inputLanguage);
+    if (!matchesScript(text, inputLanguage)) {
+      setInputError(
+        inputLang.key === "english"
+          ? "Please type in English (Latin script)."
+          : `Please type in ${inputLang.label} script (${inputLang.nativeName}).`
+      );
+      return;
+    }
+    setInputError(null);
+
     const turnId = nextTurnId();
     setConversation((prev) => [
       ...prev,
-      { id: turnId, englishText: text, status: "loading", results: null, error: null },
+      {
+        id: turnId,
+        englishText: text,
+        sourceText: text,
+        sourceLanguage: inputLanguage,
+        status: "loading",
+        results: null,
+        error: null,
+      },
     ]);
     setInputText("");
     setIsSubmitting(true);
@@ -97,7 +147,7 @@ export default function App() {
       const res = await fetch("/api/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, languages: selectedLanguages }),
+        body: JSON.stringify({ text, sourceLanguage: inputLanguage, languages: selectedLanguages }),
       });
       const data = await res.json();
 
@@ -147,6 +197,12 @@ export default function App() {
     });
   }
 
+  function handleChangeInputLanguage(key) {
+    setInputLanguage(key);
+    setSelectedLanguages((prev) => ensureValidOutputs(prev, key));
+    setInputError(null);
+  }
+
   const hasContent = conversation.some((t) => t.status === "done");
 
   return (
@@ -155,6 +211,8 @@ export default function App() {
       <NavBar
         view={view}
         roadmapLanguage={roadmapLanguage}
+        inputLanguage={inputLanguage}
+        onChangeInputLanguage={handleChangeInputLanguage}
         selectedLanguages={selectedLanguages}
         onToggleLanguage={handleToggleLanguage}
         onNavigateChat={() => setView("chat")}
@@ -190,7 +248,8 @@ export default function App() {
                   />
 
                   <p className="relative mt-4 text-sm text-gray-500 dark:text-gray-400">
-                    Type an English sentence below to get started.
+                    Type a sentence in{" "}
+                    {INPUT_LANGUAGES.find((l) => l.key === inputLanguage)?.label} below to get started.
                   </p>
 
                   <span className="relative inline-flex items-center gap-1.5 mt-6 rounded-full bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 px-3 py-1 text-xs text-gray-500 dark:text-gray-400 shadow-sm">
@@ -243,7 +302,17 @@ export default function App() {
           </div>
 
           <footer className="relative z-10 border-t border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm px-4 sm:px-6 py-4">
-            <ChatInput value={inputText} onChange={setInputText} onSubmit={handleSubmit} loading={isSubmitting} />
+            <ChatInput
+              value={inputText}
+              onChange={(v) => {
+                setInputText(v);
+                if (inputError) setInputError(null);
+              }}
+              onSubmit={handleSubmit}
+              loading={isSubmitting}
+              inputLanguage={inputLanguage}
+              error={inputError}
+            />
           </footer>
 
           {hasContent && <ExportTemplate ref={exportRef} conversation={conversation} />}

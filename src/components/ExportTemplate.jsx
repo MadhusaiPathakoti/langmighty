@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import { LANGUAGES } from "../languages.js";
+import { LANGUAGES, getInputLanguage } from "../languages.js";
 
 const ExportTemplate = forwardRef(function ExportTemplate({ conversation }, ref) {
   const doneTurns = conversation.filter((t) => t.status === "done");
@@ -21,10 +21,12 @@ const ExportTemplate = forwardRef(function ExportTemplate({ conversation }, ref)
       <h1 style={{ fontSize: "22px", fontWeight: 700, marginBottom: "4px" }}>LangLearn AI</h1>
       <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "24px" }}>Conversation transcript</p>
 
-      {doneTurns.map((turn, i) => (
+      {doneTurns.map((turn, i) => {
+        const sourceLabel = getInputLanguage(turn.sourceLanguage).label;
+        return (
         <div key={turn.id} style={{ marginBottom: "24px" }}>
           <p style={{ fontSize: "14px", marginBottom: "10px" }}>
-            <strong>{i + 1}. English:</strong> {turn.englishText}
+            <strong>{i + 1}. {sourceLabel}:</strong> {turn.sourceText ?? turn.englishText}
           </p>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
             <thead>
@@ -61,7 +63,8 @@ const ExportTemplate = forwardRef(function ExportTemplate({ conversation }, ref)
             </tbody>
           </table>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 });

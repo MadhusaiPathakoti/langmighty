@@ -1,11 +1,11 @@
 # LangLearn AI
 
-A chat-style translator: type an English sentence and get back translations in **Telugu**, **Hindi**,
-**Kannada**, **Malayalam**, and **Tamil** — pick which of the five you want from Preferences — with
-romanized pronunciation, real spoken audio, and PDF export of the whole conversation. Frontend is
-React (Vite); translation runs through a serverless function backed by Google's **free-tier** Gemini
-API, and voice playback runs through Microsoft Edge's free neural TTS engine — so the whole thing
-costs nothing to run.
+A chat-style translator: pick the language you'll type in (English or any of **Telugu**, **Hindi**,
+**Kannada**, **Malayalam**, and **Tamil**) and which of the others you want translations into, then
+type a sentence in that script and get back translations — with romanized pronunciation, real spoken
+audio, and PDF export of the whole conversation. Frontend is React (Vite); translation runs through a
+serverless function backed by Google's **free-tier** Gemini API, and voice playback runs through
+Microsoft Edge's free neural TTS engine — so the whole thing costs nothing to run.
 
 ## 1. Get a free Gemini API key
 
@@ -60,10 +60,14 @@ time. Every push to `main` redeploys automatically.
 
 - **Chat-style conversation** — every sentence you translate becomes a turn in an ongoing thread
   (like a chat app), not a one-shot form. Conversation persists in your browser across reloads.
-- Each turn shows translation + romanized pronunciation for your selected languages.
-- **Preferences** — pick any subset of Telugu, Hindi, Kannada, Malayalam, and Tamil (at least one
-  required) from the nav bar. Only those languages are translated, shown, and included in the PDF
-  export; the selection persists across sessions.
+- Each turn shows translation + romanized pronunciation for your selected output languages.
+- **Preferences** — choose the language you'll type in ("I'll type in": English, Telugu, Hindi,
+  Kannada, Malayalam, or Tamil) and, separately, which of the remaining languages to translate into
+  ("Translate to": at least one required, the input language is excluded automatically since a
+  language can't be translated into itself). Input you type is checked against the selected input
+  language's script before it's sent — e.g. picking Telugu requires typing in Telugu script. Only the
+  chosen output languages are translated, shown, and included in the PDF export; both selections
+  persist across sessions.
 - 🔊 **Listen buttons play real, natural-sounding audio** generated server-side via Microsoft Edge's
   neural voices — no browser voice packs or OS language installs required, works the same on every
   device (desktop, tablet, mobile).

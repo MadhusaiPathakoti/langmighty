@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ROADMAP_LANGUAGES } from "../roadmapData.js";
-import { LANGUAGES } from "../languages.js";
+import { INPUT_LANGUAGES, LANGUAGES } from "../languages.js";
 import IndiaFlagIcon from "./IndiaFlagIcon.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 
@@ -11,9 +11,12 @@ export default function NavBar({
   onNavigateRoadmap,
   theme,
   onToggleTheme,
+  inputLanguage,
+  onChangeInputLanguage,
   selectedLanguages,
   onToggleLanguage,
 }) {
+  const outputOptions = LANGUAGES.filter((lang) => lang.key !== inputLanguage);
   const [roadmapMenuOpen, setRoadmapMenuOpen] = useState(false);
   const [prefsOpen, setPrefsOpen] = useState(false);
   const roadmapMenuRef = useRef(null);
@@ -113,13 +116,33 @@ export default function NavBar({
 
           {prefsOpen && (
             <div
-              className="absolute right-0 mt-1 w-56 rounded-lg border border-gray-200 dark:border-gray-700
+              className="absolute right-0 mt-1 w-64 rounded-lg border border-gray-200 dark:border-gray-700
                          bg-white dark:bg-gray-900 shadow-lg py-2 px-3 z-20"
             >
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">I'll type in</p>
+              {INPUT_LANGUAGES.map((lang) => (
+                <label
+                  key={lang.key}
+                  className="flex items-center gap-2 py-1 text-sm cursor-pointer text-gray-700 dark:text-gray-200"
+                >
+                  <input
+                    type="radio"
+                    name="input-language"
+                    checked={inputLanguage === lang.key}
+                    onChange={() => onChangeInputLanguage(lang.key)}
+                    className="border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  {lang.label}
+                  {lang.key !== "english" && <span className="text-gray-400">({lang.nativeName})</span>}
+                </label>
+              ))}
+
+              <div className="my-2 border-t border-gray-100 dark:border-gray-800" />
+
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
-                Languages to translate to
+                Translate to
               </p>
-              {LANGUAGES.map((lang) => {
+              {outputOptions.map((lang) => {
                 const checked = selectedLanguages.includes(lang.key);
                 const isOnlyOne = checked && selectedLanguages.length === 1;
                 return (
