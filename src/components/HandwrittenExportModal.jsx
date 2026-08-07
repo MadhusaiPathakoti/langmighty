@@ -1,6 +1,11 @@
 import { useRef, useState } from "react";
 import HandwrittenCard from "./HandwrittenCard.jsx";
-import { HANDWRITTEN_BACKGROUNDS, DEFAULT_HANDWRITTEN_BACKGROUND_ID, getHandwrittenBackground } from "./handwrittenBackgrounds.js";
+import {
+  CSS_PAPER_BACKGROUNDS,
+  PHOTO_BACKGROUNDS,
+  DEFAULT_HANDWRITTEN_BACKGROUND_ID,
+  getHandwrittenBackground,
+} from "./handwrittenBackgrounds.js";
 import {
   LATIN_HANDWRITING_FONTS,
   NATIVE_FONT_SETS,
@@ -303,8 +308,10 @@ export default function HandwrittenExportModal({ turn, onClose }) {
 
             <div>
               <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Background</p>
-              <div className="grid grid-cols-3 gap-2">
-                {HANDWRITTEN_BACKGROUNDS.map((bg) => (
+
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-1.5">Paper textures</p>
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                {CSS_PAPER_BACKGROUNDS.map((bg) => (
                   <button
                     key={bg.id}
                     type="button"
@@ -322,6 +329,28 @@ export default function HandwrittenExportModal({ turn, onClose }) {
                   />
                 ))}
               </div>
+
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-1.5">Photos</p>
+              <div className="grid grid-cols-3 gap-2">
+                {PHOTO_BACKGROUNDS.map((bg) => (
+                  <button
+                    key={bg.id}
+                    type="button"
+                    title={bg.label}
+                    onClick={() => {
+                      setBackgroundId(bg.id);
+                      setCustomImage(null);
+                    }}
+                    className={`h-12 rounded-md border-2 transition-transform ${
+                      backgroundId === bg.id && !customImage
+                        ? "border-indigo-500 scale-105"
+                        : "border-gray-200 dark:border-gray-700"
+                    }`}
+                    style={{ backgroundImage: bg.swatch, backgroundSize: "cover", backgroundPosition: "center" }}
+                  />
+                ))}
+              </div>
+
               <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5">
                 {background.label}
               </p>

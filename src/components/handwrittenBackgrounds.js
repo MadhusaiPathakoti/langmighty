@@ -1,7 +1,17 @@
+import notebookLeaf from "../media/photo-backgrounds/notebook-leaf.jpg";
+import notepadPink from "../media/photo-backgrounds/notepad-pink.jpg";
+import notebookMarble from "../media/photo-backgrounds/notebook-marble.jpg";
+import paperDesk from "../media/photo-backgrounds/paper-desk.jpg";
+import notepadCream from "../media/photo-backgrounds/notepad-cream.jpg";
+import linedPadWood from "../media/photo-backgrounds/lined-pad-wood.jpg";
+import ringBoundBlue from "../media/photo-backgrounds/ring-bound-blue.jpg";
+import notepadYellow from "../media/photo-backgrounds/notepad-yellow.jpg";
+import vintageJournal from "../media/photo-backgrounds/vintage-journal.jpg";
+
 // CSS-only "paper" backgrounds for the handwritten share-card. Each preset supplies
 // a swatch (for the picker thumbnail), the card's layered background, and an ink
 // palette tuned for legibility against that paper.
-export const HANDWRITTEN_BACKGROUNDS = [
+export const CSS_PAPER_BACKGROUNDS = [
   {
     id: "ruled",
     label: "Ruled Notebook",
@@ -82,6 +92,36 @@ export const HANDWRITTEN_BACKGROUNDS = [
     ink: { primary: "#3b3220", secondary: "#5b4d2e", accent: "#8a4b12" },
   },
 ];
+
+// Photo backgrounds. Each uses the same dark, warm-neutral ink so text stays
+// legible against whatever part of the photo the text ends up over (pan/zoom
+// lets the user reposition to avoid the busiest areas of the photo).
+const PHOTO_INK = { primary: "#1f2937", secondary: "#4b5563", accent: "#92400e" };
+
+export const PHOTO_BACKGROUNDS = [
+  { id: "photo-notebook-leaf", label: "Notebook & Leaf", image: notebookLeaf },
+  { id: "photo-notepad-pink", label: "Notepad on Pink", image: notepadPink },
+  { id: "photo-notebook-marble", label: "Notebook on Marble", image: notebookMarble },
+  { id: "photo-paper-desk", label: "Paper on Desk", image: paperDesk },
+  { id: "photo-notepad-cream", label: "Cream Notepad", image: notepadCream },
+  { id: "photo-lined-pad-wood", label: "Lined Pad on Wood", image: linedPadWood },
+  { id: "photo-ring-bound-blue", label: "Ring-Bound Page", image: ringBoundBlue },
+  { id: "photo-notepad-yellow", label: "Yellow Notepad", image: notepadYellow },
+  { id: "photo-vintage-journal", label: "Vintage Journal", image: vintageJournal },
+].map((bg) => ({
+  ...bg,
+  spiral: false,
+  marginLeft: 0,
+  swatch: `url(${bg.image})`,
+  style: {
+    backgroundImage: `url(${bg.image})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  },
+  ink: PHOTO_INK,
+}));
+
+export const HANDWRITTEN_BACKGROUNDS = [...CSS_PAPER_BACKGROUNDS, ...PHOTO_BACKGROUNDS];
 
 export const DEFAULT_HANDWRITTEN_BACKGROUND_ID = HANDWRITTEN_BACKGROUNDS[0].id;
 
