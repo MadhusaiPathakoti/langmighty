@@ -17,7 +17,7 @@ import {
 } from "./languages.js";
 
 const TAGLINES = [
-  "English to Telugu, Hindi, Kannada, Malayalam & Tamil — with pronunciation and voice.",
+  "Translate between English, Telugu, Hindi, Kannada, Malayalam & Tamil — any language to any language, with pronunciation and voice.",
   "Learn to read, write, and speak Indian languages.",
   "Type in English. Hear it back instantly.",
 ];
