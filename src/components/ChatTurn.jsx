@@ -1,9 +1,22 @@
+import { useState } from "react";
 import TranslationResults from "./TranslationResults.jsx";
+import HandwrittenExportModal from "./HandwrittenExportModal.jsx";
 
-export default function ChatTurn({ turn }) {
+export default function ChatTurn({ turn, onDelete }) {
+  const [showShareModal, setShowShareModal] = useState(false);
+
   return (
-    <div className="space-y-2">
-      <div className="flex justify-end">
+    <div className="space-y-2 group">
+      <div className="flex justify-end items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onDelete?.(turn.id)}
+          className="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 text-sm transition-colors"
+          title="Delete this message"
+          aria-label="Delete this message"
+        >
+          🗑
+        </button>
         <div className="max-w-[80%] rounded-2xl bg-indigo-600 text-white px-4 py-2.5 text-sm">
           {turn.sourceText ?? turn.englishText}
         </div>
@@ -24,9 +37,22 @@ export default function ChatTurn({ turn }) {
             </div>
           )}
 
-          {turn.status === "done" && <TranslationResults results={turn.results} />}
+          {turn.status === "done" && (
+            <>
+              <TranslationResults results={turn.results} />
+              <button
+                type="button"
+                onClick={() => setShowShareModal(true)}
+                className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+              >
+                ✎ Share as handwritten note
+              </button>
+            </>
+          )}
         </div>
       </div>
+
+      {showShareModal && <HandwrittenExportModal turn={turn} onClose={() => setShowShareModal(false)} />}
     </div>
   );
 }

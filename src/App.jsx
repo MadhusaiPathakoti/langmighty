@@ -182,6 +182,10 @@ export default function App() {
     await exportNodeToPdf(exportRef.current, `translation_${Date.now()}.pdf`);
   }
 
+  function handleDeleteTurn(id) {
+    setConversation((prev) => prev.filter((t) => t.id !== id));
+  }
+
   function handleNavigateRoadmap(langKey) {
     setRoadmapLanguage(langKey);
     setView("roadmap");
@@ -295,7 +299,7 @@ export default function App() {
               )}
 
               {conversation.map((turn) => (
-                <ChatTurn key={turn.id} turn={turn} />
+                <ChatTurn key={turn.id} turn={turn} onDelete={handleDeleteTurn} />
               ))}
               <div ref={bottomRef} />
             </div>

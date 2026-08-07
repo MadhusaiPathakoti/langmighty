@@ -18,7 +18,7 @@ const ExportTemplate = forwardRef(function ExportTemplate({ conversation }, ref)
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <h1 style={{ fontSize: "22px", fontWeight: 700, marginBottom: "4px" }}>Linguist.ai</h1>
+      <h1 style={{ fontSize: "22px", fontWeight: 700, marginBottom: "4px" }}>LangMighty</h1>
       <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "24px" }}>Conversation transcript</p>
 
       {doneTurns.map((turn, i) => {
