@@ -18,7 +18,7 @@ const RoadmapExportTemplate = forwardRef(function RoadmapExportTemplate({ langua
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <h1 style={{ fontSize: "22px", fontWeight: 700, marginBottom: "4px" }}>LangLearn AI</h1>
+      <h1 style={{ fontSize: "22px", fontWeight: 700, marginBottom: "4px" }}>Linguist.ai</h1>
       <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "4px" }}>
         Roadmap to Learn {langMeta.label} ({langMeta.nativeName})
       </p>
