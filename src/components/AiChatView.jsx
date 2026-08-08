@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import AiChatExportTemplate from "./AiChatExportTemplate.jsx";
 import AiChatMessage from "./AiChatMessage.jsx";
+import { exportNodeToPdf } from "../utils/pdfExport.js";
 
 const AI_CHAT_KEY = "langlearn_ai_chat";
 
@@ -30,7 +32,9 @@ export default function AiChatView() {
   const [messages, setMessages] = useState(loadMessages);
   const [inputText, setInputText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const bottomRef = useRef(null);
+  const exportRef = useRef(null);
 
   useEffect(() => {
     localStorage.setItem(AI_CHAT_KEY, JSON.stringify(messages));
@@ -98,6 +102,18 @@ export default function AiChatView() {
     setMessages([]);
   }
 
+  async function handleExportPdf() {
+    if (!exportRef.current || isExportingPdf) return;
+    setIsExportingPdf(true);
+    try {
+      await exportNodeToPdf(exportRef.current, `langmighty-ai-chat-${Date.now()}.pdf`);
+    } finally {
+      setIsExportingPdf(false);
+    }
+  }
+
+  const hasContent = messages.some((m) => m.status === "done" && m.content?.trim());
+
   return (
     <div className="relative z-10 flex-1 flex flex-col min-h-0">
       <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
@@ -134,7 +150,17 @@ export default function AiChatView() {
               </div>
             </div>
           ) : (
-            <div className="flex justify-end">
+            <div className="flex justify-end items-center gap-3">
+              {hasContent && (
+                <button
+                  type="button"
+                  onClick={handleExportPdf}
+                  disabled={isExportingPdf}
+                  className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline disabled:opacity-60"
+                >
+                  {isExportingPdf ? "Exporting..." : "Export to PDF"}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handleClear}
@@ -175,6 +201,8 @@ export default function AiChatView() {
           </form>
         </div>
       </footer>
+
+      {hasContent && <AiChatExportTemplate ref={exportRef} messages={messages} />}
     </div>
   );
 }

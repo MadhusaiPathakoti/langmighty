@@ -14,7 +14,9 @@ import {
   DEFAULT_NATIVE_FONT_SET_ID,
 } from "./handwrittenFonts.js";
 import { ASPECT_RATIOS, DEFAULT_ASPECT_RATIO_ID, getAspectRatio, PREVIEW_WIDTH, previewHeightFor } from "./aspectRatios.js";
-import { exportNodeToImage } from "../utils/imageExport.js";
+import { downloadNodeAsImage, shareNodeAsImage } from "../utils/imageExport.js";
+
+const canShareFiles = typeof navigator !== "undefined" && typeof navigator.share === "function";
 
 const MIN_ZOOM = 0.7;
 const MAX_ZOOM = 1.6;
@@ -56,7 +58,7 @@ export default function HandwrittenExportModal({ turn, onClose }) {
   const [isDragging, setIsDragging] = useState(false);
   const [watermarkPan, setWatermarkPan] = useState({ x: 0, y: 0 });
   const [isDraggingWatermark, setIsDraggingWatermark] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
+  const [exportAction, setExportAction] = useState(null); // null | "download" | "share"
   const [previewScale, setPreviewScale] = useState(MAX_PREVIEW_SCALE);
   const cardRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -158,9 +160,9 @@ export default function HandwrittenExportModal({ turn, onClose }) {
     e.target.value = "";
   }
 
-  async function handleDownload() {
-    if (!cardRef.current || isExporting) return;
-    setIsExporting(true);
+  async function runExport(exportFn, action) {
+    if (!cardRef.current || exportAction) return;
+    setExportAction(action);
     // The on-screen preview wraps the card in `transform: scale(...)` purely for
     // display; html2canvas miscalculates inline-block margins when an ancestor
     // has a CSS transform, so it must be removed for the duration of the capture.
@@ -170,15 +172,23 @@ export default function HandwrittenExportModal({ turn, onClose }) {
     try {
       const scale = aspectRatio.width / PREVIEW_WIDTH;
       const height = previewHeightFor(aspectRatio);
-      await exportNodeToImage(cardRef.current, `langmighty-note-${Date.now()}.png`, {
+      await exportFn(cardRef.current, `langmighty-note-${Date.now()}.png`, {
         scale,
         width: PREVIEW_WIDTH,
         height,
       });
     } finally {
       if (scaledWrapper) scaledWrapper.style.transform = previousTransform;
-      setIsExporting(false);
+      setExportAction(null);
     }
+  }
+
+  function handleDownload() {
+    return runExport(downloadNodeAsImage, "download");
+  }
+
+  function handleShare() {
+    return runExport(shareNodeAsImage, "share");
   }
 
   return createPortal(
@@ -489,15 +499,25 @@ export default function HandwrittenExportModal({ turn, onClose }) {
           </div>
         </div>
 
-        <div className="shrink-0 border-t border-gray-200 dark:border-gray-800 p-4">
+        <div className="shrink-0 border-t border-gray-200 dark:border-gray-800 p-4 flex gap-3">
           <button
             type="button"
             onClick={handleDownload}
-            disabled={isExporting}
-            className="w-full rounded-lg bg-indigo-600 text-white font-medium px-3 py-3 text-sm hover:bg-indigo-700 disabled:opacity-60 transition-colors"
+            disabled={Boolean(exportAction)}
+            className="flex-1 rounded-lg bg-indigo-600 text-white font-medium px-3 py-3 text-sm hover:bg-indigo-700 disabled:opacity-60 transition-colors"
           >
-            {isExporting ? "Rendering..." : "Save Image"}
+            {exportAction === "download" ? "Downloading..." : "Download"}
           </button>
+          {canShareFiles && (
+            <button
+              type="button"
+              onClick={handleShare}
+              disabled={Boolean(exportAction)}
+              className="flex-1 rounded-lg border border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400 font-medium px-3 py-3 text-sm hover:bg-indigo-50 dark:hover:bg-indigo-950 disabled:opacity-60 transition-colors"
+            >
+              {exportAction === "share" ? "Sharing..." : "Share"}
+            </button>
+          )}
         </div>
       </div>
     </div>,

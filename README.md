@@ -5,9 +5,28 @@ Live app: **[linguist-ai-two.vercel.app](https://linguist-ai-two.vercel.app/)**
 A chat-style translator between English, Telugu, Hindi, Kannada, Malayalam, and Tamil — any of
 these languages to any other. Type a sentence and get back translations with romanized
 pronunciation, real spoken audio, a shareable handwritten-note image, and PDF export of the whole
-conversation.
+conversation. Also includes an AI language tutor you can chat with about grammar, vocabulary, and
+pronunciation.
 
 ## Features
+
+### AI Chat tutor
+
+Ask free-form language-learning questions — grammar, vocabulary, pronouns, verb forms, pronunciation,
+usage — for English, Telugu, Hindi, Kannada, Malayalam, or Tamil, and get back an answer with native
+script, romanized pronunciation, and an English explanation for every example, formatted with
+markdown tables and headings where helpful.
+
+- **Free-form conversation** — ask anything language-related, e.g. "teach me pronouns in Kannada
+  with examples" or "how do I say thank you formally in Tamil?"
+- Multi-turn context — follow-up questions ("phase-1", "give more examples") understand what was
+  asked before.
+- Conversation persists in your browser across reloads; delete individual messages or clear the
+  whole chat.
+- **Export to PDF** — the full transcript, including any markdown tables, exported as a paginated
+  PDF with page breaks placed between messages rather than through the middle of a table row.
+- Powered by Google Gemini's free tier — same backend approach as the translator, with no request
+  limits imposed by the app itself.
 
 ### Translation & conversation
 
@@ -27,7 +46,7 @@ conversation.
 - **Delete a message** — remove any turn from the conversation (and from local storage) with the
   🗑 button next to it, e.g. if a translation came back wrong.
 - **Export to PDF** — the entire conversation, every turn numbered in order, with native scripts
-  rendering correctly.
+  rendering correctly and page breaks placed between turns rather than through a table row.
 
 ### Share as a handwritten note
 
@@ -35,8 +54,9 @@ Turn any translated turn into a shareable notebook-style image for social media,
 handwritten note** under each translated turn.
 
 - **Paper backgrounds** — Ruled Notebook, Dot Grid Journal, Kraft Paper, Chalkboard, and Sticky
-  Note, all rendered in pure CSS (crisp at any size, no image assets to manage) — or **upload your
-  own photo** as the background instead.
+  Note, all rendered in pure CSS (crisp at any size, no image assets to manage); a set of photo
+  backgrounds (notebook, wood desk, marble, and more); or **upload your own photo** as the
+  background instead.
 - **Handwriting fonts** — Caveat, Kalam, Patrick Hand, Indie Flower, or Shadow Into Light for the
   English line and romanized pronunciation.
 - **Native script style** — Rounded (playful Baloo family) or Clean (Noto Sans) for the native-script
@@ -47,7 +67,8 @@ handwritten note** under each translated turn.
   background.
 - **Image size** — export as Portrait (1080×1350, 4:5), Square (1080×1080), or Landscape
   (1080×566), matched to common social media formats.
-- Downloads as a PNG at the exact resolution you picked.
+- **Download** the PNG directly at the exact resolution you picked, or **Share** straight to
+  another app (e.g. Photos, Messages) on devices that support the native share sheet.
 
 ### Roadmap
 
@@ -67,21 +88,26 @@ handwritten note** under each translated turn.
 3. Type a sentence and send it — get translations, pronunciation, and a Listen button for each
    output language.
 4. Click **✎ Share as handwritten note** under any translated turn to generate a shareable image —
-   pick a background, font, size, and position, then download the PNG.
-5. Use **Roadmap** to work through a structured path for learning a specific language from scratch.
-6. Export the conversation (or a roadmap) to PDF any time to keep or share it.
+   pick a background, font, size, and position, then download or share the PNG.
+5. Use **AI Chat** to ask free-form questions about grammar, vocabulary, or pronunciation in any of
+   the supported languages.
+6. Use **Roadmap** to work through a structured path for learning a specific language from scratch.
+7. Export a conversation, chat, or roadmap to PDF any time to keep or share it.
 
 ## Tech stack
 
 - React + Vite, Tailwind CSS
 - Vercel serverless function (`api/translate.js`) calling the Gemini API with a structured JSON
   response schema, plus script validation and automatic retry for mismatched-script translations
+- Vercel serverless function (`api/chat.js`) calling the Gemini API with a language-tutor system
+  prompt and multi-turn conversation history
 - Vercel serverless function (`api/tts.js`) using [`edge-tts-universal`](https://github.com/travisvn/edge-tts-universal)
   for Microsoft Edge's free neural TTS voices
+- `react-markdown` + `remark-gfm` for rendering AI Chat replies (tables, headings, bold text)
 - `html2canvas` for client-side image/PDF rendering, `jspdf` for PDF export
 
 ## What's next
 
-- AI tutor module for personalized, self-paced adaptive tutoring
 - Support for more Indian languages
 - Progress tracking for the Roadmap
+- Script-mismatch protection for AI Chat replies, matching the translator's retry logic
