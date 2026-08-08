@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ROADMAP_LANGUAGES } from "../roadmapData.js";
 import { INPUT_LANGUAGES, LANGUAGES } from "../languages.js";
+import { useAuthGate } from "../context/AuthGateContext.jsx";
 import IndiaFlagIcon from "./IndiaFlagIcon.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 
@@ -17,6 +18,7 @@ export default function NavBar({
   selectedLanguages,
   onToggleLanguage,
 }) {
+  const { isSignedIn, userEmail, remainingCredits, signOut } = useAuthGate();
   const outputOptions = LANGUAGES.filter((lang) => lang.key !== inputLanguage);
   const [roadmapMenuOpen, setRoadmapMenuOpen] = useState(false);
   const [prefsOpen, setPrefsOpen] = useState(false);
@@ -180,6 +182,22 @@ export default function NavBar({
             </div>
           )}
         </div>
+
+        {isSignedIn ? (
+          <button
+            type="button"
+            onClick={signOut}
+            title={userEmail}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 dark:text-gray-400
+                       hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            Sign out
+          </button>
+        ) : (
+          <span className="px-3 py-1.5 text-xs font-medium text-gray-400 dark:text-gray-500">
+            {remainingCredits} free {remainingCredits === 1 ? "prompt" : "prompts"} left
+          </span>
+        )}
 
         <ThemeToggle theme={theme} onToggle={onToggleTheme} />
       </div>

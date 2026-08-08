@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import AiChatExportTemplate from "./AiChatExportTemplate.jsx";
 import AiChatMessage from "./AiChatMessage.jsx";
+import { useAuthGate } from "../context/AuthGateContext.jsx";
 import { exportNodeToPdf } from "../utils/pdfExport.js";
 
 const AI_CHAT_KEY = "langlearn_ai_chat";
@@ -35,6 +36,7 @@ export default function AiChatView() {
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const bottomRef = useRef(null);
   const exportRef = useRef(null);
+  const { requestAccess, consumeCredit } = useAuthGate();
 
   useEffect(() => {
     localStorage.setItem(AI_CHAT_KEY, JSON.stringify(messages));
@@ -47,6 +49,7 @@ export default function AiChatView() {
   async function sendMessage(text) {
     const trimmed = text.trim();
     if (!trimmed || isSubmitting) return;
+    if (!requestAccess()) return;
 
     const history = messages
       .filter((m) => m.status === "done")
@@ -58,6 +61,7 @@ export default function AiChatView() {
     setMessages((prev) => [...prev, userMessage, assistantMessage]);
     setInputText("");
     setIsSubmitting(true);
+    consumeCredit();
 
     try {
       const res = await fetch("/api/chat", {

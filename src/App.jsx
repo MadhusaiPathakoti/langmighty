@@ -7,7 +7,9 @@ import ExportTemplate from "./components/ExportTemplate.jsx";
 import IndiaFlagIcon from "./components/IndiaFlagIcon.jsx";
 import NavBar from "./components/NavBar.jsx";
 import RoadmapView from "./components/RoadmapView.jsx";
+import SignupGateModal from "./components/SignupGateModal.jsx";
 import TypewriterText from "./components/TypewriterText.jsx";
+import { useAuthGate } from "./context/AuthGateContext.jsx";
 import { exportNodeToPdf } from "./utils/pdfExport.js";
 import {
   DEFAULT_LANGUAGE_KEYS,
@@ -88,6 +90,7 @@ export default function App() {
     ensureValidOutputs(loadLanguagePrefs(), loadInputLanguage())
   );
   const [inputError, setInputError] = useState(null);
+  const { requestAccess, consumeCredit } = useAuthGate();
 
   const exportRef = useRef(null);
   const bottomRef = useRef(null);
@@ -116,6 +119,7 @@ export default function App() {
   async function handleSubmit() {
     const text = inputText.trim();
     if (!text || isSubmitting) return;
+    if (!requestAccess()) return;
 
     const inputLang = INPUT_LANGUAGES.find((l) => l.key === inputLanguage);
     if (!matchesScript(text, inputLanguage)) {
@@ -143,6 +147,7 @@ export default function App() {
     ]);
     setInputText("");
     setIsSubmitting(true);
+    consumeCredit();
 
     try {
       const res = await fetch("/api/translate", {
@@ -326,6 +331,8 @@ export default function App() {
           {hasContent && <ExportTemplate ref={exportRef} conversation={conversation} />}
         </>
       )}
+
+      <SignupGateModal />
     </div>
   );
 }
