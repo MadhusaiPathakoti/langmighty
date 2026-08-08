@@ -8,6 +8,7 @@ export default function NavBar({
   view,
   roadmapLanguage,
   onNavigateChat,
+  onNavigateAiChat,
   onNavigateRoadmap,
   theme,
   onToggleTheme,
@@ -62,6 +63,18 @@ export default function NavBar({
           }`}
         >
           Translate
+        </button>
+
+        <button
+          type="button"
+          onClick={onNavigateAiChat}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            view === "ai-chat"
+              ? "bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300"
+              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+          }`}
+        >
+          AI Chat
         </button>
 
         <div className="relative" ref={roadmapMenuRef}>

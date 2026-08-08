@@ -15,6 +15,12 @@ const HandwrittenCard = forwardRef(function HandwrittenCard(
     panY = 0,
     rotation = 0,
     aspectRatio,
+    watermarkPanX = 0,
+    watermarkPanY = 0,
+    onWatermarkPointerDown,
+    onWatermarkPointerMove,
+    onWatermarkPointerUp,
+    isDraggingWatermark = false,
   },
   ref
 ) {
@@ -130,6 +136,10 @@ const HandwrittenCard = forwardRef(function HandwrittenCard(
 
       <p
         aria-hidden="true"
+        onPointerDown={onWatermarkPointerDown}
+        onPointerMove={onWatermarkPointerMove}
+        onPointerUp={onWatermarkPointerUp}
+        onPointerCancel={onWatermarkPointerUp}
         style={{
           position: "absolute",
           bottom: "16px",
@@ -139,6 +149,9 @@ const HandwrittenCard = forwardRef(function HandwrittenCard(
           color: ink.accent,
           opacity: 0.8,
           margin: 0,
+          transform: `translate(${watermarkPanX}px, ${watermarkPanY}px)`,
+          cursor: onWatermarkPointerDown ? (isDraggingWatermark ? "grabbing" : "grab") : undefined,
+          touchAction: onWatermarkPointerDown ? "none" : undefined,
         }}
       >
         ✦ LangMighty

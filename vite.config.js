@@ -66,6 +66,25 @@ function localApiPlugin() {
         await handler(req, res);
       });
 
+      server.middlewares.use("/api/chat", async (req, res) => {
+        if (req.method !== "POST") {
+          res.statusCode = 405;
+          res.end();
+          return;
+        }
+        await prepareApiRequest(req, res);
+
+        const key = readDotEnv().GEMINI_API_KEY;
+        if (key) {
+          process.env.GEMINI_API_KEY = key;
+        } else {
+          delete process.env.GEMINI_API_KEY;
+        }
+
+        const { default: handler } = await server.ssrLoadModule("/api/chat.js");
+        await handler(req, res);
+      });
+
       server.middlewares.use("/api/tts", async (req, res) => {
         if (req.method !== "POST") {
           res.statusCode = 405;

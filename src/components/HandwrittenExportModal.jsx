@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import HandwrittenCard from "./HandwrittenCard.jsx";
 import {
   CSS_PAPER_BACKGROUNDS,
@@ -21,7 +22,27 @@ const ZOOM_STEP = 0.1;
 const MIN_ROTATION = -15;
 const MAX_ROTATION = 15;
 const ROTATION_STEP = 1;
-const PREVIEW_SCALE = 0.85;
+const MAX_PREVIEW_SCALE = 0.85;
+const MIN_PREVIEW_SCALE = 0.25;
+
+// Some browsers throw if the pointer was already released (e.g. a fast tap-and-lift
+// on a touchscreen) by the time capture/release is requested; that's not worth
+// crashing the modal over.
+function safePointerCapture(el, pointerId) {
+  try {
+    el.setPointerCapture?.(pointerId);
+  } catch {
+    // ignore
+  }
+}
+
+function safeReleasePointerCapture(el, pointerId) {
+  try {
+    el.releasePointerCapture?.(pointerId);
+  } catch {
+    // ignore
+  }
+}
 
 export default function HandwrittenExportModal({ turn, onClose }) {
   const [backgroundId, setBackgroundId] = useState(DEFAULT_HANDWRITTEN_BACKGROUND_ID);
@@ -33,13 +54,49 @@ export default function HandwrittenExportModal({ turn, onClose }) {
   const [rotation, setRotation] = useState(0);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  const [watermarkPan, setWatermarkPan] = useState({ x: 0, y: 0 });
+  const [isDraggingWatermark, setIsDraggingWatermark] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [previewScale, setPreviewScale] = useState(MAX_PREVIEW_SCALE);
   const cardRef = useRef(null);
   const fileInputRef = useRef(null);
   const dragRef = useRef(null);
+  const watermarkDragRef = useRef(null);
+  const previewContainerRef = useRef(null);
 
   const background = getHandwrittenBackground(backgroundId);
   const aspectRatio = getAspectRatio(aspectRatioId);
+
+  // Prevent the page behind the modal from scrolling/being visible on mobile,
+  // where a fixed overlay alone doesn't reliably block background touch-scroll.
+  useEffect(() => {
+    const original = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = original;
+    };
+  }, []);
+
+  // Scale the card preview to fit whatever space is actually available instead
+  // of a fixed 0.85 — on a narrow phone screen the card would otherwise overflow
+  // and force an awkward horizontal scroll to see or interact with it.
+  useEffect(() => {
+    const container = previewContainerRef.current;
+    if (!container) return;
+
+    const cardHeight = previewHeightFor(aspectRatio);
+    function recompute() {
+      const availableWidth = container.clientWidth - 32;
+      const availableHeight = container.clientHeight - 32;
+      const scale = Math.min(MAX_PREVIEW_SCALE, availableWidth / PREVIEW_WIDTH, availableHeight / cardHeight);
+      setPreviewScale(Math.max(MIN_PREVIEW_SCALE, scale));
+    }
+
+    recompute();
+    const observer = new ResizeObserver(recompute);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [aspectRatio]);
 
   function adjustZoom(delta) {
     setFontScale((z) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round((z + delta) * 100) / 100)));
@@ -53,20 +110,43 @@ export default function HandwrittenExportModal({ turn, onClose }) {
     e.preventDefault();
     dragRef.current = { startX: e.clientX, startY: e.clientY, originX: pan.x, originY: pan.y };
     setIsDragging(true);
-    e.currentTarget.setPointerCapture?.(e.pointerId);
+    safePointerCapture(e.currentTarget, e.pointerId);
   }
 
   function handlePointerMove(e) {
     if (!dragRef.current) return;
-    const dx = (e.clientX - dragRef.current.startX) / PREVIEW_SCALE;
-    const dy = (e.clientY - dragRef.current.startY) / PREVIEW_SCALE;
+    const dx = (e.clientX - dragRef.current.startX) / previewScale;
+    const dy = (e.clientY - dragRef.current.startY) / previewScale;
     setPan({ x: dragRef.current.originX + dx, y: dragRef.current.originY + dy });
   }
 
   function handlePointerUp(e) {
     dragRef.current = null;
     setIsDragging(false);
-    e.currentTarget.releasePointerCapture?.(e.pointerId);
+    safeReleasePointerCapture(e.currentTarget, e.pointerId);
+  }
+
+  function handleWatermarkPointerDown(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    watermarkDragRef.current = { startX: e.clientX, startY: e.clientY, originX: watermarkPan.x, originY: watermarkPan.y };
+    setIsDraggingWatermark(true);
+    safePointerCapture(e.currentTarget, e.pointerId);
+  }
+
+  function handleWatermarkPointerMove(e) {
+    if (!watermarkDragRef.current) return;
+    e.stopPropagation();
+    const dx = (e.clientX - watermarkDragRef.current.startX) / previewScale;
+    const dy = (e.clientY - watermarkDragRef.current.startY) / previewScale;
+    setWatermarkPan({ x: watermarkDragRef.current.originX + dx, y: watermarkDragRef.current.originY + dy });
+  }
+
+  function handleWatermarkPointerUp(e) {
+    watermarkDragRef.current = null;
+    setIsDraggingWatermark(false);
+    e.stopPropagation();
+    safeReleasePointerCapture(e.currentTarget, e.pointerId);
   }
 
   function handleFileChange(e) {
@@ -101,33 +181,36 @@ export default function HandwrittenExportModal({ turn, onClose }) {
     }
   }
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-0 md:p-4"
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto"
+        className="bg-white dark:bg-gray-900 md:rounded-xl shadow-2xl w-full h-full md:h-auto md:max-w-4xl md:max-h-[92vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+        <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-800">
           <h2 className="font-semibold text-gray-900 dark:text-gray-100">Share as handwritten note</h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl leading-none p-1"
             aria-label="Close"
           >
             ×
           </button>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-6 p-5">
-          <div className="flex-1 overflow-auto rounded-lg bg-gray-100 dark:bg-gray-950 p-4 flex items-center justify-center">
+        <div className="flex-1 overflow-y-auto flex flex-col md:flex-row gap-6 p-4 md:p-5">
+          <div
+            ref={previewContainerRef}
+            className="w-full h-[42vh] shrink-0 md:h-auto md:flex-1 rounded-lg bg-gray-100 dark:bg-gray-950 p-4 flex items-center justify-center overflow-hidden"
+          >
             <div
               style={{
-                transform: `scale(${PREVIEW_SCALE})`,
-                transformOrigin: "top center",
+                transform: `scale(${previewScale})`,
+                transformOrigin: "center center",
                 cursor: isDragging ? "grabbing" : "grab",
                 touchAction: "none",
               }}
@@ -148,6 +231,12 @@ export default function HandwrittenExportModal({ turn, onClose }) {
                 panY={pan.y}
                 rotation={rotation}
                 aspectRatio={aspectRatio}
+                watermarkPanX={watermarkPan.x}
+                watermarkPanY={watermarkPan.y}
+                onWatermarkPointerDown={handleWatermarkPointerDown}
+                onWatermarkPointerMove={handleWatermarkPointerMove}
+                onWatermarkPointerUp={handleWatermarkPointerUp}
+                isDraggingWatermark={isDraggingWatermark}
               />
             </div>
           </div>
@@ -194,6 +283,22 @@ export default function HandwrittenExportModal({ turn, onClose }) {
                 </button>
               </div>
               <p className="text-[11px] text-gray-400 dark:text-gray-500">Drag the note in the preview to pan the text.</p>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Watermark position</p>
+                <button
+                  type="button"
+                  onClick={() => setWatermarkPan({ x: 0, y: 0 })}
+                  className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline"
+                >
+                  Reset
+                </button>
+              </div>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                Drag the ✦ LangMighty mark in the preview to align it.
+              </p>
             </div>
 
             <div>
@@ -381,18 +486,21 @@ export default function HandwrittenExportModal({ turn, onClose }) {
                 </button>
               )}
             </div>
-
-            <button
-              type="button"
-              onClick={handleDownload}
-              disabled={isExporting}
-              className="w-full rounded-lg bg-indigo-600 text-white font-medium px-3 py-2.5 text-sm hover:bg-indigo-700 disabled:opacity-60 transition-colors"
-            >
-              {isExporting ? "Rendering..." : "Download PNG"}
-            </button>
           </div>
         </div>
+
+        <div className="shrink-0 border-t border-gray-200 dark:border-gray-800 p-4">
+          <button
+            type="button"
+            onClick={handleDownload}
+            disabled={isExporting}
+            className="w-full rounded-lg bg-indigo-600 text-white font-medium px-3 py-3 text-sm hover:bg-indigo-700 disabled:opacity-60 transition-colors"
+          >
+            {isExporting ? "Rendering..." : "Save Image"}
+          </button>
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import AiChatView from "./components/AiChatView.jsx";
 import ChatInput from "./components/ChatInput.jsx";
 import ChatTurn from "./components/ChatTurn.jsx";
 import CulturalBackground from "./components/CulturalBackground.jsx";
@@ -76,7 +77,7 @@ function nextTurnId() {
 }
 
 export default function App() {
-  const [view, setView] = useState("chat"); // "chat" | "roadmap"
+  const [view, setView] = useState("chat"); // "chat" | "ai-chat" | "roadmap"
   const [roadmapLanguage, setRoadmapLanguage] = useState("kannada");
   const [inputText, setInputText] = useState("");
   const [conversation, setConversation] = useState(loadConversation);
@@ -220,6 +221,7 @@ export default function App() {
         selectedLanguages={selectedLanguages}
         onToggleLanguage={handleToggleLanguage}
         onNavigateChat={() => setView("chat")}
+        onNavigateAiChat={() => setView("ai-chat")}
         onNavigateRoadmap={handleNavigateRoadmap}
         theme={theme}
         onToggleTheme={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
@@ -227,6 +229,8 @@ export default function App() {
 
       {view === "roadmap" ? (
         <RoadmapView language={roadmapLanguage} onSelectLanguage={setRoadmapLanguage} />
+      ) : view === "ai-chat" ? (
+        <AiChatView />
       ) : (
         <>
           <div className="relative z-10 flex-1 overflow-y-auto px-4 sm:px-6 py-6">
