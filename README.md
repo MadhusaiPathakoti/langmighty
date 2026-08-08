@@ -1,12 +1,17 @@
 # LangMighty
 
-Live app: **[Langmighty](https://langmighty.vercel.app/)**
+**Learn. Speak. Connect. 🌍**
 
-A chat-style translator between English, Telugu, Hindi, Kannada, Malayalam, and Tamil — any of
-these languages to any other. Type a sentence and get back translations with romanized
-pronunciation, real spoken audio, a shareable handwritten-note image, and PDF export of the whole
-conversation. Also includes an AI language tutor you can chat with about grammar, vocabulary, and
-pronunciation.
+Live app: **[LangMighty](https://langmighty.vercel.app/)**
+
+A chat-style translator between English, Telugu, Hindi, Kannada, Malayalam, and Tamil — any of these languages to any other. Type a sentence and get back translations with romanized pronunciation, real spoken audio, a shareable handwritten-note image, and PDF export of the whole conversation.
+
+Also includes an AI language tutor you can chat with about grammar, vocabulary, pronunciation, and language usage.
+
+## 🌐 Connect with LangMighty
+
+- 📸 **Instagram:** [@langmighty](https://www.instagram.com/langmighty/)
+- ▶️ **YouTube:** [LangMighty](https://www.youtube.com/channel/UCCFXBeqeHcRqLpQ6bgxaRsQ)
 
 ## Features
 
