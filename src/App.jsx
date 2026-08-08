@@ -116,6 +116,63 @@ export default function App() {
     if (view === "chat") bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [conversation, view]);
 
+  // Shared by handleSubmit (new turn) and handleRegenerate (existing turn) — the
+  // caller is responsible for the requestAccess() check and putting the turn into
+  // "loading" state before calling this.
+  async function runTranslate(turnId, { text, sourceLanguage, languages, regenerate }) {
+    setIsSubmitting(true);
+    consumeCredit();
+
+    try {
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({ text, sourceLanguage, languages, regenerate }),
+      });
+
+      if (res.status === 403) {
+        reportServerRejection();
+        setConversation((prev) =>
+          regenerate
+            ? prev.map((t) =>
+                t.id === turnId
+                  ? { ...t, status: "error", error: "You've used your free prompts. Please sign in to continue." }
+                  : t
+              )
+            : prev.filter((t) => t.id !== turnId)
+        );
+        return;
+      }
+
+      const data = await res.json();
+
+      setConversation((prev) =>
+        prev.map((t) =>
+          t.id === turnId
+            ? res.ok
+              ? { ...t, status: "done", results: data, error: null }
+              : { ...t, status: "error", error: data.error || "Translation failed. Please try again." }
+            : t
+        )
+      );
+    } catch {
+      setConversation((prev) =>
+        prev.map((t) =>
+          t.id === turnId
+            ? {
+                ...t,
+                status: "error",
+                error: "Could not reach the translation service. Check your connection and try again.",
+              }
+            : t
+        )
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   async function handleSubmit() {
     const text = inputText.trim();
     if (!text || isSubmitting) return;
@@ -140,55 +197,31 @@ export default function App() {
         englishText: text,
         sourceText: text,
         sourceLanguage: inputLanguage,
+        languages: selectedLanguages,
         status: "loading",
         results: null,
         error: null,
       },
     ]);
     setInputText("");
-    setIsSubmitting(true);
-    consumeCredit();
 
-    try {
-      const authHeaders = await getAuthHeaders();
-      const res = await fetch("/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders },
-        body: JSON.stringify({ text, sourceLanguage: inputLanguage, languages: selectedLanguages }),
-      });
+    await runTranslate(turnId, { text, sourceLanguage: inputLanguage, languages: selectedLanguages, regenerate: false });
+  }
 
-      if (res.status === 403) {
-        reportServerRejection();
-        setConversation((prev) => prev.filter((t) => t.id !== turnId));
-        return;
-      }
+  async function handleRegenerate(turnId) {
+    if (isSubmitting) return;
+    const turn = conversation.find((t) => t.id === turnId);
+    if (!turn) return;
+    if (!requestAccess()) return;
 
-      const data = await res.json();
+    setConversation((prev) => prev.map((t) => (t.id === turnId ? { ...t, status: "loading", error: null } : t)));
 
-      setConversation((prev) =>
-        prev.map((t) =>
-          t.id === turnId
-            ? res.ok
-              ? { ...t, status: "done", results: data }
-              : { ...t, status: "error", error: data.error || "Translation failed. Please try again." }
-            : t
-        )
-      );
-    } catch {
-      setConversation((prev) =>
-        prev.map((t) =>
-          t.id === turnId
-            ? {
-                ...t,
-                status: "error",
-                error: "Could not reach the translation service. Check your connection and try again.",
-              }
-            : t
-        )
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+    await runTranslate(turnId, {
+      text: turn.sourceText,
+      sourceLanguage: turn.sourceLanguage,
+      languages: turn.languages ?? selectedLanguages,
+      regenerate: true,
+    });
   }
 
   async function handleExport() {
@@ -316,7 +349,13 @@ export default function App() {
               )}
 
               {conversation.map((turn) => (
-                <ChatTurn key={turn.id} turn={turn} onDelete={handleDeleteTurn} />
+                <ChatTurn
+                  key={turn.id}
+                  turn={turn}
+                  onDelete={handleDeleteTurn}
+                  onRegenerate={handleRegenerate}
+                  disableActions={isSubmitting}
+                />
               ))}
               <div ref={bottomRef} />
             </div>

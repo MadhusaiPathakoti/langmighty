@@ -1,9 +1,24 @@
+import crypto from "node:crypto";
 import { LANGUAGES, INPUT_LANGUAGES, DEFAULT_LANGUAGE_KEYS, DEFAULT_INPUT_LANGUAGE_KEY } from "../src/languages.js";
 import { enforceCreditGate } from "./_lib/creditGate.js";
+import { getRedis } from "./_lib/redisCache.js";
 
 const GEMINI_MODEL = "gemini-3.5-flash-lite";
 const VALID_KEYS = new Set(LANGUAGES.map((l) => l.key));
 const VALID_INPUT_KEYS = new Set(INPUT_LANGUAGES.map((l) => l.key));
+
+// Bump this if buildPrompt/buildResponseSchema ever change shape, so old cached
+// entries can't be served as if they matched a new prompt/schema.
+const CACHE_VERSION = "v1";
+const CACHE_TTL_SECONDS = 60 * 60 * 24;
+
+function buildCacheKey(sourceKey, keys, text) {
+  const hash = crypto
+    .createHash("sha256")
+    .update(`${sourceKey}|${keys.slice().sort().join(",")}|${text}`)
+    .digest("hex");
+  return `translate:${CACHE_VERSION}:${hash}`;
+}
 
 function languageSchema() {
   return {
@@ -94,11 +109,12 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { text, languages, sourceLanguage } = req.body || {};
+  const { text, languages, sourceLanguage, regenerate } = req.body || {};
   if (!text || !text.trim()) {
     res.status(400).json({ error: "Please enter some text to translate." });
     return;
   }
+  const trimmedText = text.trim();
 
   if (!(await enforceCreditGate(req, res))) return;
 
@@ -107,6 +123,30 @@ export default async function handler(req, res) {
   let keys = Array.isArray(languages) ? languages.filter((k) => VALID_KEYS.has(k) && k !== sourceKey) : [];
   if (keys.length === 0) keys = DEFAULT_LANGUAGE_KEYS.filter((k) => k !== sourceKey);
   if (keys.length === 0) keys = LANGUAGES.map((l) => l.key).filter((k) => k !== sourceKey);
+
+  const redis = getRedis();
+  const cacheKey = buildCacheKey(sourceKey, keys, trimmedText);
+
+  // Lets you verify caching behavior directly (curl -i / browser devtools Network
+  // tab) instead of guessing from response latency.
+  if (!redis) {
+    res.setHeader("X-Cache", "DISABLED");
+  } else if (regenerate) {
+    res.setHeader("X-Cache", "BYPASS");
+  } else {
+    res.setHeader("X-Cache", "MISS");
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        res.setHeader("X-Cache", "HIT");
+        res.status(200).json(cached);
+        return;
+      }
+    } catch (err) {
+      console.error("Translate cache read error:", err);
+      res.setHeader("X-Cache", "ERROR");
+    }
+  }
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -119,7 +159,7 @@ export default async function handler(req, res) {
   const sourceLabel = INPUT_LANGUAGES.find((l) => l.key === sourceKey).label;
 
   try {
-    let result = await callGemini(apiKey, buildPrompt(keys, sourceLabel, text), buildResponseSchema(keys));
+    let result = await callGemini(apiKey, buildPrompt(keys, sourceLabel, trimmedText), buildResponseSchema(keys));
 
     let badKeys = findScriptMismatches(result, keys);
     if (badKeys.length > 0) {
@@ -127,7 +167,7 @@ export default async function handler(req, res) {
       // script (e.g. Kannada text rendered in Telugu characters). Re-ask just for
       // the languages that failed the script check before giving up on them.
       try {
-        const retryResult = await callGemini(apiKey, buildPrompt(badKeys, sourceLabel, text), buildResponseSchema(badKeys));
+        const retryResult = await callGemini(apiKey, buildPrompt(badKeys, sourceLabel, trimmedText), buildResponseSchema(badKeys));
         for (const key of badKeys) {
           if (findScriptMismatches(retryResult, [key]).length === 0) {
             result[key] = retryResult[key];
@@ -142,6 +182,14 @@ export default async function handler(req, res) {
       for (const key of badKeys) {
         console.error(`Dropping ${key}: model kept returning the wrong script.`);
         delete result[key];
+      }
+    }
+
+    if (redis) {
+      try {
+        await redis.set(cacheKey, result, { ex: CACHE_TTL_SECONDS });
+      } catch (err) {
+        console.error("Translate cache write error:", err);
       }
     }
 

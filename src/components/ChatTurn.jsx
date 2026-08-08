@@ -2,7 +2,7 @@ import { useState } from "react";
 import TranslationResults from "./TranslationResults.jsx";
 import HandwrittenExportModal from "./HandwrittenExportModal.jsx";
 
-export default function ChatTurn({ turn, onDelete }) {
+export default function ChatTurn({ turn, onDelete, onRegenerate, disableActions }) {
   const [showShareModal, setShowShareModal] = useState(false);
 
   return (
@@ -40,13 +40,24 @@ export default function ChatTurn({ turn, onDelete }) {
           {turn.status === "done" && (
             <>
               <TranslationResults results={turn.results} />
-              <button
-                type="button"
-                onClick={() => setShowShareModal(true)}
-                className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
-              >
-                ✎ Share as handwritten note
-              </button>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => onRegenerate?.(turn.id)}
+                  disabled={disableActions}
+                  title="Get a fresh translation instead of the cached one"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  ↻ Regenerate
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowShareModal(true)}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                >
+                  ✎ Share as handwritten note
+                </button>
+              </div>
             </>
           )}
         </div>

@@ -63,7 +63,13 @@ function localApiPlugin() {
         }
         await prepareApiRequest(req, res);
 
-        injectEnv(["GEMINI_API_KEY", "VITE_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]);
+        injectEnv([
+          "GEMINI_API_KEY",
+          "VITE_SUPABASE_URL",
+          "SUPABASE_SERVICE_ROLE_KEY",
+          "UPSTASH_REDIS_REST_URL",
+          "UPSTASH_REDIS_REST_TOKEN",
+        ]);
 
         const { default: handler } = await server.ssrLoadModule("/api/translate.js");
         await handler(req, res);
