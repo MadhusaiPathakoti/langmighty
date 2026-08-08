@@ -23,6 +23,14 @@ function readDotEnv() {
   return result;
 }
 
+function injectEnv(keys) {
+  const env = readDotEnv();
+  for (const key of keys) {
+    if (env[key]) process.env[key] = env[key];
+    else delete process.env[key];
+  }
+}
+
 async function prepareApiRequest(req, res) {
   try {
     const chunks = [];
@@ -55,12 +63,7 @@ function localApiPlugin() {
         }
         await prepareApiRequest(req, res);
 
-        const key = readDotEnv().GEMINI_API_KEY;
-        if (key) {
-          process.env.GEMINI_API_KEY = key;
-        } else {
-          delete process.env.GEMINI_API_KEY;
-        }
+        injectEnv(["GEMINI_API_KEY", "VITE_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]);
 
         const { default: handler } = await server.ssrLoadModule("/api/translate.js");
         await handler(req, res);
@@ -74,12 +77,7 @@ function localApiPlugin() {
         }
         await prepareApiRequest(req, res);
 
-        const key = readDotEnv().GEMINI_API_KEY;
-        if (key) {
-          process.env.GEMINI_API_KEY = key;
-        } else {
-          delete process.env.GEMINI_API_KEY;
-        }
+        injectEnv(["GEMINI_API_KEY", "VITE_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]);
 
         const { default: handler } = await server.ssrLoadModule("/api/chat.js");
         await handler(req, res);

@@ -64,6 +64,23 @@ export function AuthGateProvider({ children }) {
     return false;
   }
 
+  // The client-side check above is just a UX shortcut to skip an obviously-doomed
+  // request; the server enforces the real limit (see api/_lib/creditGate.js), since
+  // localStorage can be cleared or bypassed entirely. Call this when a request comes
+  // back 403 so the badge and modal reflect the server's authoritative decision.
+  function reportServerRejection() {
+    setCreditsUsed(FREE_CREDIT_LIMIT);
+    localStorage.setItem(CREDITS_KEY, String(FREE_CREDIT_LIMIT));
+    setGateOpen(true);
+  }
+
+  async function getAuthHeaders() {
+    if (!isSupabaseConfigured) return {};
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
   async function signInWithGoogle(marketingOptIn) {
     localStorage.setItem(PENDING_OPT_IN_KEY, String(marketingOptIn));
     await supabase.auth.signInWithOAuth({
@@ -86,6 +103,8 @@ export function AuthGateProvider({ children }) {
         canUseFeature,
         consumeCredit,
         requestAccess,
+        reportServerRejection,
+        getAuthHeaders,
         gateOpen,
         openGate: () => setGateOpen(true),
         closeGate: () => setGateOpen(false),

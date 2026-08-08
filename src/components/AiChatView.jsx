@@ -36,7 +36,7 @@ export default function AiChatView() {
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const bottomRef = useRef(null);
   const exportRef = useRef(null);
-  const { requestAccess, consumeCredit } = useAuthGate();
+  const { requestAccess, consumeCredit, reportServerRejection, getAuthHeaders } = useAuthGate();
 
   useEffect(() => {
     localStorage.setItem(AI_CHAT_KEY, JSON.stringify(messages));
@@ -64,11 +64,19 @@ export default function AiChatView() {
     consumeCredit();
 
     try {
+      const authHeaders = await getAuthHeaders();
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ message: trimmed, history }),
       });
+
+      if (res.status === 403) {
+        reportServerRejection();
+        setMessages((prev) => prev.filter((m) => m.id !== userMessage.id && m.id !== assistantMessage.id));
+        return;
+      }
+
       const data = await res.json();
 
       setMessages((prev) =>

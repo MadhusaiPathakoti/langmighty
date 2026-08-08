@@ -90,7 +90,7 @@ export default function App() {
     ensureValidOutputs(loadLanguagePrefs(), loadInputLanguage())
   );
   const [inputError, setInputError] = useState(null);
-  const { requestAccess, consumeCredit } = useAuthGate();
+  const { requestAccess, consumeCredit, reportServerRejection, getAuthHeaders } = useAuthGate();
 
   const exportRef = useRef(null);
   const bottomRef = useRef(null);
@@ -150,11 +150,19 @@ export default function App() {
     consumeCredit();
 
     try {
+      const authHeaders = await getAuthHeaders();
       const res = await fetch("/api/translate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ text, sourceLanguage: inputLanguage, languages: selectedLanguages }),
       });
+
+      if (res.status === 403) {
+        reportServerRejection();
+        setConversation((prev) => prev.filter((t) => t.id !== turnId));
+        return;
+      }
+
       const data = await res.json();
 
       setConversation((prev) =>

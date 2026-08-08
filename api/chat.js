@@ -1,3 +1,5 @@
+import { enforceCreditGate } from "./_lib/creditGate.js";
+
 const GEMINI_MODEL = "gemini-3.5-flash-lite";
 const MAX_HISTORY_TURNS = 16;
 
@@ -65,6 +67,8 @@ export default async function handler(req, res) {
     res.status(400).json({ error: "Please enter a message." });
     return;
   }
+
+  if (!(await enforceCreditGate(req, res))) return;
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
