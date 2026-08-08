@@ -1,6 +1,6 @@
 # LangMighty
 
-Live app: **[linguist-ai-two.vercel.app](https://linguist-ai-two.vercel.app/)**
+Live app: **[Langmighty](https://langmighty.vercel.app/)**
 
 A chat-style translator between English, Telugu, Hindi, Kannada, Malayalam, and Tamil — any of
 these languages to any other. Type a sentence and get back translations with romanized
