@@ -1,5 +1,12 @@
-import { useRef, useState } from "react";
-import { generateQuiz, getPhrasesForCategories, QUIZ_TARGET_LANGUAGES } from "../quizData.js";
+import { useEffect, useRef, useState } from "react";
+import {
+  generateQuiz,
+  getPhrasesForCategories,
+  loadExtraPhrases,
+  QUIZ_PHRASES,
+  QUIZ_TARGET_LANGUAGES,
+  trackSeenIds,
+} from "../quizData.js";
 import { LANGUAGES } from "../languages.js";
 import TopicPicker, { loadQuizCategories } from "./TopicPicker.jsx";
 
@@ -22,6 +29,20 @@ export default function QuizGame({ onExit }) {
   // Phrase ids used in the round(s) just played — passed as excludeIds so a replay
   // prefers fresh words over immediately reshowing the same ones.
   const recentIdsRef = useRef([]);
+  // Starts as just the static bank; upgraded once the AI-generated + Redis-cached
+  // extra phrases load (fast, but not instant, so the very first round doesn't
+  // wait on it — later rounds pick up the larger pool automatically).
+  const [allPhrases, setAllPhrases] = useState(QUIZ_PHRASES);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadExtraPhrases().then((extra) => {
+      if (!cancelled && extra.length > 0) setAllPhrases([...QUIZ_PHRASES, ...extra]);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const [questions, setQuestions] = useState(() => {
     const result = generateQuiz(QUESTION_COUNT, {
@@ -37,15 +58,17 @@ export default function QuizGame({ onExit }) {
   const [answeredCorrectly, setAnsweredCorrectly] = useState(false);
 
   const finished = questionIndex >= questions.length;
-  const availableCount = getPhrasesForCategories(categoryKeys).length;
+  const availableCount = getPhrasesForCategories(categoryKeys, allPhrases).length;
 
   function startNewQuiz(language, categories, { resetHistory } = {}) {
+    const excludeIds = resetHistory ? [] : recentIdsRef.current;
     const result = generateQuiz(QUESTION_COUNT, {
       targetLanguage: language,
       categoryKeys: categories,
-      excludeIds: resetHistory ? [] : recentIdsRef.current,
+      excludeIds,
+      allPhrases,
     });
-    recentIdsRef.current = result.usedIds;
+    recentIdsRef.current = trackSeenIds(excludeIds, result.usedIds, getPhrasesForCategories(categories, allPhrases).length);
     setQuestions(result.questions);
     setQuestionIndex(0);
     setScore(0);

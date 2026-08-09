@@ -141,10 +141,33 @@ export function shuffle(array) {
   return copy;
 }
 
-export function getPhrasesForCategories(categoryKeys) {
-  if (!Array.isArray(categoryKeys) || categoryKeys.length === 0) return QUIZ_PHRASES;
-  const filtered = QUIZ_PHRASES.filter((p) => categoryKeys.includes(p.category));
-  return filtered.length > 0 ? filtered : QUIZ_PHRASES;
+export function getPhrasesForCategories(categoryKeys, allPhrases = QUIZ_PHRASES) {
+  if (!Array.isArray(categoryKeys) || categoryKeys.length === 0) return allPhrases;
+  const filtered = allPhrases.filter((p) => categoryKeys.includes(p.category));
+  return filtered.length > 0 ? filtered : allPhrases;
+}
+
+// Bulk-generated (via scripts/seedGameContent.mjs) and cached in Redis — fetched
+// once per session and merged with the static QUIZ_PHRASES bank above. Falls
+// back to an empty list (so callers just get the static bank) if unconfigured,
+// not yet seeded, or the request fails.
+let extraPhrasesPromise = null;
+export function loadExtraPhrases() {
+  if (!extraPhrasesPromise) {
+    extraPhrasesPromise = fetch("/api/game-content?type=phrases")
+      .then((res) => (res.ok ? res.json() : { phrases: [] }))
+      .then((data) => (Array.isArray(data.phrases) ? data.phrases : []))
+      .catch(() => []);
+  }
+  return extraPhrasesPromise;
+}
+
+// Accumulates ids seen across rounds (not just the last one) so a word/sentence
+// only repeats once every item in the current pool has been shown at least once.
+// Resets once the accumulated set covers the whole pool, starting a fresh cycle.
+export function trackSeenIds(previousIds, newIds, poolSize) {
+  const seen = new Set([...previousIds, ...newIds]);
+  return seen.size >= poolSize ? [] : [...seen];
 }
 
 function buildQuestion(phrase, fixedLanguage, pool) {
@@ -173,19 +196,23 @@ function buildQuestion(phrase, fixedLanguage, pool) {
 // `excludeIds` are phrase ids used in a recent round — skipped where possible so
 // replaying doesn't immediately reshow the same words, only falling back to reuse
 // once the (filtered) pool is smaller than what's needed to stay fresh.
-export function generateQuiz(questionCount, { targetLanguage, categoryKeys, excludeIds = [] } = {}) {
-  const pool = getPhrasesForCategories(categoryKeys);
+export function generateQuiz(questionCount, { targetLanguage, categoryKeys, excludeIds = [], allPhrases = QUIZ_PHRASES } = {}) {
+  const pool = getPhrasesForCategories(categoryKeys, allPhrases);
   const fixedLanguage = QUIZ_TARGET_LANGUAGES.includes(targetLanguage) ? targetLanguage : null;
 
+  // Fresh (not-yet-seen) items always come first, so a round only reaches into
+  // "stale" (already-seen) ones for the leftover slots it has no fresh item for
+  // — rather than the old all-or-nothing behavior, which threw away the fresh/
+  // stale distinction entirely whenever fresh items ran even one short.
   const exclude = new Set(excludeIds);
-  const fresh = pool.filter((p) => !exclude.has(p.id));
-  const candidates = fresh.length >= Math.min(questionCount, pool.length) ? fresh : pool;
+  const fresh = shuffle(pool.filter((p) => !exclude.has(p.id)));
+  const stale = shuffle(pool.filter((p) => exclude.has(p.id)));
+  const ordered = [...fresh, ...stale];
 
-  const shuffled = shuffle(candidates);
   const questions = [];
   const usedIds = [];
   for (let i = 0; i < questionCount; i++) {
-    const phrase = shuffled[i % shuffled.length];
+    const phrase = ordered[i % ordered.length];
     questions.push(buildQuestion(phrase, fixedLanguage, pool));
     usedIds.push(phrase.id);
   }
@@ -197,15 +224,14 @@ export function generateQuiz(questionCount, { targetLanguage, categoryKeys, excl
 // broken), each paired with its translation in `targetLanguage` (or a random
 // language per pair when "mixed"/omitted). Same excludeIds freshness logic as
 // generateQuiz, so replaying doesn't immediately reshow the same word set.
-export function generateWordMatchRound(pairCount, { targetLanguage, categoryKeys, excludeIds = [] } = {}) {
-  const pool = getPhrasesForCategories(categoryKeys);
+export function generateWordMatchRound(pairCount, { targetLanguage, categoryKeys, excludeIds = [], allPhrases = QUIZ_PHRASES } = {}) {
+  const pool = getPhrasesForCategories(categoryKeys, allPhrases);
   const fixedLanguage = QUIZ_TARGET_LANGUAGES.includes(targetLanguage) ? targetLanguage : null;
 
   const exclude = new Set(excludeIds);
-  const fresh = pool.filter((p) => !exclude.has(p.id));
-  const candidates = fresh.length >= Math.min(pairCount, pool.length) ? fresh : pool;
-
-  const chosen = shuffle(candidates).slice(0, Math.min(pairCount, candidates.length));
+  const fresh = shuffle(pool.filter((p) => !exclude.has(p.id)));
+  const stale = shuffle(pool.filter((p) => exclude.has(p.id)));
+  const chosen = [...fresh, ...stale].slice(0, Math.min(pairCount, pool.length));
 
   const pairs = chosen.map((phrase) => {
     const targetLang = fixedLanguage || QUIZ_TARGET_LANGUAGES[Math.floor(Math.random() * QUIZ_TARGET_LANGUAGES.length)];

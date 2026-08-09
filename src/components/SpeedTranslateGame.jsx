@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { generateQuiz, getPhrasesForCategories, QUIZ_TARGET_LANGUAGES } from "../quizData.js";
+import {
+  generateQuiz,
+  getPhrasesForCategories,
+  loadExtraPhrases,
+  QUIZ_PHRASES,
+  QUIZ_TARGET_LANGUAGES,
+  trackSeenIds,
+} from "../quizData.js";
 import { LANGUAGES } from "../languages.js";
 import TopicPicker, { loadQuizCategories } from "./TopicPicker.jsx";
 
@@ -37,7 +44,20 @@ export default function SpeedTranslateGame({ onExit }) {
   const [wrongAnswers, setWrongAnswers] = useState([]);
 
   const feedbackTimeoutRef = useRef(null);
-  const availableCount = getPhrasesForCategories(categoryKeys).length;
+  // Starts as just the static bank; upgraded once the AI-generated + Redis-cached
+  // extra phrases load (by the time "Start" is clicked, this has usually resolved).
+  const [allPhrases, setAllPhrases] = useState(QUIZ_PHRASES);
+  const availableCount = getPhrasesForCategories(categoryKeys, allPhrases).length;
+
+  useEffect(() => {
+    let cancelled = false;
+    loadExtraPhrases().then((extra) => {
+      if (!cancelled && extra.length > 0) setAllPhrases([...QUIZ_PHRASES, ...extra]);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (phase !== "playing") return;
@@ -52,12 +72,9 @@ export default function SpeedTranslateGame({ onExit }) {
   useEffect(() => () => clearTimeout(feedbackTimeoutRef.current), []);
 
   function startRound() {
-    const result = generateQuiz(BATCH_SIZE, {
-      targetLanguage,
-      categoryKeys,
-      excludeIds: recentIdsRef.current,
-    });
-    recentIdsRef.current = result.usedIds;
+    const excludeIds = recentIdsRef.current;
+    const result = generateQuiz(BATCH_SIZE, { targetLanguage, categoryKeys, excludeIds, allPhrases });
+    recentIdsRef.current = trackSeenIds(excludeIds, result.usedIds, getPhrasesForCategories(categoryKeys, allPhrases).length);
     setQuestions(result.questions);
     setQuestionIndex(0);
     setScore(0);
@@ -71,6 +88,7 @@ export default function SpeedTranslateGame({ onExit }) {
   function handleLanguageChange(language) {
     setTargetLanguage(language);
     localStorage.setItem(SPEED_LANGUAGE_KEY, language);
+    recentIdsRef.current = [];
     setPhase("ready");
   }
 
@@ -80,6 +98,7 @@ export default function SpeedTranslateGame({ onExit }) {
       localStorage.setItem(SPEED_CATEGORIES_KEY, JSON.stringify(next));
       return next;
     });
+    recentIdsRef.current = [];
     setPhase("ready");
   }
 

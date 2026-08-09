@@ -41,6 +41,10 @@ async function prepareApiRequest(req, res) {
     req.body = {};
   }
 
+  // Vercel's real request object parses query params automatically; the local
+  // dev server doesn't, so GET routes (e.g. game-content) need it done here.
+  req.query = Object.fromEntries(new URL(req.url, "http://localhost").searchParams);
+
   res.status = (code) => {
     res.statusCode = code;
     return res;
@@ -98,6 +102,20 @@ function localApiPlugin() {
         await prepareApiRequest(req, res);
 
         const { default: handler } = await server.ssrLoadModule("/api/tts.js");
+        await handler(req, res);
+      });
+
+      server.middlewares.use("/api/game-content", async (req, res) => {
+        if (req.method !== "GET") {
+          res.statusCode = 405;
+          res.end();
+          return;
+        }
+        await prepareApiRequest(req, res);
+
+        injectEnv(["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"]);
+
+        const { default: handler } = await server.ssrLoadModule("/api/game-content.js");
         await handler(req, res);
       });
     },

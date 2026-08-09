@@ -1,5 +1,13 @@
-import { useRef, useState } from "react";
-import { generateWordMatchRound, getPhrasesForCategories, shuffle, QUIZ_TARGET_LANGUAGES } from "../quizData.js";
+import { useEffect, useRef, useState } from "react";
+import {
+  generateWordMatchRound,
+  getPhrasesForCategories,
+  loadExtraPhrases,
+  shuffle,
+  QUIZ_PHRASES,
+  QUIZ_TARGET_LANGUAGES,
+  trackSeenIds,
+} from "../quizData.js";
 import { LANGUAGES } from "../languages.js";
 import TopicPicker, { loadQuizCategories } from "./TopicPicker.jsx";
 
@@ -27,6 +35,19 @@ export default function WordMatchGame({ onExit }) {
   // Phrase ids used in the round(s) just played — passed as excludeIds so a replay
   // prefers fresh words over immediately reshowing the same ones.
   const recentIdsRef = useRef([]);
+  // Starts as just the static bank; upgraded once the AI-generated + Redis-cached
+  // extra phrases load (later rounds pick up the larger pool automatically).
+  const [allPhrases, setAllPhrases] = useState(QUIZ_PHRASES);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadExtraPhrases().then((extra) => {
+      if (!cancelled && extra.length > 0) setAllPhrases([...QUIZ_PHRASES, ...extra]);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const [pairs, setPairs] = useState(() => {
     const result = generateWordMatchRound(PAIR_COUNT, {
@@ -45,15 +66,17 @@ export default function WordMatchGame({ onExit }) {
   const [mistakes, setMistakes] = useState(0);
 
   const finished = pairs.length > 0 && matchedIds.size === pairs.length;
-  const availableCount = getPhrasesForCategories(categoryKeys).length;
+  const availableCount = getPhrasesForCategories(categoryKeys, allPhrases).length;
 
   function startNewRound(language, categories, { resetHistory } = {}) {
+    const excludeIds = resetHistory ? [] : recentIdsRef.current;
     const result = generateWordMatchRound(PAIR_COUNT, {
       targetLanguage: language,
       categoryKeys: categories,
-      excludeIds: resetHistory ? [] : recentIdsRef.current,
+      excludeIds,
+      allPhrases,
     });
-    recentIdsRef.current = result.usedIds;
+    recentIdsRef.current = trackSeenIds(excludeIds, result.usedIds, getPhrasesForCategories(categories, allPhrases).length);
     setPairs(result.pairs);
     setLeftOrder(shuffledIndices(result.pairs.length));
     setRightOrder(shuffledIndices(result.pairs.length));

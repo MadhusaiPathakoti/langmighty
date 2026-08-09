@@ -61,6 +61,18 @@ ${sourceLabel} text: "${text}"
 Respond only with JSON matching the required schema.`;
 }
 
+// `lang.script.test(text)` alone only checks the string CONTAINS at least one
+// character of that script — it happily passes a string that's mostly the wrong
+// script with just one stray matching character, including single near-
+// identical-looking characters from a different Unicode block (e.g. a Tamil
+// vowel sign that visually resembles the correct Telugu one). This requires the
+// translation contain ONLY the target language's script, catching contamination
+// from any of the other four scripts, not just a total-wrong-script swap.
+function isPureScript(text, lang) {
+  if (!lang.script.test(text)) return false;
+  return LANGUAGES.every((other) => other.key === lang.key || !other.script.test(text));
+}
+
 // Returns the subset of `keys` whose translation isn't actually written in that
 // language's own script — this is how we catch the model mixing up scripts
 // between similar-looking requests (e.g. writing Kannada text in Telugu script).
@@ -68,7 +80,7 @@ function findScriptMismatches(result, keys) {
   return keys.filter((key) => {
     const lang = LANGUAGES.find((l) => l.key === key);
     const translation = result?.[key]?.translation;
-    return !translation || !lang.script.test(translation);
+    return !translation || !isPureScript(translation, lang);
   });
 }
 

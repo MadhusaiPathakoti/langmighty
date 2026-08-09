@@ -2,6 +2,7 @@ import { useState } from "react";
 import ListenGuessGame from "./ListenGuessGame.jsx";
 import QuizGame from "./QuizGame.jsx";
 import SpeedTranslateGame from "./SpeedTranslateGame.jsx";
+import WordChainGame from "./WordChainGame.jsx";
 import WordMatchGame from "./WordMatchGame.jsx";
 
 const GAMES = [
@@ -33,6 +34,13 @@ const GAMES = [
     description: "Hear a word spoken aloud, then pick the matching written option.",
     available: true,
   },
+  {
+    id: "word-chain",
+    emoji: "🔗",
+    title: "Word Chain",
+    description: "Build an English sentence's translation by tapping words in the right order.",
+    available: true,
+  },
 ];
 
 export default function PlaygroundView() {
@@ -53,6 +61,7 @@ export default function PlaygroundView() {
           {activeGame === "word-match" && <WordMatchGame onExit={() => setActiveGame(null)} />}
           {activeGame === "speed-translate" && <SpeedTranslateGame onExit={() => setActiveGame(null)} />}
           {activeGame === "listen-guess" && <ListenGuessGame onExit={() => setActiveGame(null)} />}
+          {activeGame === "word-chain" && <WordChainGame onExit={() => setActiveGame(null)} />}
         </div>
       </div>
     );
