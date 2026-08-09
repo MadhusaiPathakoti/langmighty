@@ -1,10 +1,12 @@
 import { QUIZ_TARGET_LANGUAGES, shuffle } from "./quizData.js";
 
-// Curated sentence bank for the Word Chain game. Each sentence is broken into its
-// natural word-by-word order per language — word counts differ across languages
-// on purpose (e.g. Malayalam/Tamil often express "I am hungry" as two words where
-// Hindi uses four), since that's genuinely how each language segments the idea,
-// not an inconsistency to fix.
+// Curated sentence bank for the Word Chain and Guess the Sentence games. Each
+// sentence is broken into its natural word-by-word order per language — word
+// counts differ across languages on purpose (e.g. Malayalam/Tamil often express
+// "I am hungry" as two words where Hindi uses four), since that's genuinely how
+// each language segments the idea, not an inconsistency to fix. `pronunciation`
+// mirrors `translations` word-for-word (same array length, same order) with a
+// romanized reading of each word.
 export const WORD_CHAIN_SENTENCES = [
   {
     id: "feeling-hungry",
@@ -15,6 +17,13 @@ export const WORD_CHAIN_SENTENCES = [
       hindi: ["मुझे", "भूख", "लगी", "है"],
       malayalam: ["എനിക്ക്", "വിശക്കുന്നു"],
       tamil: ["எனக்கு", "பசிக்கிறது"],
+    },
+    pronunciation: {
+      telugu: ["naaku", "aakaligaa", "undi"],
+      kannada: ["nanage", "hasivaagide"],
+      hindi: ["mujhe", "bhookh", "lagi", "hai"],
+      malayalam: ["enikku", "vishakkunnu"],
+      tamil: ["enakku", "pasikkirathu"],
     },
   },
   {
@@ -27,6 +36,13 @@ export const WORD_CHAIN_SENTENCES = [
       malayalam: ["എനിക്ക്", "ദാഹിക്കുന്നു"],
       tamil: ["எனக்கு", "தாகமாக", "இருக்கிறது"],
     },
+    pronunciation: {
+      telugu: ["naaku", "daahamgaa", "undi"],
+      kannada: ["nanage", "daahavaagide"],
+      hindi: ["mujhe", "pyaas", "lagi", "hai"],
+      malayalam: ["enikku", "daahikkunnu"],
+      tamil: ["enakku", "thaagamaaga", "irukkirathu"],
+    },
   },
   {
     id: "i-am-fine",
@@ -37,6 +53,13 @@ export const WORD_CHAIN_SENTENCES = [
       hindi: ["मैं", "ठीक", "हूँ"],
       malayalam: ["ഞാൻ", "സുഖമായിരിക്കുന്നു"],
       tamil: ["நான்", "நலமாக", "இருக்கிறேன்"],
+    },
+    pronunciation: {
+      telugu: ["nenu", "baagunnaanu"],
+      kannada: ["naanu", "chennaagiddene"],
+      hindi: ["main", "theek", "hoon"],
+      malayalam: ["njaan", "sukhamaayirikkunnu"],
+      tamil: ["naan", "nalamaaga", "irukkiren"],
     },
   },
   {
@@ -49,6 +72,13 @@ export const WORD_CHAIN_SENTENCES = [
       malayalam: ["നിങ്ങളുടെ", "പേര്", "എന്താണ്"],
       tamil: ["உங்கள்", "பெயர்", "என்ன"],
     },
+    pronunciation: {
+      telugu: ["mee", "peru", "emiti"],
+      kannada: ["nimma", "hesaru", "enu"],
+      hindi: ["aapka", "naam", "kya", "hai"],
+      malayalam: ["ningalude", "peru", "enthaanu"],
+      tamil: ["ungal", "peyar", "enna"],
+    },
   },
   {
     id: "i-want-water",
@@ -59,6 +89,13 @@ export const WORD_CHAIN_SENTENCES = [
       hindi: ["मुझे", "पानी", "चाहिए"],
       malayalam: ["എനിക്ക്", "വെള്ളം", "വേണം"],
       tamil: ["எனக்கு", "தண்ணீர்", "வேண்டும்"],
+    },
+    pronunciation: {
+      telugu: ["naaku", "neellu", "kaavaali"],
+      kannada: ["nanage", "neeru", "beku"],
+      hindi: ["mujhe", "paani", "chaahiye"],
+      malayalam: ["enikku", "vellam", "venam"],
+      tamil: ["enakku", "thanneer", "vendum"],
     },
   },
   {
@@ -71,6 +108,13 @@ export const WORD_CHAIN_SENTENCES = [
       malayalam: ["ഞാൻ", "നിന്നെ", "സ്നേഹിക്കുന്നു"],
       tamil: ["நான்", "உன்னை", "காதலிக்கிறேன்"],
     },
+    pronunciation: {
+      telugu: ["nenu", "ninnu", "premisthunnaanu"],
+      kannada: ["naanu", "ninnannu", "preethisuttene"],
+      hindi: ["main", "tumse", "pyaar", "karta", "hoon"],
+      malayalam: ["njaan", "ninne", "snehikkunnu"],
+      tamil: ["naan", "unnai", "kaadhalikkiren"],
+    },
   },
   {
     id: "where-are-you-going",
@@ -81,6 +125,13 @@ export const WORD_CHAIN_SENTENCES = [
       hindi: ["आप", "कहाँ", "जा", "रहे", "हैं"],
       malayalam: ["നിങ്ങൾ", "എവിടെ", "പോകുന്നു"],
       tamil: ["நீங்கள்", "எங்கே", "செல்கிறீர்கள்"],
+    },
+    pronunciation: {
+      telugu: ["meeru", "ekkadiki", "velthunnaaru"],
+      kannada: ["neevu", "ellige", "hoguttiddeeri"],
+      hindi: ["aap", "kahaan", "jaa", "rahe", "hain"],
+      malayalam: ["ningal", "evide", "pokunnu"],
+      tamil: ["neengal", "enge", "selgireergal"],
     },
   },
   {
@@ -93,6 +144,13 @@ export const WORD_CHAIN_SENTENCES = [
       malayalam: ["ഞാൻ", "വീട്ടിലേക്ക്", "പോകുന്നു"],
       tamil: ["நான்", "வீட்டுக்கு", "செல்கிறேன்"],
     },
+    pronunciation: {
+      telugu: ["nenu", "intiki", "velthunnaanu"],
+      kannada: ["naanu", "manege", "hoguttiddene"],
+      hindi: ["main", "ghar", "jaa", "raha", "hoon"],
+      malayalam: ["njaan", "veettilekku", "pokunnu"],
+      tamil: ["naan", "veettukku", "selgiren"],
+    },
   },
   {
     id: "this-is-my-friend",
@@ -103,6 +161,13 @@ export const WORD_CHAIN_SENTENCES = [
       hindi: ["यह", "मेरा", "दोस्त", "है"],
       malayalam: ["ഇത്", "എന്റെ", "സുഹൃത്താണ്"],
       tamil: ["இவன்", "என்", "நண்பன்"],
+    },
+    pronunciation: {
+      telugu: ["ithanu", "naa", "snehithudu"],
+      kannada: ["ivanu", "nanna", "snehita"],
+      hindi: ["yeh", "mera", "dost", "hai"],
+      malayalam: ["ith", "ente", "suhruthaanu"],
+      tamil: ["ivan", "en", "nanban"],
     },
   },
   {
@@ -115,6 +180,13 @@ export const WORD_CHAIN_SENTENCES = [
       malayalam: ["എനിക്ക്", "ക്ഷീണം", "ഉണ്ട്"],
       tamil: ["எனக்கு", "சோர்வாக", "இருக்கிறது"],
     },
+    pronunciation: {
+      telugu: ["naaku", "alasatagaa", "undi"],
+      kannada: ["nanage", "aayaasavaagide"],
+      hindi: ["main", "thaka", "hua", "hoon"],
+      malayalam: ["enikku", "ksheenam", "undu"],
+      tamil: ["enakku", "sorvaaga", "irukkirathu"],
+    },
   },
   {
     id: "feeling-cold",
@@ -125,6 +197,13 @@ export const WORD_CHAIN_SENTENCES = [
       hindi: ["मुझे", "ठंड", "लग", "रही", "है"],
       malayalam: ["എനിക്ക്", "തണുക്കുന്നു"],
       tamil: ["எனக்கு", "குளிராக", "இருக்கிறது"],
+    },
+    pronunciation: {
+      telugu: ["naaku", "chaligaa", "undi"],
+      kannada: ["nanage", "chaliyaagide"],
+      hindi: ["mujhe", "thand", "lag", "rahi", "hai"],
+      malayalam: ["enikku", "thanukkunnu"],
+      tamil: ["enakku", "kuliraaga", "irukkirathu"],
     },
   },
   {
@@ -137,6 +216,13 @@ export const WORD_CHAIN_SENTENCES = [
       malayalam: ["ഞാൻ", "ഇന്ന്", "സന്തോഷത്തിലാണ്"],
       tamil: ["நான்", "இன்று", "மகிழ்ச்சியாக", "இருக்கிறேன்"],
     },
+    pronunciation: {
+      telugu: ["nenu", "eeroju", "santhoshamgaa", "unnaanu"],
+      kannada: ["naanu", "indu", "santoshavaagiddene"],
+      hindi: ["main", "aaj", "khush", "hoon"],
+      malayalam: ["njaan", "innu", "santhoshathilaanu"],
+      tamil: ["naan", "indru", "magizhchiyaaga", "irukkiren"],
+    },
   },
   {
     id: "thank-you-very-much",
@@ -147,6 +233,13 @@ export const WORD_CHAIN_SENTENCES = [
       hindi: ["आपको", "बहुत", "धन्यवाद"],
       malayalam: ["നിങ്ങൾക്ക്", "വളരെ", "നന്ദി"],
       tamil: ["உங்களுக்கு", "மிக்க", "நன்றி"],
+    },
+    pronunciation: {
+      telugu: ["meeku", "chaalaa", "dhanyavaadaalu"],
+      kannada: ["nimage", "tumbaa", "dhanyavaadagalu"],
+      hindi: ["aapko", "bahut", "dhanyavaad"],
+      malayalam: ["ningalkku", "valare", "nandi"],
+      tamil: ["ungalukku", "mikka", "nandri"],
     },
   },
   {
@@ -159,6 +252,13 @@ export const WORD_CHAIN_SENTENCES = [
       malayalam: ["ദയവായി", "എന്നെ", "സഹായിക്കൂ"],
       tamil: ["தயவுசெய்து", "எனக்கு", "உதவுங்கள்"],
     },
+    pronunciation: {
+      telugu: ["dayachesi", "naaku", "sahaayam", "cheyandi"],
+      kannada: ["dayavittu", "nanage", "sahaaya", "maadi"],
+      hindi: ["kripaya", "meri", "madad", "karein"],
+      malayalam: ["dayavaayi", "enne", "sahaayikkoo"],
+      tamil: ["thayavuseydhu", "enakku", "udhavungal"],
+    },
   },
   {
     id: "i-am-a-student",
@@ -169,6 +269,13 @@ export const WORD_CHAIN_SENTENCES = [
       hindi: ["मैं", "छात्र", "हूँ"],
       malayalam: ["ഞാൻ", "വിദ്യാർത്ഥിയാണ്"],
       tamil: ["நான்", "மாணவன்"],
+    },
+    pronunciation: {
+      telugu: ["nenu", "vidyaarthini"],
+      kannada: ["naanu", "vidyaarthi"],
+      hindi: ["main", "chhaatra", "hoon"],
+      malayalam: ["njaan", "vidyaarthiyaanu"],
+      tamil: ["naan", "maanavan"],
     },
   },
   {
@@ -181,6 +288,13 @@ export const WORD_CHAIN_SENTENCES = [
       malayalam: ["നിങ്ങൾ", "ഇംഗ്ലീഷ്", "പറയുമോ"],
       tamil: ["நீங்கள்", "ஆங்கிலம்", "பேசுவீர்களா"],
     },
+    pronunciation: {
+      telugu: ["meeru", "English", "maatlaadataaraa"],
+      kannada: ["neevu", "English", "maathanaaduttheeraa"],
+      hindi: ["aap", "angrezi", "bolte", "hain"],
+      malayalam: ["ningal", "English", "parayumo"],
+      tamil: ["neengal", "aangilam", "pesuveergalaa"],
+    },
   },
   {
     id: "i-dont-understand",
@@ -191,6 +305,13 @@ export const WORD_CHAIN_SENTENCES = [
       hindi: ["मुझे", "समझ", "नहीं", "आया"],
       malayalam: ["എനിക്ക്", "മനസ്സിലായില്ല"],
       tamil: ["எனக்கு", "புரியவில்லை"],
+    },
+    pronunciation: {
+      telugu: ["naaku", "artham", "kaaledu"],
+      kannada: ["nanage", "arthavaagalilla"],
+      hindi: ["mujhe", "samajh", "nahin", "aaya"],
+      malayalam: ["enikku", "manassilaayilla"],
+      tamil: ["enakku", "puriyavillai"],
     },
   },
   {
@@ -203,6 +324,13 @@ export const WORD_CHAIN_SENTENCES = [
       malayalam: ["ഇതിന്", "എത്ര", "വില"],
       tamil: ["இது", "என்ன", "விலை"],
     },
+    pronunciation: {
+      telugu: ["idi", "entha"],
+      kannada: ["idu", "eshtu"],
+      hindi: ["yeh", "kitne", "ka", "hai"],
+      malayalam: ["ithinu", "ethra", "vila"],
+      tamil: ["ithu", "enna", "vilai"],
+    },
   },
   {
     id: "see-you-tomorrow",
@@ -213,6 +341,13 @@ export const WORD_CHAIN_SENTENCES = [
       hindi: ["कल", "मिलते", "हैं"],
       malayalam: ["നാളെ", "കാണാം"],
       tamil: ["நாளை", "சந்திப்போம்"],
+    },
+    pronunciation: {
+      telugu: ["repu", "kaluddaam"],
+      kannada: ["naale", "sigona"],
+      hindi: ["kal", "milte", "hain"],
+      malayalam: ["naale", "kaanaam"],
+      tamil: ["naalai", "sandhippom"],
     },
   },
   {
@@ -225,6 +360,13 @@ export const WORD_CHAIN_SENTENCES = [
       malayalam: ["ഞാൻ", "ഒരു", "പുതിയ", "ഭാഷ", "പഠിക്കുന്നു"],
       tamil: ["நான்", "ஒரு", "புதிய", "மொழி", "கற்கிறேன்"],
     },
+    pronunciation: {
+      telugu: ["nenu", "oka", "kotha", "bhaasha", "nerchukuntunnaanu"],
+      kannada: ["naanu", "ondu", "hosa", "bhaashe", "kaliyuttiddene"],
+      hindi: ["main", "bhaasha", "seekh", "raha", "hoon"],
+      malayalam: ["njaan", "oru", "puthiya", "bhaasha", "padhikkunnu"],
+      tamil: ["naan", "oru", "puthiya", "mozhi", "katrgiren"],
+    },
   },
   {
     id: "i-have-a-question",
@@ -235,6 +377,13 @@ export const WORD_CHAIN_SENTENCES = [
       hindi: ["मेरे", "पास", "एक", "सवाल", "है"],
       malayalam: ["എനിക്ക്", "ഒരു", "ചോദ്യമുണ്ട്"],
       tamil: ["எனக்கு", "ஒரு", "கேள்வி", "இருக்கிறது"],
+    },
+    pronunciation: {
+      telugu: ["naaku", "oka", "prashna", "undi"],
+      kannada: ["nanage", "ondu", "prashne", "ide"],
+      hindi: ["mere", "paas", "ek", "sawaal", "hai"],
+      malayalam: ["enikku", "oru", "chodyamund"],
+      tamil: ["enakku", "oru", "kelvi", "irukkirathu"],
     },
   },
   {
@@ -247,6 +396,13 @@ export const WORD_CHAIN_SENTENCES = [
       malayalam: ["നിങ്ങളുടെ", "ദിവസം", "നല്ലതാകട്ടെ"],
       tamil: ["உங்கள்", "நாள்", "இனிதாக", "இருக்கட்டும்"],
     },
+    pronunciation: {
+      telugu: ["mee", "roju", "baagundaali"],
+      kannada: ["nimma", "dina", "chennaagirali"],
+      hindi: ["aapka", "din", "shubh", "ho"],
+      malayalam: ["ningalude", "divasam", "nallathaakatte"],
+      tamil: ["ungal", "naal", "inithaaga", "irukkattum"],
+    },
   },
   {
     id: "i-forgot-my-phone",
@@ -258,6 +414,13 @@ export const WORD_CHAIN_SENTENCES = [
       malayalam: ["ഞാൻ", "എന്റെ", "ഫോൺ", "മറന്നു"],
       tamil: ["நான்", "என்", "ஃபோனை", "மறந்துவிட்டேன்"],
     },
+    pronunciation: {
+      telugu: ["nenu", "naa", "phone", "marchipoyaanu"],
+      kannada: ["naanu", "nanna", "phone", "maretiddene"],
+      hindi: ["main", "apna", "phone", "bhool", "gaya"],
+      malayalam: ["njaan", "ente", "phone", "marannu"],
+      tamil: ["naan", "en", "phonai", "maranthuvitten"],
+    },
   },
   {
     id: "i-need-to-go-now",
@@ -268,6 +431,13 @@ export const WORD_CHAIN_SENTENCES = [
       hindi: ["मुझे", "अभी", "जाना", "है"],
       malayalam: ["എനിക്ക്", "ഇപ്പോൾ", "പോകണം"],
       tamil: ["எனக்கு", "இப்போது", "போக", "வேண்டும்"],
+    },
+    pronunciation: {
+      telugu: ["nenu", "ippudu", "vellaali"],
+      kannada: ["naanu", "eega", "hogabeku"],
+      hindi: ["mujhe", "abhi", "jaana", "hai"],
+      malayalam: ["enikku", "ippol", "pokanam"],
+      tamil: ["enakku", "ippothu", "poga", "vendum"],
     },
   },
 ];
@@ -314,6 +484,54 @@ export function generateWordChainRound(count, { targetLanguage, excludeIds = [],
   });
 
   return { sentences, usedIds: sentences.map((s) => s.id) };
+}
+
+// Builds one Guess the Sentence round: quiz-style multiple choice, but each
+// option is a full sentence (translation + romanized pronunciation) instead of
+// a single word. Only sentences that actually have pronunciation data for the
+// requested language are eligible — this excludes any AI-generated sentence
+// that hasn't been backfilled with pronunciation yet, rather than showing an
+// option with no romanization under it.
+export function generateSentenceQuiz(questionCount, { targetLanguage, excludeIds = [], allSentences = WORD_CHAIN_SENTENCES } = {}) {
+  const lang = QUIZ_TARGET_LANGUAGES.includes(targetLanguage) ? targetLanguage : QUIZ_TARGET_LANGUAGES[0];
+  const pool = allSentences.filter((s) => s.translations[lang]?.length && s.pronunciation?.[lang]?.length);
+
+  const exclude = new Set(excludeIds);
+  const fresh = shuffle(pool.filter((s) => !exclude.has(s.id)));
+  const stale = shuffle(pool.filter((s) => exclude.has(s.id)));
+  const ordered = [...fresh, ...stale];
+
+  function optionFor(sentence) {
+    return {
+      text: sentence.translations[lang].join(" "),
+      pronunciation: sentence.pronunciation[lang].join(" "),
+    };
+  }
+
+  const questions = [];
+  const usedIds = [];
+  const count = Math.min(questionCount, ordered.length || 1);
+  for (let i = 0; i < count; i++) {
+    const sentence = ordered[i % ordered.length];
+    const correctOption = optionFor(sentence);
+
+    const distractorPool = pool.filter((s) => s.id !== sentence.id);
+    const distractorOptions = shuffle(distractorPool)
+      .slice(0, 3)
+      .map(optionFor);
+
+    const options = shuffle([correctOption, ...distractorOptions]);
+
+    questions.push({
+      sentenceId: sentence.id,
+      english: sentence.english,
+      targetLanguage: lang,
+      correctAnswer: correctOption.text,
+      options,
+    });
+    usedIds.push(sentence.id);
+  }
+  return { questions, usedIds, poolSize: pool.length };
 }
 
 // Bulk-generated (via scripts/seedGameContent.mjs) and cached in Redis — fetched

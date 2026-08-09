@@ -98,6 +98,13 @@ function isPureScript(text, langKey) {
   return true;
 }
 
+// Pronunciation fields should be romanized (Latin letters) — reject anything
+// that's actually still in one of the five native scripts (a sign Gemini just
+// echoed the word back instead of transliterating it).
+function isRomanized(text) {
+  return !LANG_KEYS.some((k) => scriptFor(k).test(text));
+}
+
 // ---------- Phrases ----------
 
 function phraseSchema() {
@@ -160,6 +167,8 @@ Respond only with a JSON array matching the schema — no extra commentary.`;
 
 // ---------- Sentences ----------
 
+const PRON_KEYS = LANG_KEYS.map((k) => `${k}Pron`);
+
 function sentenceSchema() {
   return {
     type: "ARRAY",
@@ -168,8 +177,9 @@ function sentenceSchema() {
       properties: {
         english: { type: "STRING" },
         ...Object.fromEntries(LANG_KEYS.map((k) => [k, { type: "ARRAY", items: { type: "STRING" } }])),
+        ...Object.fromEntries(PRON_KEYS.map((k) => [k, { type: "ARRAY", items: { type: "STRING" } }])),
       },
-      required: ["english", ...LANG_KEYS],
+      required: ["english", ...LANG_KEYS, ...PRON_KEYS],
     },
   };
 }
@@ -178,15 +188,16 @@ function fewShotExamples() {
   return WORD_CHAIN_SENTENCES.slice(0, 2).map((s) => ({
     english: s.english,
     ...Object.fromEntries(LANG_KEYS.map((k) => [k, s.translations[k]])),
+    ...Object.fromEntries(LANG_KEYS.map((k) => [`${k}Pron`, s.pronunciation[k]])),
   }));
 }
 
 async function generateSentenceBatch(count, existingEnglish) {
-  const prompt = `You are generating short, common English sentences for a "build the sentence" language-learning game. Each sentence is split into an ordered array of words per language, for the learner to tap in the correct order.
+  const prompt = `You are generating short, common English sentences for language-learning games. Each sentence is split into an ordered array of words per language, for the learner to tap in the correct order, alongside a parallel array of romanized (Latin-letter) pronunciation for each of those same words, in the same order.
 
-Generate ${count} NEW simple, common everyday English sentences (3-8 words), each translated and segmented into words for Kannada, Hindi, Malayalam, Tamil, and Telugu, written in each language's own native script (never romanized).
+Generate ${count} NEW simple, common everyday English sentences (3-8 words), each translated and segmented into words for Kannada, Hindi, Malayalam, Tamil, and Telugu, written in each language's own native script (never romanized) for the "<language>" fields, with a matching "<language>Pron" array giving the romanized pronunciation of each of those exact words in the same order — one pronunciation entry per word, same array length.
 
-Each language's array must be that language's OWN natural word-by-word breakdown — not a forced word-for-word gloss of the English. Word counts should differ across languages when that's genuinely how each language expresses the idea (e.g. Malayalam or Tamil often combine what English needs 4 words for into 2).
+Each language's word array must be that language's OWN natural word-by-word breakdown — not a forced word-for-word gloss of the English. Word counts should differ across languages when that's genuinely how each language expresses the idea (e.g. Malayalam or Tamil often combine what English needs 4 words for into 2).
 
 Here is the exact format expected, with two real examples:
 ${JSON.stringify(fewShotExamples(), null, 2)}
@@ -208,9 +219,11 @@ Respond only with a JSON array matching the schema — no extra commentary.`;
     if (existingLower.has(item.english.trim().toLowerCase())) continue;
 
     const translations = {};
+    const pronunciation = {};
     let allValid = true;
     for (const lang of LANG_KEYS) {
       const words = item[lang];
+      const pron = item[`${lang}Pron`];
       if (!Array.isArray(words) || words.length === 0) {
         allValid = false;
         break;
@@ -220,7 +233,17 @@ Respond only with a JSON array matching the schema — no extra commentary.`;
         allValid = false;
         break;
       }
+      if (!Array.isArray(pron) || pron.length !== cleanWords.length) {
+        allValid = false;
+        break;
+      }
+      const cleanPron = pron.map((w) => String(w).trim()).filter(Boolean);
+      if (cleanPron.length !== cleanWords.length || !cleanPron.every(isRomanized)) {
+        allValid = false;
+        break;
+      }
       translations[lang] = cleanWords;
+      pronunciation[lang] = cleanPron;
     }
     if (!allValid) continue;
 
@@ -229,6 +252,7 @@ Respond only with a JSON array matching the schema — no extra commentary.`;
       id: uniqueId(slugify(item.english), takenIds),
       english: item.english.trim(),
       translations,
+      pronunciation,
     });
   }
   return validated;

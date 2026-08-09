@@ -1,4 +1,5 @@
 import { useState } from "react";
+import GuessSentenceGame from "./GuessSentenceGame.jsx";
 import ListenGuessGame from "./ListenGuessGame.jsx";
 import QuizGame from "./QuizGame.jsx";
 import SpeedTranslateGame from "./SpeedTranslateGame.jsx";
@@ -41,6 +42,13 @@ const GAMES = [
     description: "Build an English sentence's translation by tapping words in the right order.",
     available: true,
   },
+  {
+    id: "guess-sentence",
+    emoji: "📝",
+    title: "Guess the Sentence",
+    description: "Multiple-choice, but for full sentences — each option comes with pronunciation.",
+    available: true,
+  },
 ];
 
 export default function PlaygroundView() {
@@ -62,6 +70,7 @@ export default function PlaygroundView() {
           {activeGame === "speed-translate" && <SpeedTranslateGame onExit={() => setActiveGame(null)} />}
           {activeGame === "listen-guess" && <ListenGuessGame onExit={() => setActiveGame(null)} />}
           {activeGame === "word-chain" && <WordChainGame onExit={() => setActiveGame(null)} />}
+          {activeGame === "guess-sentence" && <GuessSentenceGame onExit={() => setActiveGame(null)} />}
         </div>
       </div>
     );
