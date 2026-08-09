@@ -1,5 +1,6 @@
 import { useState } from "react";
 import QuizGame from "./QuizGame.jsx";
+import WordMatchGame from "./WordMatchGame.jsx";
 
 const GAMES = [
   {
@@ -13,8 +14,8 @@ const GAMES = [
     id: "word-match",
     emoji: "🧩",
     title: "Word Match",
-    description: "Coming soon.",
-    available: false,
+    description: "Tap each English word, then find its matching translation.",
+    available: true,
   },
   {
     id: "speed-translate",
@@ -40,6 +41,7 @@ export default function PlaygroundView() {
             ← Back to Playground
           </button>
           {activeGame === "quiz" && <QuizGame onExit={() => setActiveGame(null)} />}
+          {activeGame === "word-match" && <WordMatchGame onExit={() => setActiveGame(null)} />}
         </div>
       </div>
     );

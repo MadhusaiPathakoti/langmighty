@@ -132,7 +132,7 @@ export const QUIZ_PHRASES = [
 
 export const QUIZ_TARGET_LANGUAGES = ["kannada", "hindi", "malayalam", "tamil", "telugu"];
 
-function shuffle(array) {
+export function shuffle(array) {
   const copy = array.slice();
   for (let i = copy.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -190,4 +190,32 @@ export function generateQuiz(questionCount, { targetLanguage, categoryKeys, excl
     usedIds.push(phrase.id);
   }
   return { questions, usedIds };
+}
+
+// Builds one Word Match round: `pairCount` distinct phrases (no repeats within a
+// round, unlike the quiz — a match grid showing the same word twice would be
+// broken), each paired with its translation in `targetLanguage` (or a random
+// language per pair when "mixed"/omitted). Same excludeIds freshness logic as
+// generateQuiz, so replaying doesn't immediately reshow the same word set.
+export function generateWordMatchRound(pairCount, { targetLanguage, categoryKeys, excludeIds = [] } = {}) {
+  const pool = getPhrasesForCategories(categoryKeys);
+  const fixedLanguage = QUIZ_TARGET_LANGUAGES.includes(targetLanguage) ? targetLanguage : null;
+
+  const exclude = new Set(excludeIds);
+  const fresh = pool.filter((p) => !exclude.has(p.id));
+  const candidates = fresh.length >= Math.min(pairCount, pool.length) ? fresh : pool;
+
+  const chosen = shuffle(candidates).slice(0, Math.min(pairCount, candidates.length));
+
+  const pairs = chosen.map((phrase) => {
+    const targetLang = fixedLanguage || QUIZ_TARGET_LANGUAGES[Math.floor(Math.random() * QUIZ_TARGET_LANGUAGES.length)];
+    return {
+      id: phrase.id,
+      english: phrase.english,
+      targetLanguage: targetLang,
+      translation: phrase.translations[targetLang],
+    };
+  });
+
+  return { pairs, usedIds: pairs.map((p) => p.id) };
 }
