@@ -107,7 +107,16 @@ export default function AiChatView() {
   }
 
   function handleDelete(id) {
-    setMessages((prev) => prev.filter((m) => m.id !== id));
+    setMessages((prev) => {
+      const index = prev.findIndex((m) => m.id === id);
+      if (index === -1) return prev;
+
+      // sendMessage always appends a user message immediately followed by its
+      // assistant reply — deleting the prompt should take its answer with it
+      // rather than leaving an orphaned response with no question above it.
+      const deletingPair = prev[index].role === "user" && prev[index + 1]?.role === "assistant";
+      return prev.filter((_, i) => i !== index && !(deletingPair && i === index + 1));
+    });
   }
 
   function handleClear() {
