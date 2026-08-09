@@ -6,6 +6,7 @@ import CulturalBackground from "./components/CulturalBackground.jsx";
 import ExportTemplate from "./components/ExportTemplate.jsx";
 import IndiaFlagIcon from "./components/IndiaFlagIcon.jsx";
 import NavBar from "./components/NavBar.jsx";
+import PlaygroundView from "./components/PlaygroundView.jsx";
 import RoadmapView from "./components/RoadmapView.jsx";
 import SignupGateModal from "./components/SignupGateModal.jsx";
 import TypewriterText from "./components/TypewriterText.jsx";
@@ -79,7 +80,7 @@ function nextTurnId() {
 }
 
 export default function App() {
-  const [view, setView] = useState("chat"); // "chat" | "ai-chat" | "roadmap"
+  const [view, setView] = useState("chat"); // "chat" | "ai-chat" | "roadmap" | "playground"
   const [roadmapLanguage, setRoadmapLanguage] = useState("kannada");
   const [inputText, setInputText] = useState("");
   const [conversation, setConversation] = useState(loadConversation);
@@ -269,6 +270,7 @@ export default function App() {
         onNavigateChat={() => setView("chat")}
         onNavigateAiChat={() => setView("ai-chat")}
         onNavigateRoadmap={handleNavigateRoadmap}
+        onNavigatePlayground={() => setView("playground")}
         theme={theme}
         onToggleTheme={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
       />
@@ -277,6 +279,8 @@ export default function App() {
         <RoadmapView language={roadmapLanguage} onSelectLanguage={setRoadmapLanguage} />
       ) : view === "ai-chat" ? (
         <AiChatView />
+      ) : view === "playground" ? (
+        <PlaygroundView />
       ) : (
         <>
           <div className="relative z-10 flex-1 overflow-y-auto px-4 sm:px-6 py-6">
