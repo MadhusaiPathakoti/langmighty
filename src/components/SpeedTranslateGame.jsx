@@ -34,6 +34,7 @@ export default function SpeedTranslateGame({ onExit }) {
   const [attempted, setAttempted] = useState(0);
   const [timeLeft, setTimeLeft] = useState(ROUND_SECONDS);
   const [feedback, setFeedback] = useState(null); // { option, correct }
+  const [wrongAnswers, setWrongAnswers] = useState([]);
 
   const feedbackTimeoutRef = useRef(null);
   const availableCount = getPhrasesForCategories(categoryKeys).length;
@@ -63,6 +64,7 @@ export default function SpeedTranslateGame({ onExit }) {
     setAttempted(0);
     setTimeLeft(ROUND_SECONDS);
     setFeedback(null);
+    setWrongAnswers([]);
     setPhase("playing");
   }
 
@@ -86,7 +88,19 @@ export default function SpeedTranslateGame({ onExit }) {
     const question = questions[questionIndex % questions.length];
     const correct = option === question.correctAnswer;
     setAttempted((a) => a + 1);
-    if (correct) setScore((s) => s + 1);
+    if (correct) {
+      setScore((s) => s + 1);
+    } else {
+      setWrongAnswers((prev) => [
+        ...prev,
+        {
+          english: question.english,
+          targetLanguage: question.targetLanguage,
+          yourAnswer: option,
+          correctAnswer: question.correctAnswer,
+        },
+      ]);
+    }
     setFeedback({ option, correct });
 
     feedbackTimeoutRef.current = setTimeout(() => {
@@ -157,7 +171,7 @@ export default function SpeedTranslateGame({ onExit }) {
     return (
       <div>
         {controls}
-        <div className="relative overflow-hidden rounded-2xl border border-indigo-100 dark:border-indigo-950 bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-indigo-950 dark:via-gray-900 dark:to-purple-950 px-6 py-14 text-center">
+        <div className="relative overflow-hidden rounded-2xl border border-indigo-100 dark:border-indigo-950 bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-indigo-950 dark:via-gray-900 dark:to-purple-950 px-6 py-10 text-center">
           <span className="text-5xl">⏱️</span>
           <h2 className="mt-3 text-xl font-semibold text-gray-900 dark:text-gray-100">Time's up!</h2>
           <p className="mt-2 text-gray-500 dark:text-gray-400">
@@ -181,6 +195,35 @@ export default function SpeedTranslateGame({ onExit }) {
             </button>
           </div>
         </div>
+
+        {wrongAnswers.length > 0 ? (
+          <div className="mt-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-4">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">
+              Review your mistakes ({wrongAnswers.length})
+            </h3>
+            <div className="max-h-72 overflow-y-auto space-y-2">
+              {wrongAnswers.map((mistake, i) => (
+                <div
+                  key={i}
+                  className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm rounded-lg bg-gray-50 dark:bg-gray-800 px-3 py-2"
+                >
+                  <span className="font-medium text-gray-800 dark:text-gray-100">
+                    "{mistake.english}" ({languageLabel(mistake.targetLanguage)})
+                  </span>
+                  <span className="text-gray-500 dark:text-gray-400">
+                    You said <span className="text-red-500 dark:text-red-400 line-through">{mistake.yourAnswer}</span>{" "}
+                    · Correct:{" "}
+                    <span className="font-medium text-green-600 dark:text-green-400">{mistake.correctAnswer}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : attempted > 0 ? (
+          <p className="mt-4 text-center text-sm text-green-600 dark:text-green-400">
+            🎯 Perfect round — no mistakes!
+          </p>
+        ) : null}
       </div>
     );
   }
