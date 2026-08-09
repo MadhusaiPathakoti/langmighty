@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ListenGuessGame from "./ListenGuessGame.jsx";
 import QuizGame from "./QuizGame.jsx";
 import SpeedTranslateGame from "./SpeedTranslateGame.jsx";
 import WordMatchGame from "./WordMatchGame.jsx";
@@ -25,6 +26,13 @@ const GAMES = [
     description: "60 seconds on the clock — answer as many translations correctly as you can.",
     available: true,
   },
+  {
+    id: "listen-guess",
+    emoji: "🎧",
+    title: "Listen & Guess",
+    description: "Hear a word spoken aloud, then pick the matching written option.",
+    available: true,
+  },
 ];
 
 export default function PlaygroundView() {
@@ -44,6 +52,7 @@ export default function PlaygroundView() {
           {activeGame === "quiz" && <QuizGame onExit={() => setActiveGame(null)} />}
           {activeGame === "word-match" && <WordMatchGame onExit={() => setActiveGame(null)} />}
           {activeGame === "speed-translate" && <SpeedTranslateGame onExit={() => setActiveGame(null)} />}
+          {activeGame === "listen-guess" && <ListenGuessGame onExit={() => setActiveGame(null)} />}
         </div>
       </div>
     );
