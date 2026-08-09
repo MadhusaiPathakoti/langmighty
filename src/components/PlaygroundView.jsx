@@ -1,5 +1,6 @@
 import { useState } from "react";
 import QuizGame from "./QuizGame.jsx";
+import SpeedTranslateGame from "./SpeedTranslateGame.jsx";
 import WordMatchGame from "./WordMatchGame.jsx";
 
 const GAMES = [
@@ -21,8 +22,8 @@ const GAMES = [
     id: "speed-translate",
     emoji: "⚡",
     title: "Speed Translate",
-    description: "Coming soon.",
-    available: false,
+    description: "60 seconds on the clock — answer as many translations correctly as you can.",
+    available: true,
   },
 ];
 
@@ -42,6 +43,7 @@ export default function PlaygroundView() {
           </button>
           {activeGame === "quiz" && <QuizGame onExit={() => setActiveGame(null)} />}
           {activeGame === "word-match" && <WordMatchGame onExit={() => setActiveGame(null)} />}
+          {activeGame === "speed-translate" && <SpeedTranslateGame onExit={() => setActiveGame(null)} />}
         </div>
       </div>
     );

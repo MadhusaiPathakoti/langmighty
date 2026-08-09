@@ -3,7 +3,7 @@ import { QUIZ_CATEGORIES } from "../quizData.js";
 
 const ALL_CATEGORY_KEYS = QUIZ_CATEGORIES.map((c) => c.key);
 
-export default function TopicPicker({ selected, onToggle }) {
+export default function TopicPicker({ selected, onToggle, disabled }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -27,14 +27,15 @@ export default function TopicPicker({ selected, onToggle }) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
+        disabled={disabled}
         aria-haspopup="true"
         aria-expanded={open}
-        className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 px-2.5 py-1.5 text-sm"
+        className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 px-2.5 py-1.5 text-sm disabled:opacity-50"
       >
         {summary} ▾
       </button>
 
-      {open && (
+      {open && !disabled && (
         <div className="absolute left-0 mt-1 w-56 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg py-2 px-3 z-20">
           {QUIZ_CATEGORIES.map((cat) => {
             const checked = selected.includes(cat.key);
