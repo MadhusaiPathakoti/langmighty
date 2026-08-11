@@ -124,12 +124,4 @@ function localApiPlugin() {
 
 export default defineConfig({
   plugins: [react(), localApiPlugin()],
-  // Some Android devices ship with an outdated WebView that predates the
-  // browser baseline Vite otherwise assumes, causing a hard parse error
-  // (e.g. "Unexpected token ?") on syntax like optional chaining. es2015
-  // forces esbuild to transpile that down to broadly-compatible output for
-  // the Capacitor build.
-  build: {
-    target: "es2015",
-  },
 });
