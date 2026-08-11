@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import { LANGUAGES, getInputLanguage } from "../languages.js";
+import { LANGUAGES, getInputLanguage } from "langmighty-shared";
 import { getLatinFont, getNativeFont, DEFAULT_LATIN_FONT_ID, DEFAULT_NATIVE_FONT_SET_ID } from "./handwrittenFonts.js";
 import { PREVIEW_WIDTH, previewHeightFor } from "./aspectRatios.js";
 

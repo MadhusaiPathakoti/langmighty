@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { generateSentenceQuiz, loadExtraSentences, WORD_CHAIN_SENTENCES } from "../wordChainData.js";
-import { QUIZ_TARGET_LANGUAGES, trackSeenIds } from "../quizData.js";
-import { LANGUAGES } from "../languages.js";
+import { generateSentenceQuiz, WORD_CHAIN_SENTENCES, QUIZ_TARGET_LANGUAGES, trackSeenIds, LANGUAGES } from "langmighty-shared";
+import { loadExtraSentences } from "../wordChainData.js";
 
 const QUESTION_COUNT = 10;
 const GUESS_SENTENCE_LANGUAGE_KEY = "langlearn_guess_sentence_language";

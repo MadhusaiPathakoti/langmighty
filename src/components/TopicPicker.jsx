@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { QUIZ_CATEGORIES } from "../quizData.js";
+import { QUIZ_CATEGORIES } from "langmighty-shared";
 
 const ALL_CATEGORY_KEYS = QUIZ_CATEGORIES.map((c) => c.key);
 

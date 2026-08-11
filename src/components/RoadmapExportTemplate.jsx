@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import { ROADMAP_STAGES, ROADMAP_CONTENT } from "../roadmapData.js";
+import { ROADMAP_STAGES, ROADMAP_CONTENT } from "langmighty-shared";
 
 const RoadmapExportTemplate = forwardRef(function RoadmapExportTemplate({ language, langMeta }, ref) {
   const content = ROADMAP_CONTENT[language];

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LANGUAGES } from "../languages.js";
+import { LANGUAGES } from "langmighty-shared";
 import SpeakerButton from "./SpeakerButton.jsx";
 
 export default function TranslationResults({ results }) {

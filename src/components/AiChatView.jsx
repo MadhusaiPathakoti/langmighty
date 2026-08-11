@@ -200,7 +200,7 @@ export default function AiChatView() {
         </div>
       </div>
 
-      <footer className="relative z-10 border-t border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm px-4 sm:px-6 py-4">
+      <footer className="relative z-10 border-t border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm px-4 sm:px-6 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
         <div className="max-w-3xl mx-auto w-full">
           <form onSubmit={handleSubmit} className="flex gap-3">
             <input

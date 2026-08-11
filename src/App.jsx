@@ -19,7 +19,7 @@ import {
   INPUT_LANGUAGES,
   LANGUAGES,
   matchesScript,
-} from "./languages.js";
+} from "langmighty-shared";
 
 const TAGLINES = [
   "Translate between English, Telugu, Hindi, Kannada, Malayalam & Tamil — any language to any language, with pronunciation and voice.",
@@ -366,7 +366,7 @@ export default function App() {
             </div>
           </div>
 
-          <footer className="relative z-10 border-t border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm px-4 sm:px-6 py-4">
+          <footer className="relative z-10 border-t border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm px-4 sm:px-6 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
             <ChatInput
               value={inputText}
               onChange={(v) => {

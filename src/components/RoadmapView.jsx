@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { ROADMAP_LANGUAGES, ROADMAP_STAGES, ROADMAP_CONTENT } from "../roadmapData.js";
+import { ROADMAP_LANGUAGES, ROADMAP_STAGES, ROADMAP_CONTENT } from "langmighty-shared";
 import RoadmapExportTemplate from "./RoadmapExportTemplate.jsx";
 import { exportNodeToPdf } from "../utils/pdfExport.js";
 

@@ -7,9 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Redis } from "@upstash/redis";
-import { LANGUAGES } from "../src/languages.js";
-import { QUIZ_CATEGORIES, QUIZ_PHRASES } from "../src/quizData.js";
-import { WORD_CHAIN_SENTENCES } from "../src/wordChainData.js";
+import { LANGUAGES, QUIZ_CATEGORIES, QUIZ_PHRASES, WORD_CHAIN_SENTENCES } from "langmighty-shared";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LANG_KEYS = LANGUAGES.map((l) => l.key); // ["telugu","hindi","kannada","malayalam","tamil"]

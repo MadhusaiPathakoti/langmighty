@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import { LANGUAGES, getInputLanguage } from "../languages.js";
+import { LANGUAGES, getInputLanguage } from "langmighty-shared";
 
 const ExportTemplate = forwardRef(function ExportTemplate({ conversation }, ref) {
   const doneTurns = conversation.filter((t) => t.status === "done");

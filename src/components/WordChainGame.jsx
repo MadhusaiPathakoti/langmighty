@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { generateWordChainRound, loadExtraSentences, WORD_CHAIN_SENTENCES } from "../wordChainData.js";
-import { QUIZ_TARGET_LANGUAGES, trackSeenIds } from "../quizData.js";
-import { LANGUAGES } from "../languages.js";
+import { generateWordChainRound, WORD_CHAIN_SENTENCES, QUIZ_TARGET_LANGUAGES, trackSeenIds, LANGUAGES } from "langmighty-shared";
+import { loadExtraSentences } from "../wordChainData.js";
 
 const SENTENCE_COUNT = 6;
 const WRONG_FLASH_MS = 400;

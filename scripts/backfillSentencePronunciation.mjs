@@ -8,7 +8,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Redis } from "@upstash/redis";
-import { LANGUAGES } from "../src/languages.js";
+import { LANGUAGES } from "langmighty-shared";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LANG_KEYS = LANGUAGES.map((l) => l.key);

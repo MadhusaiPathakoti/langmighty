@@ -1,4 +1,4 @@
-import { getInputLanguage } from "../languages.js";
+import { getInputLanguage } from "langmighty-shared";
 
 export default function ChatInput({ value, onChange, onSubmit, loading, inputLanguage, error }) {
   function handleSubmit(e) {

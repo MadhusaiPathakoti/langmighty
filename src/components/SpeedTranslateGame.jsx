@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import {
   generateQuiz,
   getPhrasesForCategories,
-  loadExtraPhrases,
   QUIZ_PHRASES,
   QUIZ_TARGET_LANGUAGES,
   trackSeenIds,
-} from "../quizData.js";
-import { LANGUAGES } from "../languages.js";
+  LANGUAGES,
+} from "langmighty-shared";
+import { loadExtraPhrases } from "../quizData.js";
 import TopicPicker, { loadQuizCategories } from "./TopicPicker.jsx";
 
 const ROUND_SECONDS = 60;

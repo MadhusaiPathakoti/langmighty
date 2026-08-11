@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import {
   generateWordMatchRound,
   getPhrasesForCategories,
-  loadExtraPhrases,
   shuffle,
   QUIZ_PHRASES,
   QUIZ_TARGET_LANGUAGES,
   trackSeenIds,
-} from "../quizData.js";
-import { LANGUAGES } from "../languages.js";
+  LANGUAGES,
+} from "langmighty-shared";
+import { loadExtraPhrases } from "../quizData.js";
 import TopicPicker, { loadQuizCategories } from "./TopicPicker.jsx";
 
 const PAIR_COUNT = 8;

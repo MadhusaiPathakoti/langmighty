@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ROADMAP_LANGUAGES } from "../roadmapData.js";
-import { INPUT_LANGUAGES, LANGUAGES } from "../languages.js";
+import { ROADMAP_LANGUAGES, INPUT_LANGUAGES, LANGUAGES } from "langmighty-shared";
 import { useAuthGate } from "../context/AuthGateContext.jsx";
 import IndiaFlagIcon from "./IndiaFlagIcon.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
@@ -45,7 +44,7 @@ export default function NavBar({
   }
 
   return (
-    <nav className="flex flex-wrap items-center justify-between gap-y-2 px-4 sm:px-6 py-2.5 border-b border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm shadow-sm sticky top-0 z-30">
+    <nav className="flex flex-wrap items-center justify-between gap-y-2 px-4 sm:px-6 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top))] border-b border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm shadow-sm sticky top-0 z-30">
       <button type="button" onClick={onNavigateChat} className="flex items-center gap-2 group">
         <span className="w-9 h-6 rounded-md overflow-hidden shadow-sm ring-1 ring-black/10 dark:ring-white/10 group-hover:scale-105 transition-transform">
           <IndiaFlagIcon className="w-full h-full" />

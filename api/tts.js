@@ -1,5 +1,5 @@
 import { EdgeTTS } from "edge-tts-universal";
-import { LANGUAGES } from "../src/languages.js";
+import { LANGUAGES } from "langmighty-shared";
 import { applyCors } from "./_lib/cors.js";
 
 const ALLOWED_VOICES = new Set(LANGUAGES.map((l) => l.ttsVoice));
