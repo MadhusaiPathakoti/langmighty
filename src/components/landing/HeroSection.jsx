@@ -1,4 +1,3 @@
-import lmBadge from "../../media/lm-badge.png";
 import { TRUST_AVATARS, STATS, colorClasses } from "./landingContent.js";
 import MockupPreview from "./MockupPreview.jsx";
 
@@ -18,13 +17,6 @@ export default function HeroSection({ onGetStarted }) {
         aria-hidden="true"
         className="pointer-events-none absolute -bottom-24 -left-16 w-72 h-72 rounded-full bg-indigo-200/40 dark:bg-indigo-500/10 blur-3xl"
       />
-      <img
-        src={lmBadge}
-        alt=""
-        aria-hidden="true"
-        className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[52rem] h-[52rem] max-w-none opacity-[0.04] dark:opacity-[0.06]"
-      />
-
       <div className="relative max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
         <div>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300 text-xs font-medium px-3 py-1 mb-5">

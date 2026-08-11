@@ -307,9 +307,7 @@ export default function App() {
                     className="pointer-events-none absolute -bottom-20 -left-10 w-56 h-56 rounded-full bg-indigo-200/40 dark:bg-indigo-500/10 blur-3xl"
                   />
 
-                  <div className="relative w-20 h-20 mx-auto mb-5">
-                    <LmLogo className="w-full h-full object-contain drop-shadow-lg" />
-                  </div>
+                  <LmLogo className="relative w-20 h-20 mx-auto mb-5 drop-shadow-lg" />
 
                   <TypewriterText
                     phrases={TAGLINES}

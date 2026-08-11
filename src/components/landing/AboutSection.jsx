@@ -4,7 +4,13 @@ export default function AboutSection() {
   return (
     <section id="about" className="px-4 sm:px-6 py-16 sm:py-20 bg-gray-50 dark:bg-gray-900/40">
       <div className="max-w-2xl mx-auto text-center">
-        <img src={lmBadge} alt="LangMighty — every language, every voice, one world" className="w-40 h-40 mx-auto mb-6 rounded-full shadow-lg" />
+        <div className="w-44 h-44 mx-auto mb-6 rounded-2xl bg-white shadow-lg p-3">
+          <img
+            src={lmBadge}
+            alt="LangMighty — every language, every voice, one world"
+            className="w-full h-full object-contain"
+          />
+        </div>
 
         <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100">
           About{" "}

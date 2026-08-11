@@ -1,4 +1,5 @@
 import { LANGUAGES } from "langmighty-shared";
+import indiaCultureMap from "../../media/india-culture-map.png";
 
 // Static, non-functional illustrations used in the hero and each feature's
 // detail section — purely decorative, so they use fixed example text rather
@@ -116,23 +117,11 @@ function ChatMockup() {
 function MultilangMockup() {
   return (
     <Card>
-      <div className="relative flex items-center justify-center py-6">
-        <span className="text-5xl">🌐</span>
-        {LANGUAGES.map((lang, i) => {
-          const angle = (i / LANGUAGES.length) * 2 * Math.PI;
-          const x = Math.round(Math.cos(angle) * 90);
-          const y = Math.round(Math.sin(angle) * 60);
-          return (
-            <span
-              key={lang.key}
-              className="absolute rounded-full bg-sky-100 dark:bg-sky-900 text-sky-700 dark:text-sky-300 text-xs font-medium px-2.5 py-1 shadow-sm"
-              style={{ transform: `translate(${x}px, ${y}px)` }}
-            >
-              {lang.label}
-            </span>
-          );
-        })}
-      </div>
+      <img
+        src={indiaCultureMap}
+        alt="Map of India with Hindi, Telugu, Kannada, Tamil, and Malayalam labeled across their regions, alongside Indian cultural landmarks and heritage"
+        className="w-full h-auto rounded-lg"
+      />
     </Card>
   );
 }

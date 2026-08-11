@@ -3,6 +3,7 @@ import CulturalBackground from "../CulturalBackground.jsx";
 import FaqSection from "./FaqSection.jsx";
 import FeatureDetailSection from "./FeatureDetailSection.jsx";
 import FeaturesOverviewSection from "./FeaturesOverviewSection.jsx";
+import FloatingSocial from "./FloatingSocial.jsx";
 import HeroSection from "./HeroSection.jsx";
 import HowItWorksSection from "./HowItWorksSection.jsx";
 import LandingFooter from "./LandingFooter.jsx";
@@ -14,6 +15,7 @@ export default function LandingPage({ onGetStarted, theme, onToggleTheme }) {
   return (
     <div className="h-screen overflow-y-auto bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
       <CulturalBackground />
+      <FloatingSocial />
       <div className="relative z-10">
         <LandingNav onGetStarted={onGetStarted} theme={theme} onToggleTheme={onToggleTheme} />
         <HeroSection onGetStarted={onGetStarted} />
