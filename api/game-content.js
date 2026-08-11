@@ -1,3 +1,4 @@
+import { applyCors } from "./_lib/cors.js";
 import { getRedis } from "./_lib/redisCache.js";
 
 const PHRASES_KEY = "game-content:phrases";
@@ -8,6 +9,8 @@ const SENTENCES_KEY = "game-content:sentences";
 // from here (or falls back to the app's static bank if empty/unconfigured) —
 // this route never calls Gemini itself, so it's free to hit on every game load.
 export default async function handler(req, res) {
+  if (applyCors(req, res)) return;
+
   if (req.method !== "GET") {
     res.status(405).json({ error: "Method not allowed" });
     return;

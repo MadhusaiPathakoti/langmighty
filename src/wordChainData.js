@@ -1,3 +1,4 @@
+import { apiFetch } from "./lib/apiClient.js";
 import { QUIZ_TARGET_LANGUAGES, shuffle } from "./quizData.js";
 
 // Curated sentence bank for the Word Chain and Guess the Sentence games. Each
@@ -541,7 +542,7 @@ export function generateSentenceQuiz(questionCount, { targetLanguage, excludeIds
 let extraSentencesPromise = null;
 export function loadExtraSentences() {
   if (!extraSentencesPromise) {
-    extraSentencesPromise = fetch("/api/game-content?type=sentences")
+    extraSentencesPromise = apiFetch("/api/game-content?type=sentences")
       .then((res) => (res.ok ? res.json() : { sentences: [] }))
       .then((data) => (Array.isArray(data.sentences) ? data.sentences : []))
       .catch(() => []);

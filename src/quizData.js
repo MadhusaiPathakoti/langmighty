@@ -1,3 +1,5 @@
+import { apiFetch } from "./lib/apiClient.js";
+
 // Curated phrase bank for the Quiz game. Translations are fixed here (not fetched
 // from Gemini) so quiz answers are guaranteed stable and correct — a live API call
 // per question would be slower, cost credits, and risk an inconsistent "correct"
@@ -154,7 +156,7 @@ export function getPhrasesForCategories(categoryKeys, allPhrases = QUIZ_PHRASES)
 let extraPhrasesPromise = null;
 export function loadExtraPhrases() {
   if (!extraPhrasesPromise) {
-    extraPhrasesPromise = fetch("/api/game-content?type=phrases")
+    extraPhrasesPromise = apiFetch("/api/game-content?type=phrases")
       .then((res) => (res.ok ? res.json() : { phrases: [] }))
       .then((data) => (Array.isArray(data.phrases) ? data.phrases : []))
       .catch(() => []);

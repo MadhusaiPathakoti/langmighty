@@ -1,9 +1,17 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { Capacitor } from "@capacitor/core";
+import { App as CapacitorApp } from "@capacitor/app";
+import { Browser } from "@capacitor/browser";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient.js";
 
 const FREE_CREDIT_LIMIT = 3;
 const CREDITS_KEY = "langlearn_credits_used";
 const PENDING_OPT_IN_KEY = "langlearn_pending_marketing_opt_in";
+// Must match: the intent-filter/CFBundleURLSchemes entries added to
+// android/app/src/main/AndroidManifest.xml and ios/App/App/Info.plist, and
+// the Redirect URLs allow-list in the Supabase dashboard (Authentication ->
+// URL Configuration) — Supabase rejects the redirect if it isn't allow-listed.
+const NATIVE_AUTH_CALLBACK_URL = "com.langmighty.app://auth-callback";
 
 function loadCreditsUsed() {
   const raw = localStorage.getItem(CREDITS_KEY);
@@ -31,6 +39,34 @@ export function AuthGateProvider({ children }) {
     });
 
     return () => listener.subscription.unsubscribe();
+  }, []);
+
+  // Google's OAuth consent screen opens in the native in-app browser (see
+  // signInWithGoogle below), not this app's own WebView. When it's done, the OS
+  // routes the NATIVE_AUTH_CALLBACK_URL redirect back to the app as an
+  // appUrlOpen event rather than a normal page navigation, so the session
+  // tokens Supabase appends to that URL have to be picked up here instead of
+  // via supabase.auth's own detectSessionInUrl (which only watches the page's
+  // actual location, and this URL never becomes that).
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const listenerHandle = CapacitorApp.addListener("appUrlOpen", async ({ url }) => {
+      if (!url.startsWith(NATIVE_AUTH_CALLBACK_URL)) return;
+
+      await Browser.close().catch(() => {});
+
+      const params = new URLSearchParams(url.split("#")[1] ?? "");
+      const access_token = params.get("access_token");
+      const refresh_token = params.get("refresh_token");
+      if (access_token && refresh_token) {
+        await supabase.auth.setSession({ access_token, refresh_token });
+      }
+    });
+
+    return () => {
+      listenerHandle.then((handle) => handle.remove());
+    };
   }, []);
 
   async function saveProfileOnSignIn(user) {
@@ -83,6 +119,20 @@ export function AuthGateProvider({ children }) {
 
   async function signInWithGoogle(marketingOptIn) {
     localStorage.setItem(PENDING_OPT_IN_KEY, String(marketingOptIn));
+
+    if (Capacitor.isNativePlatform()) {
+      // skipBrowserRedirect: Supabase would otherwise try to navigate this
+      // WebView to Google, which Google blocks — hand the URL to a real
+      // system browser instead, and pick the result up via appUrlOpen above.
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: NATIVE_AUTH_CALLBACK_URL, skipBrowserRedirect: true },
+      });
+      if (error || !data?.url) throw error ?? new Error("Could not start Google sign-in.");
+      await Browser.open({ url: data.url });
+      return;
+    }
+
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: window.location.origin },

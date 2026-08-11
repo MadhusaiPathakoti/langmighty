@@ -1,3 +1,5 @@
+import { apiFetch } from "../lib/apiClient.js";
+
 const audioCache = new Map();
 let currentAudio = null;
 
@@ -5,7 +7,7 @@ async function fetchTtsAudioUrl(text, voice) {
   const cacheKey = `${voice}::${text}`;
   if (audioCache.has(cacheKey)) return audioCache.get(cacheKey);
 
-  const res = await fetch("/api/tts", {
+  const res = await apiFetch("/api/tts", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text, voice }),

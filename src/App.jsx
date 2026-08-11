@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import AiChatView from "./components/AiChatView.jsx";
+import { apiFetch } from "./lib/apiClient.js";
 import ChatInput from "./components/ChatInput.jsx";
 import ChatTurn from "./components/ChatTurn.jsx";
 import CulturalBackground from "./components/CulturalBackground.jsx";
@@ -126,7 +127,7 @@ export default function App() {
 
     try {
       const authHeaders = await getAuthHeaders();
-      const res = await fetch("/api/translate", {
+      const res = await apiFetch("/api/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ text, sourceLanguage, languages, regenerate }),

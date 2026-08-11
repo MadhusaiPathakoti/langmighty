@@ -1,3 +1,4 @@
+import { applyCors } from "./_lib/cors.js";
 import { enforceCreditGate } from "./_lib/creditGate.js";
 
 const GEMINI_MODEL = "gemini-3.5-flash-lite";
@@ -57,6 +58,8 @@ async function callGemini(apiKey, contents) {
 }
 
 export default async function handler(req, res) {
+  if (applyCors(req, res)) return;
+
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
     return;

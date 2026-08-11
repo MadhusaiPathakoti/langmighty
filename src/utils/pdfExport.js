@@ -1,5 +1,8 @@
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { Capacitor } from "@capacitor/core";
+import { Filesystem, Directory } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
 
 const PAGE_MARGIN = 24; // pt, on every edge
 const BLANK_THRESHOLD = 248; // 0-255; a pixel counts as "blank" at or above this brightness
@@ -90,5 +93,20 @@ export async function exportNodeToPdf(node, filename) {
     isFirstPage = false;
   }
 
-  pdf.save(filename);
+  if (!Capacitor.isNativePlatform()) {
+    pdf.save(filename);
+    return;
+  }
+
+  // Browsers can silently save a file to Downloads; native platforms have no
+  // equivalent, so hand the file to the native share sheet instead, which lets
+  // the user save or send it wherever they like.
+  const dataUri = pdf.output("datauristring");
+  const base64 = dataUri.slice(dataUri.indexOf(",") + 1);
+  const { uri } = await Filesystem.writeFile({
+    path: filename,
+    data: base64,
+    directory: Directory.Cache,
+  });
+  await Share.share({ url: uri });
 }

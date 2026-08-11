@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import AiChatExportTemplate from "./AiChatExportTemplate.jsx";
 import AiChatMessage from "./AiChatMessage.jsx";
 import { useAuthGate } from "../context/AuthGateContext.jsx";
+import { apiFetch } from "../lib/apiClient.js";
 import { exportNodeToPdf } from "../utils/pdfExport.js";
 
 const AI_CHAT_KEY = "langlearn_ai_chat";
@@ -65,7 +66,7 @@ export default function AiChatView() {
 
     try {
       const authHeaders = await getAuthHeaders();
-      const res = await fetch("/api/chat", {
+      const res = await apiFetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ message: trimmed, history }),

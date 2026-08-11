@@ -1,9 +1,12 @@
 import { EdgeTTS } from "edge-tts-universal";
 import { LANGUAGES } from "../src/languages.js";
+import { applyCors } from "./_lib/cors.js";
 
 const ALLOWED_VOICES = new Set(LANGUAGES.map((l) => l.ttsVoice));
 
 export default async function handler(req, res) {
+  if (applyCors(req, res)) return;
+
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
     return;
