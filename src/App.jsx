@@ -5,7 +5,8 @@ import ChatInput from "./components/ChatInput.jsx";
 import ChatTurn from "./components/ChatTurn.jsx";
 import CulturalBackground from "./components/CulturalBackground.jsx";
 import ExportTemplate from "./components/ExportTemplate.jsx";
-import IndiaFlagIcon from "./components/IndiaFlagIcon.jsx";
+import LmLogo from "./components/LmLogo.jsx";
+import LandingPage from "./components/landing/LandingPage.jsx";
 import NavBar from "./components/NavBar.jsx";
 import PlaygroundView from "./components/PlaygroundView.jsx";
 import RoadmapView from "./components/RoadmapView.jsx";
@@ -81,7 +82,7 @@ function nextTurnId() {
 }
 
 export default function App() {
-  const [view, setView] = useState("chat"); // "chat" | "ai-chat" | "roadmap" | "playground"
+  const [view, setView] = useState("landing"); // "landing" | "chat" | "ai-chat" | "roadmap" | "playground"
   const [roadmapLanguage, setRoadmapLanguage] = useState("kannada");
   const [inputText, setInputText] = useState("");
   const [conversation, setConversation] = useState(loadConversation);
@@ -256,7 +257,15 @@ export default function App() {
     setInputError(null);
   }
 
+  function toggleTheme() {
+    setTheme((t) => (t === "dark" ? "light" : "dark"));
+  }
+
   const hasContent = conversation.some((t) => t.status === "done");
+
+  if (view === "landing") {
+    return <LandingPage onGetStarted={() => setView("chat")} theme={theme} onToggleTheme={toggleTheme} />;
+  }
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
@@ -268,12 +277,13 @@ export default function App() {
         onChangeInputLanguage={handleChangeInputLanguage}
         selectedLanguages={selectedLanguages}
         onToggleLanguage={handleToggleLanguage}
+        onNavigateLanding={() => setView("landing")}
         onNavigateChat={() => setView("chat")}
         onNavigateAiChat={() => setView("ai-chat")}
         onNavigateRoadmap={handleNavigateRoadmap}
         onNavigatePlayground={() => setView("playground")}
         theme={theme}
-        onToggleTheme={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+        onToggleTheme={toggleTheme}
       />
 
       {view === "roadmap" ? (
@@ -297,8 +307,8 @@ export default function App() {
                     className="pointer-events-none absolute -bottom-20 -left-10 w-56 h-56 rounded-full bg-indigo-200/40 dark:bg-indigo-500/10 blur-3xl"
                   />
 
-                  <div className="relative w-20 h-14 mx-auto mb-5 rounded-2xl overflow-hidden shadow-lg shadow-black/10 ring-1 ring-black/10 dark:ring-white/10">
-                    <IndiaFlagIcon className="w-full h-full" />
+                  <div className="relative w-20 h-20 mx-auto mb-5">
+                    <LmLogo className="w-full h-full object-contain drop-shadow-lg" />
                   </div>
 
                   <TypewriterText
