@@ -62,9 +62,10 @@ export const FEATURES = [
     id: "playground",
     emoji: "🎮",
     color: "rose",
-    title: "Playground: 6 Learning Games",
-    description: "Six different games — audio, visual & text challenges — free to play, no credits used.",
+    title: "Playground: 7 Learning Games",
+    description: "Seven different games — audio, visual & text challenges — free to play, no credits used.",
     bullets: [
+      "🎤 Read Aloud — speak a sentence, get instant pronunciation feedback",
       "🧠 Language Quiz — multiple-choice translation practice",
       "🧩 Word Match — tap-to-pair visual matching",
       "⚡ Speed Translate — race the clock, quickfire rounds",
@@ -72,7 +73,7 @@ export const FEATURES = [
       "🔗 Word Chain — build sentences by tapping words in order",
       "📝 Guess the Sentence — full-sentence multiple choice with pronunciation",
     ],
-    note: "Every game exercises a different sense — reading, listening, or racing the clock — so practice never gets stale. Try all 6!",
+    note: "Every game exercises a different sense — reading, listening, speaking, or racing the clock — so practice never gets stale. Try all 7!",
     mockup: "playground",
   },
   {

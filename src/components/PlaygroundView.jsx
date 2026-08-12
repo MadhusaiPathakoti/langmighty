@@ -9,6 +9,13 @@ import WordMatchGame from "./WordMatchGame.jsx";
 
 const GAMES = [
   {
+    id: "read-aloud",
+    emoji: "🎤",
+    title: "Read Aloud",
+    description: "Read a sentence out loud — we listen and check your pronunciation. Retry until you nail it.",
+    available: true,
+  },
+  {
     id: "quiz",
     emoji: "🧠",
     title: "Language Quiz",
@@ -48,13 +55,6 @@ const GAMES = [
     emoji: "📝",
     title: "Guess the Sentence",
     description: "Multiple-choice, but for full sentences — each option comes with pronunciation.",
-    available: true,
-  },
-  {
-    id: "read-aloud",
-    emoji: "🎤",
-    title: "Read Aloud",
-    description: "Read a sentence out loud — we listen and check your pronunciation. Retry until you nail it.",
     available: true,
   },
 ];

@@ -127,6 +127,7 @@ function MultilangMockup() {
 }
 
 const PLAYGROUND_GAMES = [
+  { emoji: "🎤", title: "Read Aloud" },
   { emoji: "🧠", title: "Language Quiz" },
   { emoji: "🧩", title: "Word Match" },
   { emoji: "⚡", title: "Speed Translate" },
