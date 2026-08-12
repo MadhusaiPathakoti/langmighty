@@ -15,7 +15,7 @@
     "edge-tts-universal": "^1.4.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
-    "langmighty-shared": "^1.0.0",
+    "langmighty-shared": "^1.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^9.1.0",
