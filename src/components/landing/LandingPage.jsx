@@ -13,7 +13,7 @@ import { FEATURES } from "./landingContent.js";
 
 export default function LandingPage({ onGetStarted, theme, onToggleTheme }) {
   return (
-    <div className="h-screen overflow-y-auto bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+    <div className="h-dvh overflow-y-auto bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
       <CulturalBackground />
       <FloatingSocial />
       <div className="relative z-10">

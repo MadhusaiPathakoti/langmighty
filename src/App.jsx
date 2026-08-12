@@ -269,7 +269,7 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+    <div className="h-dvh flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
       <CulturalBackground />
       <NavBar
         view={view}

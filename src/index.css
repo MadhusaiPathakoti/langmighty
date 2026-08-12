@@ -5,3 +5,13 @@
 html {
   color-scheme: light dark;
 }
+
+/* Every view manages its own internal scroll region (overflow-y-auto); the
+   page itself must never scroll independently, or a sticky footer (e.g. the
+   AI Chat input) can end up positioned against the wrong "bottom" on mobile,
+   especially once the on-screen keyboard opens. */
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
