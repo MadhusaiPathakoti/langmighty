@@ -2,6 +2,7 @@ import { useState } from "react";
 import GuessSentenceGame from "./GuessSentenceGame.jsx";
 import ListenGuessGame from "./ListenGuessGame.jsx";
 import QuizGame from "./QuizGame.jsx";
+import ReadAloudGame from "./ReadAloudGame.jsx";
 import SpeedTranslateGame from "./SpeedTranslateGame.jsx";
 import WordChainGame from "./WordChainGame.jsx";
 import WordMatchGame from "./WordMatchGame.jsx";
@@ -49,6 +50,13 @@ const GAMES = [
     description: "Multiple-choice, but for full sentences — each option comes with pronunciation.",
     available: true,
   },
+  {
+    id: "read-aloud",
+    emoji: "🎤",
+    title: "Read Aloud",
+    description: "Read a sentence out loud — we listen and check your pronunciation. Retry until you nail it.",
+    available: true,
+  },
 ];
 
 export default function PlaygroundView() {
@@ -71,6 +79,7 @@ export default function PlaygroundView() {
           {activeGame === "listen-guess" && <ListenGuessGame onExit={() => setActiveGame(null)} />}
           {activeGame === "word-chain" && <WordChainGame onExit={() => setActiveGame(null)} />}
           {activeGame === "guess-sentence" && <GuessSentenceGame onExit={() => setActiveGame(null)} />}
+          {activeGame === "read-aloud" && <ReadAloudGame onExit={() => setActiveGame(null)} />}
         </div>
       </div>
     );

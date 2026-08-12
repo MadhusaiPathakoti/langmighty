@@ -12,8 +12,18 @@ import { LANGUAGES, QUIZ_CATEGORIES, QUIZ_PHRASES, WORD_CHAIN_SENTENCES } from "
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LANG_KEYS = LANGUAGES.map((l) => l.key); // ["telugu","hindi","kannada","malayalam","tamil"]
 const GEMINI_MODEL = "gemini-3.5-flash-lite";
-const PHRASES_PER_CATEGORY = 12;
-const SENTENCE_BATCHES = [15, 15];
+const PHRASES_PER_CATEGORY = 20;
+const SENTENCE_BATCHES = [25, 25];
+// For Read Aloud's Easy/Hard difficulty tiers — the default SENTENCE_BATCHES
+// above (3-8 words) already covers Medium reasonably well.
+const SHORT_SENTENCE_BATCHES = [20, 20];
+const LONG_SENTENCE_BATCHES = [20, 20];
+const REDIS_KEYS = {
+  phrases: "game-content:phrases",
+  sentences: "game-content:sentences",
+  shortSentences: "game-content:short-sentences",
+  longSentences: "game-content:long-sentences",
+};
 
 function readDotEnv() {
   const envPath = path.resolve(__dirname, "..", ".env");
@@ -38,6 +48,11 @@ if (!env.UPSTASH_REDIS_REST_URL || !env.UPSTASH_REDIS_REST_TOKEN) {
 }
 
 const redis = new Redis({ url: env.UPSTASH_REDIS_REST_URL, token: env.UPSTASH_REDIS_REST_TOKEN });
+
+async function fetchExisting(key) {
+  const data = await redis.get(key);
+  return Array.isArray(data) ? data : [];
+}
 
 async function callGemini(prompt, schema) {
   const response = await fetch(
@@ -119,7 +134,7 @@ function phraseSchema() {
   };
 }
 
-async function generatePhrasesForCategory(category, existingEnglish) {
+async function generatePhrasesForCategory(category, existingEnglish, takenIds = new Set(QUIZ_PHRASES.map((p) => p.id))) {
   const prompt = `You are generating vocabulary for a language-learning quiz app that teaches English speakers Kannada, Hindi, Malayalam, Tamil, and Telugu.
 
 Generate ${PHRASES_PER_CATEGORY} NEW common, everyday English words or very short phrases (1-3 words) in the category "${category.label}", each with an accurate, natural, commonly-used translation into Kannada, Hindi, Malayalam, Tamil, and Telugu, written in each language's own native script (never romanized).
@@ -133,7 +148,6 @@ Respond only with a JSON array matching the schema — no extra commentary.`;
   if (!Array.isArray(raw)) return [];
 
   const validated = [];
-  const takenIds = new Set(QUIZ_PHRASES.map((p) => p.id));
   const existingLower = new Set(existingEnglish.map((e) => e.toLowerCase()));
 
   for (const item of raw) {
@@ -190,10 +204,10 @@ function fewShotExamples() {
   }));
 }
 
-async function generateSentenceBatch(count, existingEnglish) {
+async function generateSentenceBatch(count, existingEnglish, wordCountHint = "3-8", takenIds = new Set(WORD_CHAIN_SENTENCES.map((s) => s.id))) {
   const prompt = `You are generating short, common English sentences for language-learning games. Each sentence is split into an ordered array of words per language, for the learner to tap in the correct order, alongside a parallel array of romanized (Latin-letter) pronunciation for each of those same words, in the same order.
 
-Generate ${count} NEW simple, common everyday English sentences (3-8 words), each translated and segmented into words for Kannada, Hindi, Malayalam, Tamil, and Telugu, written in each language's own native script (never romanized) for the "<language>" fields, with a matching "<language>Pron" array giving the romanized pronunciation of each of those exact words in the same order — one pronunciation entry per word, same array length.
+Generate ${count} NEW simple, common everyday English sentences (${wordCountHint} words), each translated and segmented into words for Kannada, Hindi, Malayalam, Tamil, and Telugu, written in each language's own native script (never romanized) for the "<language>" fields, with a matching "<language>Pron" array giving the romanized pronunciation of each of those exact words in the same order — one pronunciation entry per word, same array length.
 
 Each language's word array must be that language's OWN natural word-by-word breakdown — not a forced word-for-word gloss of the English. Word counts should differ across languages when that's genuinely how each language expresses the idea (e.g. Malayalam or Tamil often combine what English needs 4 words for into 2).
 
@@ -209,7 +223,6 @@ Respond only with a JSON array matching the schema — no extra commentary.`;
   if (!Array.isArray(raw)) return [];
 
   const validated = [];
-  const takenIds = new Set(WORD_CHAIN_SENTENCES.map((s) => s.id));
   const existingLower = new Set(existingEnglish.map((e) => e.toLowerCase()));
 
   for (const item of raw) {
@@ -259,12 +272,28 @@ Respond only with a JSON array matching the schema — no extra commentary.`;
 // ---------- Main ----------
 
 async function main() {
-  console.log(`Generating phrases for ${QUIZ_CATEGORIES.length} categories...`);
-  const existingEnglish = QUIZ_PHRASES.map((p) => p.english);
+  console.log("Fetching existing Redis content to merge into (not overwrite)...");
+  const [existingPhrases, existingSentences, existingShortSentences, existingLongSentences] = await Promise.all([
+    fetchExisting(REDIS_KEYS.phrases),
+    fetchExisting(REDIS_KEYS.sentences),
+    fetchExisting(REDIS_KEYS.shortSentences),
+    fetchExisting(REDIS_KEYS.longSentences),
+  ]);
+  console.log(
+    `  found ${existingPhrases.length} phrases, ${existingSentences.length} medium, ${existingShortSentences.length} short, ${existingLongSentences.length} long already in Redis`
+  );
+
+  console.log(`\nGenerating phrases for ${QUIZ_CATEGORIES.length} categories...`);
+  const existingEnglish = [...QUIZ_PHRASES.map((p) => p.english), ...existingPhrases.map((p) => p.english)];
+  const takenPhraseIds = new Set([...QUIZ_PHRASES.map((p) => p.id), ...existingPhrases.map((p) => p.id)]);
   let allNewPhrases = [];
   for (const category of QUIZ_CATEGORIES) {
     try {
-      const generated = await generatePhrasesForCategory(category, [...existingEnglish, ...allNewPhrases.map((p) => p.english)]);
+      const generated = await generatePhrasesForCategory(
+        category,
+        [...existingEnglish, ...allNewPhrases.map((p) => p.english)],
+        takenPhraseIds
+      );
       console.log(`  ${category.key}: +${generated.length} phrases`);
       allNewPhrases = allNewPhrases.concat(generated);
     } catch (err) {
@@ -272,31 +301,74 @@ async function main() {
     }
   }
 
-  console.log(`\nGenerating sentences in ${SENTENCE_BATCHES.length} batches...`);
-  const existingSentenceEnglish = WORD_CHAIN_SENTENCES.map((s) => s.english);
-  let allNewSentences = [];
-  for (const count of SENTENCE_BATCHES) {
-    try {
-      const generated = await generateSentenceBatch(count, [
-        ...existingSentenceEnglish,
-        ...allNewSentences.map((s) => s.english),
-      ]);
-      console.log(`  batch of ${count}: +${generated.length} sentences`);
-      allNewSentences = allNewSentences.concat(generated);
-    } catch (err) {
-      console.error(`  batch of ${count}: FAILED — ${err.message}`);
+  // Shared across all three tiers (and all batches within each) so a sentence
+  // — or its generated id — can't be duplicated across Medium/Short/Long even
+  // though they're written to separate Redis keys, since ReadAloudGame.jsx
+  // combines all of them into one pool client-side. Seeded with whatever's
+  // already in Redis across all three, not just the static bank, so a re-run
+  // never regenerates something already stored under a different tier's key.
+  const seenEnglish = [
+    ...WORD_CHAIN_SENTENCES.map((s) => s.english),
+    ...existingSentences.map((s) => s.english),
+    ...existingShortSentences.map((s) => s.english),
+    ...existingLongSentences.map((s) => s.english),
+  ];
+  const takenSentenceIds = new Set([
+    ...WORD_CHAIN_SENTENCES.map((s) => s.id),
+    ...existingSentences.map((s) => s.id),
+    ...existingShortSentences.map((s) => s.id),
+    ...existingLongSentences.map((s) => s.id),
+  ]);
+
+  async function generateTier(label, batches, wordCountHint) {
+    console.log(`\nGenerating ${label} sentences in ${batches.length} batches (${wordCountHint} words)...`);
+    let generated = [];
+    for (const count of batches) {
+      try {
+        const batch = await generateSentenceBatch(
+          count,
+          [...seenEnglish, ...generated.map((s) => s.english)],
+          wordCountHint,
+          takenSentenceIds
+        );
+        console.log(`  batch of ${count}: +${batch.length} sentences`);
+        generated = generated.concat(batch);
+      } catch (err) {
+        console.error(`  batch of ${count}: FAILED — ${err.message}`);
+      }
     }
+    seenEnglish.push(...generated.map((s) => s.english));
+    return generated;
   }
 
-  console.log(`\nTotal validated: ${allNewPhrases.length} phrases, ${allNewSentences.length} sentences`);
+  const allNewSentences = await generateTier("medium", SENTENCE_BATCHES, "3-8");
+  const allNewShortSentences = await generateTier("short", SHORT_SENTENCE_BATCHES, "1-2");
+  const allNewLongSentences = await generateTier("long", LONG_SENTENCE_BATCHES, "6-10");
+
+  console.log(
+    `\nNewly validated this run: ${allNewPhrases.length} phrases, ${allNewSentences.length} medium, ${allNewShortSentences.length} short, ${allNewLongSentences.length} long sentences`
+  );
+
+  const mergedPhrases = [...existingPhrases, ...allNewPhrases];
+  const mergedSentences = [...existingSentences, ...allNewSentences];
+  const mergedShortSentences = [...existingShortSentences, ...allNewShortSentences];
+  const mergedLongSentences = [...existingLongSentences, ...allNewLongSentences];
 
   if (allNewPhrases.length > 0) {
-    await redis.set("game-content:phrases", allNewPhrases);
-    console.log("Wrote game-content:phrases to Redis.");
+    await redis.set(REDIS_KEYS.phrases, mergedPhrases);
+    console.log(`Wrote ${mergedPhrases.length} total phrases to Redis.`);
   }
   if (allNewSentences.length > 0) {
-    await redis.set("game-content:sentences", allNewSentences);
-    console.log("Wrote game-content:sentences to Redis.");
+    await redis.set(REDIS_KEYS.sentences, mergedSentences);
+    console.log(`Wrote ${mergedSentences.length} total medium sentences to Redis.`);
+  }
+  if (allNewShortSentences.length > 0) {
+    await redis.set(REDIS_KEYS.shortSentences, mergedShortSentences);
+    console.log(`Wrote ${mergedShortSentences.length} total short sentences to Redis.`);
+  }
+  if (allNewLongSentences.length > 0) {
+    await redis.set(REDIS_KEYS.longSentences, mergedLongSentences);
+    console.log(`Wrote ${mergedLongSentences.length} total long sentences to Redis.`);
   }
 }
 
