@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ROADMAP_LANGUAGES, INPUT_LANGUAGES, LANGUAGES } from "langmighty-shared";
+import { ROADMAP_LANGUAGES } from "langmighty-shared";
 import { useAuthGate } from "../context/AuthGateContext.jsx";
 import LmLogo from "./LmLogo.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
@@ -14,25 +14,15 @@ export default function NavBar({
   onNavigatePlayground,
   theme,
   onToggleTheme,
-  inputLanguage,
-  onChangeInputLanguage,
-  selectedLanguages,
-  onToggleLanguage,
 }) {
   const { isSignedIn, userEmail, remainingCredits, signOut } = useAuthGate();
-  const outputOptions = LANGUAGES.filter((lang) => lang.key !== inputLanguage);
   const [roadmapMenuOpen, setRoadmapMenuOpen] = useState(false);
-  const [prefsOpen, setPrefsOpen] = useState(false);
   const roadmapMenuRef = useRef(null);
-  const prefsRef = useRef(null);
 
   useEffect(() => {
     function handleClickOutside(e) {
       if (roadmapMenuRef.current && !roadmapMenuRef.current.contains(e.target)) {
         setRoadmapMenuOpen(false);
-      }
-      if (prefsRef.current && !prefsRef.current.contains(e.target)) {
-        setPrefsOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -132,72 +122,6 @@ export default function NavBar({
                   {lang.label} <span className="text-gray-400">({lang.nativeName})</span>
                 </button>
               ))}
-            </div>
-          )}
-        </div>
-
-        <div className="relative" ref={prefsRef}>
-          <button
-            type="button"
-            onClick={() => setPrefsOpen((o) => !o)}
-            aria-haspopup="true"
-            aria-expanded={prefsOpen}
-            className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300
-                       hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            Preferences ▾
-          </button>
-
-          {prefsOpen && (
-            <div
-              className="absolute right-0 mt-1 w-64 rounded-lg border border-gray-200 dark:border-gray-700
-                         bg-white dark:bg-gray-900 shadow-lg py-2 px-3 z-20"
-            >
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">I'll type in</p>
-              {INPUT_LANGUAGES.map((lang) => (
-                <label
-                  key={lang.key}
-                  className="flex items-center gap-2 py-1 text-sm cursor-pointer text-gray-700 dark:text-gray-200"
-                >
-                  <input
-                    type="radio"
-                    name="input-language"
-                    checked={inputLanguage === lang.key}
-                    onChange={() => onChangeInputLanguage(lang.key)}
-                    className="border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  />
-                  {lang.label}
-                  {lang.key !== "english" && <span className="text-gray-400">({lang.nativeName})</span>}
-                </label>
-              ))}
-
-              <div className="my-2 border-t border-gray-100 dark:border-gray-800" />
-
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
-                Translate to
-              </p>
-              {outputOptions.map((lang) => {
-                const checked = selectedLanguages.includes(lang.key);
-                const isOnlyOne = checked && selectedLanguages.length === 1;
-                return (
-                  <label
-                    key={lang.key}
-                    className={`flex items-center gap-2 py-1 text-sm ${
-                      isOnlyOne ? "cursor-not-allowed text-gray-400" : "cursor-pointer text-gray-700 dark:text-gray-200"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      disabled={isOnlyOne}
-                      onChange={() => onToggleLanguage(lang.key)}
-                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                    />
-                    {lang.label}
-                  </label>
-                );
-              })}
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">At least one language must stay selected.</p>
             </div>
           )}
         </div>

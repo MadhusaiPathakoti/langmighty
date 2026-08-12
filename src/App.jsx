@@ -11,6 +11,7 @@ import NavBar from "./components/NavBar.jsx";
 import PlaygroundView from "./components/PlaygroundView.jsx";
 import RoadmapView from "./components/RoadmapView.jsx";
 import SignupGateModal from "./components/SignupGateModal.jsx";
+import TranslatePreferences from "./components/TranslatePreferences.jsx";
 import TypewriterText from "./components/TypewriterText.jsx";
 import { useAuthGate } from "./context/AuthGateContext.jsx";
 import { exportNodeToPdf } from "./utils/pdfExport.js";
@@ -273,10 +274,6 @@ export default function App() {
       <NavBar
         view={view}
         roadmapLanguage={roadmapLanguage}
-        inputLanguage={inputLanguage}
-        onChangeInputLanguage={handleChangeInputLanguage}
-        selectedLanguages={selectedLanguages}
-        onToggleLanguage={handleToggleLanguage}
         onNavigateLanding={() => setView("landing")}
         onNavigateChat={() => setView("chat")}
         onNavigateAiChat={() => setView("ai-chat")}
@@ -375,6 +372,14 @@ export default function App() {
           </div>
 
           <footer className="relative z-10 border-t border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm px-4 sm:px-6 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+            <div className="max-w-3xl mx-auto w-full flex justify-end mb-2">
+              <TranslatePreferences
+                inputLanguage={inputLanguage}
+                onChangeInputLanguage={handleChangeInputLanguage}
+                selectedLanguages={selectedLanguages}
+                onToggleLanguage={handleToggleLanguage}
+              />
+            </div>
             <ChatInput
               value={inputText}
               onChange={(v) => {
