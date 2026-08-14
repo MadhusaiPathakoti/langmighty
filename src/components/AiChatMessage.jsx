@@ -40,7 +40,7 @@ export default function AiChatMessage({ message, onDelete }) {
         >
           🗑
         </button>
-        <div className="max-w-[80%] rounded-2xl bg-indigo-600 text-white px-4 py-2.5 text-sm whitespace-pre-wrap">
+        <div className="min-w-0 max-w-[80%] rounded-2xl bg-indigo-600 text-white px-4 py-2.5 text-sm whitespace-pre-wrap break-words">
           {message.content}
         </div>
       </div>
@@ -49,7 +49,7 @@ export default function AiChatMessage({ message, onDelete }) {
 
   return (
     <div className="flex justify-start group">
-      <div className="max-w-full w-full sm:max-w-[90%] rounded-2xl bg-gray-100 dark:bg-gray-800 px-4 py-3 text-sm text-gray-800 dark:text-gray-100">
+      <div className="min-w-0 max-w-full w-full sm:max-w-[90%] rounded-2xl bg-gray-100 dark:bg-gray-800 px-4 py-3 text-sm text-gray-800 dark:text-gray-100">
         {message.status === "loading" && (
           <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
             <span className="w-3.5 h-3.5 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
