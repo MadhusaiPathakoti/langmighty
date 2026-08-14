@@ -345,9 +345,6 @@ export default function AuthModal() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
-                <button type="button" onClick={() => switchTo("forgot-password")} className="text-xs text-left text-indigo-600 dark:text-indigo-400">
-                  Forgot password?
-                </button>
                 <button type="submit" disabled={isSubmitting || !isSupabaseConfigured} className={primaryButtonClass}>
                   {isSubmitting ? "Logging in..." : "Log in"}
                 </button>
