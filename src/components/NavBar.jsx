@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ROADMAP_LANGUAGES } from "langmighty-shared";
 import { useAuthGate } from "../context/AuthGateContext.jsx";
+import ChangePasswordModal from "./ChangePasswordModal.jsx";
 import LmLogo from "./LmLogo.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 
@@ -15,14 +16,20 @@ export default function NavBar({
   theme,
   onToggleTheme,
 }) {
-  const { isSignedIn, userEmail, remainingCredits, signOut } = useAuthGate();
+  const { isSignedIn, userEmail, remainingCredits, signOut, openAuthModal } = useAuthGate();
   const [roadmapMenuOpen, setRoadmapMenuOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const roadmapMenuRef = useRef(null);
+  const accountMenuRef = useRef(null);
 
   useEffect(() => {
     function handleClickOutside(e) {
       if (roadmapMenuRef.current && !roadmapMenuRef.current.contains(e.target)) {
         setRoadmapMenuOpen(false);
+      }
+      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target)) {
+        setAccountMenuOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -127,23 +134,67 @@ export default function NavBar({
         </div>
 
         {isSignedIn ? (
-          <button
-            type="button"
-            onClick={signOut}
-            title={userEmail}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 dark:text-gray-400
-                       hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            Sign out
-          </button>
+          <div className="relative" ref={accountMenuRef}>
+            <button
+              type="button"
+              onClick={() => setAccountMenuOpen((o) => !o)}
+              title={userEmail}
+              aria-haspopup="true"
+              aria-expanded={accountMenuOpen}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 dark:text-gray-400
+                         hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              {userEmail} ▾
+            </button>
+
+            {accountMenuOpen && (
+              <div
+                className="absolute right-0 mt-1 w-48 rounded-lg border border-gray-200 dark:border-gray-700
+                           bg-white dark:bg-gray-900 shadow-lg py-1 z-20"
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAccountMenuOpen(false);
+                    setChangePasswordOpen(true);
+                  }}
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  Change password
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAccountMenuOpen(false);
+                    signOut();
+                  }}
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  Sign out
+                </button>
+              </div>
+            )}
+          </div>
         ) : (
-          <span className="px-3 py-1.5 text-xs font-medium text-gray-400 dark:text-gray-500">
-            {remainingCredits} free {remainingCredits === 1 ? "prompt" : "prompts"} left
-          </span>
+          <>
+            <span className="px-3 py-1.5 text-xs font-medium text-gray-400 dark:text-gray-500">
+              {remainingCredits} free {remainingCredits === 1 ? "prompt" : "prompts"} left
+            </span>
+            <button
+              type="button"
+              onClick={() => openAuthModal("login")}
+              className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300
+                         hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              Sign in
+            </button>
+          </>
         )}
 
         <ThemeToggle theme={theme} onToggle={onToggleTheme} />
       </div>
+
+      <ChangePasswordModal open={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
     </nav>
   );
 }

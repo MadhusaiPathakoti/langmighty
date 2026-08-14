@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import AiChatView from "./components/AiChatView.jsx";
 import { apiFetch } from "./lib/apiClient.js";
+import AuthModal from "./components/AuthModal.jsx";
 import ChatInput from "./components/ChatInput.jsx";
 import ChatTurn from "./components/ChatTurn.jsx";
 import CulturalBackground from "./components/CulturalBackground.jsx";
@@ -10,7 +11,6 @@ import LandingPage from "./components/landing/LandingPage.jsx";
 import NavBar from "./components/NavBar.jsx";
 import PlaygroundView from "./components/PlaygroundView.jsx";
 import RoadmapView from "./components/RoadmapView.jsx";
-import SignupGateModal from "./components/SignupGateModal.jsx";
 import TranslatePreferences from "./components/TranslatePreferences.jsx";
 import TypewriterText from "./components/TypewriterText.jsx";
 import { useAuthGate } from "./context/AuthGateContext.jsx";
@@ -397,7 +397,7 @@ export default function App() {
         </>
       )}
 
-      <SignupGateModal />
+      <AuthModal />
     </div>
   );
 }
