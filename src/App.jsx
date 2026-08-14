@@ -21,6 +21,7 @@ import {
   INPUT_LANGUAGES,
   LANGUAGES,
   matchesScript,
+  ROADMAP_LANGUAGES,
 } from "langmighty-shared";
 
 const TAGLINES = [
@@ -33,6 +34,21 @@ const CONVERSATION_KEY = "langlearn_conversation";
 const THEME_KEY = "langlearn_theme";
 const LANGUAGE_PREFS_KEY = "langlearn_language_prefs";
 const INPUT_LANGUAGE_KEY = "langlearn_input_language";
+// sessionStorage rather than localStorage: survives a refresh (the actual complaint)
+// without permanently skipping the landing page on a fresh visit in a new tab.
+const VIEW_KEY = "langlearn_view";
+const ROADMAP_LANGUAGE_KEY = "langlearn_roadmap_language";
+const VALID_VIEWS = ["landing", "chat", "ai-chat", "roadmap", "playground"];
+
+function loadView() {
+  const saved = sessionStorage.getItem(VIEW_KEY);
+  return VALID_VIEWS.includes(saved) ? saved : "landing";
+}
+
+function loadRoadmapLanguage() {
+  const saved = sessionStorage.getItem(ROADMAP_LANGUAGE_KEY);
+  return ROADMAP_LANGUAGES.some((l) => l.key === saved) ? saved : "kannada";
+}
 
 function loadConversation() {
   try {
@@ -83,8 +99,8 @@ function nextTurnId() {
 }
 
 export default function App() {
-  const [view, setView] = useState("landing"); // "landing" | "chat" | "ai-chat" | "roadmap" | "playground"
-  const [roadmapLanguage, setRoadmapLanguage] = useState("kannada");
+  const [view, setView] = useState(loadView); // "landing" | "chat" | "ai-chat" | "roadmap" | "playground"
+  const [roadmapLanguage, setRoadmapLanguage] = useState(loadRoadmapLanguage);
   const [inputText, setInputText] = useState("");
   const [conversation, setConversation] = useState(loadConversation);
   const [theme, setTheme] = useState(loadTheme);
@@ -115,6 +131,14 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(INPUT_LANGUAGE_KEY, inputLanguage);
   }, [inputLanguage]);
+
+  useEffect(() => {
+    sessionStorage.setItem(VIEW_KEY, view);
+  }, [view]);
+
+  useEffect(() => {
+    sessionStorage.setItem(ROADMAP_LANGUAGE_KEY, roadmapLanguage);
+  }, [roadmapLanguage]);
 
   useEffect(() => {
     if (view === "chat") bottomRef.current?.scrollIntoView({ behavior: "smooth" });
