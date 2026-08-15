@@ -9,6 +9,7 @@ import ExportTemplate from "./components/ExportTemplate.jsx";
 import LmLogo from "./components/LmLogo.jsx";
 import LandingPage from "./components/landing/LandingPage.jsx";
 import NavBar from "./components/NavBar.jsx";
+import PdfStoreView from "./components/PdfStoreView.jsx";
 import PlaygroundView from "./components/PlaygroundView.jsx";
 import RoadmapView from "./components/RoadmapView.jsx";
 import TranslatePreferences from "./components/TranslatePreferences.jsx";
@@ -38,7 +39,7 @@ const INPUT_LANGUAGE_KEY = "langlearn_input_language";
 // without permanently skipping the landing page on a fresh visit in a new tab.
 const VIEW_KEY = "langlearn_view";
 const ROADMAP_LANGUAGE_KEY = "langlearn_roadmap_language";
-const VALID_VIEWS = ["landing", "chat", "ai-chat", "roadmap", "playground"];
+const VALID_VIEWS = ["landing", "chat", "ai-chat", "roadmap", "playground", "pdf-store"];
 
 function loadView() {
   const saved = sessionStorage.getItem(VIEW_KEY);
@@ -303,6 +304,7 @@ export default function App() {
         onNavigateAiChat={() => setView("ai-chat")}
         onNavigateRoadmap={handleNavigateRoadmap}
         onNavigatePlayground={() => setView("playground")}
+        onNavigatePdfStore={() => setView("pdf-store")}
         theme={theme}
         onToggleTheme={toggleTheme}
       />
@@ -313,6 +315,8 @@ export default function App() {
         <AiChatView />
       ) : view === "playground" ? (
         <PlaygroundView />
+      ) : view === "pdf-store" ? (
+        <PdfStoreView />
       ) : (
         <>
           <div className="relative z-10 flex-1 overflow-y-auto px-4 sm:px-6 py-6">

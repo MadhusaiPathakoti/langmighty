@@ -13,6 +13,7 @@ export default function NavBar({
   onNavigateAiChat,
   onNavigateRoadmap,
   onNavigatePlayground,
+  onNavigatePdfStore,
   theme,
   onToggleTheme,
 }) {
@@ -93,6 +94,18 @@ export default function NavBar({
           }`}
         >
           Playground
+        </button>
+
+        <button
+          type="button"
+          onClick={onNavigatePdfStore}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            view === "pdf-store"
+              ? "bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300"
+              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+          }`}
+        >
+          PDF Store
         </button>
 
         <div className="relative" ref={roadmapMenuRef}>

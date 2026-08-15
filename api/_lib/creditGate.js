@@ -17,7 +17,7 @@ function getClientIp(req) {
   return req.socket?.remoteAddress || "unknown";
 }
 
-async function getSignedInUser(req, supabaseAdmin) {
+export async function getSignedInUser(req, supabaseAdmin) {
   const auth = req.headers["authorization"];
   if (!auth?.startsWith("Bearer ") || !supabaseAdmin) return null;
   const token = auth.slice("Bearer ".length);

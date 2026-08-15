@@ -118,6 +118,31 @@ function localApiPlugin() {
         const { default: handler } = await server.ssrLoadModule("/api/game-content.js");
         await handler(req, res);
       });
+
+      // PDF store: one generic dispatcher instead of a block per route, since
+      // there are many small routes under this prefix. Each handler still does
+      // its own req.method check (see api/pdf-store/*.js), matching the
+      // per-file convention used everywhere else in this plugin.
+      server.middlewares.use("/api/pdf-store", async (req, res) => {
+        const sub = req.url.split("?")[0].replace(/^\/+/, "");
+        if (!/^[a-z-]+$/.test(sub)) {
+          res.statusCode = 404;
+          res.end();
+          return;
+        }
+        await prepareApiRequest(req, res);
+
+        injectEnv([
+          "VITE_SUPABASE_URL",
+          "SUPABASE_SERVICE_ROLE_KEY",
+          "RAZORPAY_KEY_ID",
+          "RAZORPAY_KEY_SECRET",
+          "PDF_STORE_PASSWORD_ENC_KEY",
+        ]);
+
+        const { default: handler } = await server.ssrLoadModule(`/api/pdf-store/${sub}.js`);
+        await handler(req, res);
+      });
     },
   };
 }

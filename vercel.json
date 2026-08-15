@@ -1,0 +1,11 @@
+{
+  "functions": {
+    "api/pdf-store/verify-payment.js": {
+      "includeFiles": "node_modules/muhammara/**",
+      "maxDuration": 30
+    },
+    "api/pdf-store/admin-finalize.js": {
+      "includeFiles": "node_modules/muhammara/**"
+    }
+  }
+}
