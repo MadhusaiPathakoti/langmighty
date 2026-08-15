@@ -34,7 +34,11 @@ export default function ManagePdfsView() {
     setError(null);
     try {
       const authHeaders = await getAuthHeaders();
-      const res = await apiFetch("/api/pdf-store/admin-list", { headers: authHeaders });
+      const res = await apiFetch("/api/pdf-store/admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({ action: "list" }),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not load the PDF list.");
       setItems(data.items || []);
@@ -76,10 +80,11 @@ export default function ManagePdfsView() {
     setRowError(item.id, null);
     try {
       const authHeaders = await getAuthHeaders();
-      const res = await apiFetch("/api/pdf-store/admin-update-price", {
+      const res = await apiFetch("/api/pdf-store/admin", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({
+          action: "update-price",
           pdfId: item.id,
           pricePaise: Math.round(rupees * 100),
           originalPricePaise: originalRupees ? Math.round(originalRupees * 100) : null,
@@ -111,10 +116,10 @@ export default function ManagePdfsView() {
     setRowError(item.id, null);
     try {
       const authHeaders = await getAuthHeaders();
-      const res = await apiFetch("/api/pdf-store/admin-set-active", {
+      const res = await apiFetch("/api/pdf-store/admin", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders },
-        body: JSON.stringify({ pdfId: item.id, isActive: !item.isActive }),
+        body: JSON.stringify({ action: "set-active", pdfId: item.id, isActive: !item.isActive }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not update this PDF.");
@@ -132,10 +137,10 @@ export default function ManagePdfsView() {
     setRowError(item.id, null);
     try {
       const authHeaders = await getAuthHeaders();
-      const res = await apiFetch("/api/pdf-store/admin-delete", {
+      const res = await apiFetch("/api/pdf-store/admin", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders },
-        body: JSON.stringify({ pdfId: item.id }),
+        body: JSON.stringify({ action: "delete", pdfId: item.id }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not delete this PDF.");

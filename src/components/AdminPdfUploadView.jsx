@@ -57,10 +57,10 @@ export default function AdminPdfUploadView({ onBack, onUploaded }) {
     try {
       const authHeaders = await getAuthHeaders();
 
-      const urlRes = await apiFetch("/api/pdf-store/admin-create-upload-url", {
+      const urlRes = await apiFetch("/api/pdf-store/admin", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders },
-        body: JSON.stringify({ fileName: file.name }),
+        body: JSON.stringify({ action: "create-upload-url", fileName: file.name }),
       });
       const urlData = await urlRes.json();
       if (!urlRes.ok) throw new Error(urlData.error || "Could not prepare the upload.");
@@ -72,10 +72,11 @@ export default function AdminPdfUploadView({ onBack, onUploaded }) {
       if (uploadErr) throw uploadErr;
 
       setStatus("Finalizing…");
-      const finalizeRes = await apiFetch("/api/pdf-store/admin-finalize", {
+      const finalizeRes = await apiFetch("/api/pdf-store/admin", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({
+          action: "finalize",
           title,
           description,
           fromLang,
