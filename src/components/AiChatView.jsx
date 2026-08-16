@@ -47,6 +47,51 @@ export default function AiChatView() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Shared by sendMessage (new exchange) and handleRegenerate (existing one) —
+  // the caller is responsible for the requestAccess() check, appending/resetting
+  // the assistant message into "loading" state, and building `history`.
+  async function runChat(assistantId, message, history, onCreditLimitReached) {
+    setIsSubmitting(true);
+    consumeCredit();
+
+    try {
+      const authHeaders = await getAuthHeaders();
+      const res = await apiFetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({ message, history }),
+      });
+
+      if (res.status === 403) {
+        reportServerRejection();
+        onCreditLimitReached();
+        return;
+      }
+
+      const data = await res.json();
+
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId
+            ? res.ok
+              ? { ...m, status: "done", content: data.reply }
+              : { ...m, status: "error", error: data.error || "The AI tutor could not respond. Please try again." }
+            : m
+        )
+      );
+    } catch {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId
+            ? { ...m, status: "error", error: "Could not reach the AI tutor. Check your connection and try again." }
+            : m
+        )
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   async function sendMessage(text) {
     const trimmed = text.trim();
     if (!trimmed || isSubmitting) return;
@@ -61,50 +106,43 @@ export default function AiChatView() {
 
     setMessages((prev) => [...prev, userMessage, assistantMessage]);
     setInputText("");
-    setIsSubmitting(true);
-    consumeCredit();
 
-    try {
-      const authHeaders = await getAuthHeaders();
-      const res = await apiFetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders },
-        body: JSON.stringify({ message: trimmed, history }),
-      });
-
-      if (res.status === 403) {
-        reportServerRejection();
-        setMessages((prev) => prev.filter((m) => m.id !== userMessage.id && m.id !== assistantMessage.id));
-        return;
-      }
-
-      const data = await res.json();
-
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantMessage.id
-            ? res.ok
-              ? { ...m, status: "done", content: data.reply }
-              : { ...m, status: "error", error: data.error || "The AI tutor could not respond. Please try again." }
-            : m
-        )
-      );
-    } catch {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantMessage.id
-            ? { ...m, status: "error", error: "Could not reach the AI tutor. Check your connection and try again." }
-            : m
-        )
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+    await runChat(assistantMessage.id, trimmed, history, () =>
+      setMessages((prev) => prev.filter((m) => m.id !== userMessage.id && m.id !== assistantMessage.id))
+    );
   }
 
   function handleSubmit(e) {
     e.preventDefault();
     sendMessage(inputText);
+  }
+
+  async function handleRegenerate(assistantId) {
+    if (isSubmitting) return;
+    const index = messages.findIndex((m) => m.id === assistantId);
+    if (index === -1) return;
+    const userMessage = messages[index - 1];
+    if (!userMessage || userMessage.role !== "user") return;
+    if (!requestAccess()) return;
+
+    // Everything before this question/answer pair — regenerating shouldn't feed
+    // the answer being replaced back in as its own prior context.
+    const history = messages
+      .slice(0, index - 1)
+      .filter((m) => m.status === "done")
+      .map((m) => ({ role: m.role, content: m.content }));
+
+    setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, status: "loading", error: null } : m)));
+
+    await runChat(assistantId, userMessage.content, history, () =>
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId
+            ? { ...m, status: "error", error: "You've used your free prompts. Please sign in to continue." }
+            : m
+        )
+      )
+    );
   }
 
   function handleDelete(id) {
@@ -197,7 +235,13 @@ export default function AiChatView() {
           )}
 
           {messages.map((message) => (
-            <AiChatMessage key={message.id} message={message} onDelete={handleDelete} />
+            <AiChatMessage
+              key={message.id}
+              message={message}
+              onDelete={handleDelete}
+              onRegenerate={handleRegenerate}
+              disableActions={isSubmitting}
+            />
           ))}
           <div ref={bottomRef} />
         </div>

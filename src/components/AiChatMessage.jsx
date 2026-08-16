@@ -25,7 +25,7 @@ const markdownComponents = {
   td: (props) => <td className="px-3 py-2 border-b border-gray-100 dark:border-gray-800" {...props} />,
 };
 
-export default function AiChatMessage({ message, onDelete }) {
+export default function AiChatMessage({ message, onDelete, onRegenerate, disableActions }) {
   const isUser = message.role === "user";
 
   if (isUser) {
@@ -62,9 +62,20 @@ export default function AiChatMessage({ message, onDelete }) {
         )}
 
         {message.status === "done" && (
-          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-            {message.content}
-          </ReactMarkdown>
+          <>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+              {message.content}
+            </ReactMarkdown>
+            <button
+              type="button"
+              onClick={() => onRegenerate?.(message.id)}
+              disabled={disableActions}
+              title="Ask again for a different answer"
+              className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              ↻ Regenerate
+            </button>
+          </>
         )}
       </div>
     </div>
