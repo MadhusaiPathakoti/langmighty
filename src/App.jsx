@@ -202,8 +202,8 @@ export default function App() {
     }
   }
 
-  async function handleSubmit() {
-    const text = inputText.trim();
+  async function handleSubmit(overrideText) {
+    const text = (overrideText ?? inputText).trim();
     if (!text || isSubmitting) return;
     if (!requestAccess()) return;
 
@@ -235,6 +235,14 @@ export default function App() {
     setInputText("");
 
     await runTranslate(turnId, { text, sourceLanguage: inputLanguage, languages: selectedLanguages, regenerate: false });
+  }
+
+  // Voice input: show what was heard in the box (so a script mismatch is visible
+  // and editable) while submitting the override text directly, since setInputText
+  // here wouldn't be reflected in `inputText` until the next render.
+  function handleVoiceResult(transcript) {
+    setInputText(transcript);
+    handleSubmit(transcript);
   }
 
   async function handleRegenerate(turnId) {
@@ -415,6 +423,7 @@ export default function App() {
                 if (inputError) setInputError(null);
               }}
               onSubmit={handleSubmit}
+              onVoiceResult={handleVoiceResult}
               loading={isSubmitting}
               inputLanguage={inputLanguage}
               error={inputError}
