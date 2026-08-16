@@ -30,6 +30,8 @@ Copy `.env.example` to `.env` and fill in:
 - `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` — server-only, Redis cache
 - `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` — server-only, PDF store payments
 - `PDF_STORE_PASSWORD_ENC_KEY` — server-only, encrypts per-purchase PDF passwords at rest
+- `RESEND_API_KEY`, `ADMIN_NOTIFICATION_EMAIL` — server-only, Contact Admin ticket email notifications
+  (`RESEND_FROM_EMAIL` optional, only needed once a sending domain is verified in Resend)
 
 Every `api/_lib/*.js` client getter (`getRedis`, `getSupabaseAdmin`) reads env vars lazily on each
 call rather than once at import time, and every feature is designed to fail open/gracefully when its
@@ -48,7 +50,8 @@ also register it in `vite.config.js`** (method check, env injection, `ssrLoadMod
 404 in local dev while working fine on Vercel. `api/pdf-store/*` is the one exception: it's handled by
 a single generic dispatcher keyed off the URL path segment (`/api/pdf-store/<name>` →
 `ssrLoadModule("/api/pdf-store/<name>.js")`), so a new file under `api/pdf-store/` needs no new
-middleware block — it just needs the route name to match `/^[a-z-]+$/`.
+middleware block — it just needs the route name to match `/^[a-z-]+$/`. `api/support/*` uses the same
+generic-dispatcher exception.
 
 ### Serverless API (`api/`)
 
@@ -109,6 +112,31 @@ same Supabase project as everything else:
   buyers must keep download access, so the only option at that point is deactivating
   (`set-active: false`), which hides it from the catalog but leaves existing purchases downloadable.
 
+### Contact Admin / support tickets (`api/support/`)
+
+Lets any user (signed in or not — a "can't sign in" report must still work) file a bug/feedback
+report with attachments, which both emails the admin and shows up in the in-app admin inbox:
+
+- `create-upload-url.js` — public, mirrors `pdf-store/admin.js`'s `create-upload-url` action: the
+  client uploads the attachment directly to the private `support-attachments` bucket via a signed URL,
+  so file bytes never pass through this serverless function's request body (Vercel's body-size limits
+  would otherwise cap how large a screenshot could be).
+- `submit.js` — public, rate-limited by IP via a Redis counter (`_lib/redisCache.js`, not the
+  Supabase-backed translate/chat credit gate — a ticket report is a different kind of usage and
+  unauthenticated users must still be able to submit). Inserts a row into `support_tickets`, then
+  emails `ADMIN_NOTIFICATION_EMAIL` via `_lib/resend.js` — the email is a notification only (ticket
+  text + attachment count), not the attachments themselves, to sidestep email attachment size limits;
+  the actual files are only ever viewed through the admin inbox's signed URLs. A failed email send is
+  logged but never fails the request — the ticket is already saved regardless.
+- `admin.js` — `requireAdmin()`-gated action-dispatch (`list | update-status`), same pattern as
+  `pdf-store/admin.js`. Surfaced as a "Support Tickets" tab inside the existing PDF admin panel
+  (`AdminPdfUploadView.jsx`) rather than a new admin surface, since that's the only admin area the app
+  has.
+- `_lib/resend.js` — a single `fetch` call to Resend's REST API (no SDK dependency, matching how
+  `translate.js`/`chat.js` call Gemini directly), fails open (logs + skips) if `RESEND_API_KEY`/
+  `ADMIN_NOTIFICATION_EMAIL` aren't set, so tickets still land in the admin inbox before email is
+  configured.
+
 ### `langmighty-shared` package
 
 An external npm package (not in this repo) that is the single source of truth for `LANGUAGES`,
@@ -147,9 +175,14 @@ pairs; follow that existing pattern rather than introducing a state library.
   page breaks are deliberately placed between messages/turns, not mid-element — preserve that when
   touching export templates (`components/*ExportTemplate.jsx`).
 - `components/PdfStoreView.jsx` — the buyer-facing catalog: language filters, Razorpay checkout,
-  post-purchase password reveal, and password-gated download. `components/AdminPdfUploadView.jsx` and
-  `ManagePdfsView.jsx` are the admin-only upload/manage screens (shown only when `isAdmin`, itself
-  derived from the `my-purchases` response) that drive `api/pdf-store/admin.js`'s actions.
+  post-purchase password reveal, and password-gated download. `components/AdminPdfUploadView.jsx`
+  (shown only when `isAdmin`, itself derived from the `my-purchases` response) is the admin panel —
+  its three tabs (`ManagePdfsView.jsx`, upload form, `SupportTicketsView.jsx`) drive
+  `api/pdf-store/admin.js`'s and `api/support/admin.js`'s actions respectively.
+- `components/ContactAdminModal.jsx` — the "🛟" button in `NavBar.jsx` (always visible, no sign-in
+  required) opens this; uploads attachments straight to Supabase Storage via a signed URL (see
+  `api/support/create-upload-url.js`) before calling `api/support/submit.js` with just the resulting
+  paths, following the same two-step pattern as `AdminPdfUploadView.jsx`'s PDF upload.
 
 ### Patches
 

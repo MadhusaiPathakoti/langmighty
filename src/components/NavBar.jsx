@@ -14,6 +14,7 @@ export default function NavBar({
   onNavigateRoadmap,
   onNavigatePlayground,
   onNavigatePdfStore,
+  onOpenContactAdmin,
   theme,
   onToggleTheme,
 }) {
@@ -203,6 +204,17 @@ export default function NavBar({
             </button>
           </>
         )}
+
+        <button
+          type="button"
+          onClick={onOpenContactAdmin}
+          title="Contact Admin"
+          aria-label="Contact Admin"
+          className="px-2.5 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400
+                     hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        >
+          🛟
+        </button>
 
         <ThemeToggle theme={theme} onToggle={onToggleTheme} />
       </div>

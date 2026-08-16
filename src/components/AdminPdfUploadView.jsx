@@ -4,6 +4,7 @@ import { apiFetch } from "../lib/apiClient.js";
 import { useAuthGate } from "../context/AuthGateContext.jsx";
 import { supabase } from "../lib/supabaseClient.js";
 import ManagePdfsView from "./ManagePdfsView.jsx";
+import SupportTicketsView from "./SupportTicketsView.jsx";
 
 const ORIGINALS_BUCKET = "pdf-store-originals";
 
@@ -28,7 +29,7 @@ export default function AdminPdfUploadView({ onBack, onUploaded }) {
   const [error, setError] = useState(null);
 
   const [reviewing, setReviewing] = useState(false);
-  const [tab, setTab] = useState("upload"); // "upload" | "manage"
+  const [tab, setTab] = useState("upload"); // "upload" | "manage" | "support"
 
   function handleFormSubmit(e) {
     e.preventDefault();
@@ -104,7 +105,7 @@ export default function AdminPdfUploadView({ onBack, onUploaded }) {
     <div className="relative z-10 flex-1 overflow-y-auto px-4 sm:px-6 py-6">
       <div className="max-w-lg mx-auto space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">PDF Admin</h1>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Admin</h1>
           <button
             type="button"
             onClick={onBack}
@@ -140,9 +141,22 @@ export default function AdminPdfUploadView({ onBack, onUploaded }) {
           >
             Manage Existing
           </button>
+          <button
+            type="button"
+            onClick={() => setTab("support")}
+            disabled={submitting}
+            className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
+              tab === "support"
+                ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            }`}
+          >
+            Support Tickets
+          </button>
         </div>
 
         {tab === "manage" && <ManagePdfsView />}
+        {tab === "support" && <SupportTicketsView />}
 
         {tab === "upload" && (
         <form onSubmit={handleFormSubmit} className="space-y-4">

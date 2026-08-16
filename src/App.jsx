@@ -4,6 +4,7 @@ import { apiFetch } from "./lib/apiClient.js";
 import AuthModal from "./components/AuthModal.jsx";
 import ChatInput from "./components/ChatInput.jsx";
 import ChatTurn from "./components/ChatTurn.jsx";
+import ContactAdminModal from "./components/ContactAdminModal.jsx";
 import CulturalBackground from "./components/CulturalBackground.jsx";
 import ExportTemplate from "./components/ExportTemplate.jsx";
 import LmLogo from "./components/LmLogo.jsx";
@@ -111,6 +112,7 @@ export default function App() {
     ensureValidOutputs(loadLanguagePrefs(), loadInputLanguage())
   );
   const [inputError, setInputError] = useState(null);
+  const [contactAdminOpen, setContactAdminOpen] = useState(false);
   const { requestAccess, consumeCredit, reportServerRejection, getAuthHeaders } = useAuthGate();
 
   const exportRef = useRef(null);
@@ -343,6 +345,7 @@ export default function App() {
         onNavigateRoadmap={handleNavigateRoadmap}
         onNavigatePlayground={() => setView("playground")}
         onNavigatePdfStore={() => setView("pdf-store")}
+        onOpenContactAdmin={() => setContactAdminOpen(true)}
         theme={theme}
         onToggleTheme={toggleTheme}
       />
@@ -465,6 +468,7 @@ export default function App() {
       )}
 
       <AuthModal />
+      <ContactAdminModal open={contactAdminOpen} onClose={() => setContactAdminOpen(false)} />
     </div>
   );
 }

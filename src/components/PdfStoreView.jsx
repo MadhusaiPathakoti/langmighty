@@ -234,7 +234,7 @@ export default function PdfStoreView() {
               onClick={() => setShowAdmin(true)}
               className="rounded-lg border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-medium px-3 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
-              Upload a PDF
+              Admin
             </button>
           )}
         </div>

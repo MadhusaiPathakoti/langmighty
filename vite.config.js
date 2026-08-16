@@ -143,6 +143,32 @@ function localApiPlugin() {
         const { default: handler } = await server.ssrLoadModule(`/api/pdf-store/${sub}.js`);
         await handler(req, res);
       });
+
+      // Support (Contact Admin) tickets: same generic-dispatcher approach as
+      // pdf-store above, for the same reason (a handful of small routes under
+      // one prefix).
+      server.middlewares.use("/api/support", async (req, res) => {
+        const sub = req.url.split("?")[0].replace(/^\/+/, "");
+        if (!/^[a-z-]+$/.test(sub)) {
+          res.statusCode = 404;
+          res.end();
+          return;
+        }
+        await prepareApiRequest(req, res);
+
+        injectEnv([
+          "VITE_SUPABASE_URL",
+          "SUPABASE_SERVICE_ROLE_KEY",
+          "UPSTASH_REDIS_REST_URL",
+          "UPSTASH_REDIS_REST_TOKEN",
+          "RESEND_API_KEY",
+          "RESEND_FROM_EMAIL",
+          "ADMIN_NOTIFICATION_EMAIL",
+        ]);
+
+        const { default: handler } = await server.ssrLoadModule(`/api/support/${sub}.js`);
+        await handler(req, res);
+      });
     },
   };
 }
