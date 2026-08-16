@@ -3,6 +3,7 @@ import { INPUT_LANGUAGES } from "langmighty-shared";
 import { apiFetch } from "../lib/apiClient.js";
 import { useAuthGate } from "../context/AuthGateContext.jsx";
 import AdminPdfUploadView from "./AdminPdfUploadView.jsx";
+import OfferCountdownBanner from "./OfferCountdownBanner.jsx";
 
 const RAZORPAY_CHECKOUT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
 
@@ -237,6 +238,8 @@ export default function PdfStoreView() {
             </button>
           )}
         </div>
+
+        <OfferCountdownBanner />
 
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <div className="flex items-center gap-2">
