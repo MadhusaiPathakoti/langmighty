@@ -39,12 +39,21 @@ function isSeparatorRow(cells) {
   return cells.length > 0 && cells.every((cell) => /^:?-+:?$/.test(cell));
 }
 
-// Classifies a table column by the actual majority script of its cells, rather
-// than trusting the header text — headers are sometimes native-script-only
-// (e.g. "తెలుగు" with no "(Telugu)" hint), which would silently defeat a
-// header-name match. Returns null for columns that aren't dominated by any of
-// our 5 regional scripts (romanized pronunciation, English meaning, etc.).
-function detectColumnLanguage(cells) {
+// Determines a column's INTENDED language, not just what its content happens
+// to agree with. A header that names a language in Latin text (e.g. "Telugu",
+// "Malayalam Word") is trusted as ground truth first — this is what catches an
+// entire column being uniformly the wrong script (every cell agreeing with
+// itself is exactly the failure mode content-majority alone can't see, since
+// there's no internal disagreement to flag). Only when the header gives no
+// Latin hint (e.g. native-script-only headers like "తెలుగు") do we fall back
+// to the actual majority script of the cells. Returns null for columns that
+// name/contain none of our 5 regional scripts (romanized pronunciation,
+// English meaning, etc.).
+function detectColumnLanguage(header, cells) {
+  const lowerHeader = header.toLowerCase();
+  const headerLang = LANGUAGES.find((lang) => lowerHeader.includes(lang.label.toLowerCase()));
+  if (headerLang) return headerLang;
+
   const counts = new Map();
   for (const cell of cells) {
     if (!cell) continue;
@@ -88,7 +97,7 @@ function findTableScriptMismatches(replyText) {
 
     headers.forEach((header, colIdx) => {
       const columnCells = rows.map((row) => row[colIdx]);
-      const lang = detectColumnLanguage(columnCells);
+      const lang = detectColumnLanguage(header, columnCells);
       if (!lang) return;
       columnCells.forEach((cell, rowIdx) => {
         if (cell && !isPureScript(cell, lang)) {
