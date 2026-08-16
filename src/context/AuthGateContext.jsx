@@ -88,7 +88,15 @@ export function AuthGateProvider({ children }) {
 
   async function getAuthHeaders() {
     if (!isSupabaseConfigured) return {};
-    const { data } = await supabase.auth.getSession();
+    const { data, error } = await supabase.auth.getSession();
+    if (error) {
+      // The refresh token itself was rejected (expired/revoked) — the nav bar's
+      // "signed in" state is now stale since it only updates on auth *events*, not
+      // on this getSession() call. Clear it locally (no network call, can't fail)
+      // so the UI stops claiming the user is signed in when every authenticated
+      // request is actually about to 401.
+      await supabase.auth.signOut({ scope: "local" });
+    }
     const token = data.session?.access_token;
     return token ? { Authorization: `Bearer ${token}` } : {};
   }
@@ -148,7 +156,16 @@ export function AuthGateProvider({ children }) {
   }
 
   async function signOut() {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      // The global sign-out hits the server to revoke the refresh token; if that
+      // call itself fails (offline, or the session was already dead), fall back to
+      // a local-only sign-out so the user isn't stuck looking signed in with no
+      // way to clear it from this device.
+      console.error("Sign out failed, clearing local session instead:", err);
+      await supabase.auth.signOut({ scope: "local" });
+    }
   }
 
   return (
