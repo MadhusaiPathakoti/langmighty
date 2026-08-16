@@ -307,6 +307,9 @@ export default function PdfStoreView() {
                     {item.description && (
                       <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">{item.description}</p>
                     )}
+                    {item.pageCount != null && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.pageCount} pages</p>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between text-sm">
