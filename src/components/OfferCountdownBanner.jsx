@@ -25,8 +25,15 @@ function formatRemaining(ms) {
   return [hours, minutes, seconds].map((n) => String(n).padStart(2, "0")).join(":");
 }
 
+// Seeded as soon as this module is evaluated — part of the app's initial bundle
+// (no lazy-loading here), so this runs at first page load, not lazily inside
+// the component. Otherwise the deadline wouldn't get written to localStorage
+// until the user actually opened PDF Store, making the countdown look like it
+// "starts" whenever they first click that tab instead of when they arrived.
+const initialDeadline = loadDeadline();
+
 export default function OfferCountdownBanner() {
-  const [deadline, setDeadline] = useState(loadDeadline);
+  const [deadline, setDeadline] = useState(initialDeadline);
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
