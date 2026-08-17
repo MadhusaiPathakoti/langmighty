@@ -123,33 +123,6 @@ export default function App() {
     localStorage.setItem(THEME_KEY, theme);
   }, [theme]);
 
-  // `100dvh` alone is unreliable in some mobile WebViews once content grows
-  // very tall (e.g. a long AI Chat conversation) or the on-screen keyboard
-  // opens/closes — the root can end up sized against a stale viewport height,
-  // which is how the sticky footer (chat input) ends up positioned against
-  // the wrong "bottom". Actively measuring window.innerHeight (and
-  // visualViewport, which tracks the keyboard more accurately than the window)
-  // and re-deriving the root's height from that on every resize is the
-  // standard fix for this class of bug.
-  useEffect(() => {
-    function setAppHeight() {
-      // `||` (not `??`) — visualViewport.height can genuinely read as 0 at
-      // certain moments (e.g. before it's fully initialized), and 0 is a
-      // valid-looking number `??` wouldn't fall back on.
-      const height = window.visualViewport?.height || window.innerHeight;
-      if (height > 0) {
-        document.documentElement.style.setProperty("--app-height", `${height}px`);
-      }
-    }
-    setAppHeight();
-    window.addEventListener("resize", setAppHeight);
-    window.visualViewport?.addEventListener("resize", setAppHeight);
-    return () => {
-      window.removeEventListener("resize", setAppHeight);
-      window.visualViewport?.removeEventListener("resize", setAppHeight);
-    };
-  }, []);
-
   useEffect(() => {
     localStorage.setItem(CONVERSATION_KEY, JSON.stringify(conversation));
   }, [conversation]);
@@ -331,10 +304,7 @@ export default function App() {
   }
 
   return (
-    <div
-      className="flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100"
-      style={{ height: "var(--app-height, 100dvh)" }}
-    >
+    <div className="h-dvh flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
       <CulturalBackground />
       <NavBar
         view={view}

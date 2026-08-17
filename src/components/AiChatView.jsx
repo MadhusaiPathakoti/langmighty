@@ -175,8 +175,8 @@ export default function AiChatView() {
   const hasContent = messages.some((m) => m.status === "done" && m.content?.trim());
 
   return (
-    <div className="relative z-10 grid grid-rows-[minmax(0,1fr)_auto] flex-1 min-h-0">
-      <div className="overflow-y-auto px-4 sm:px-6 py-6">
+    <>
+      <div className="relative z-10 flex-1 overflow-y-auto px-4 sm:px-6 py-6">
         <div className="max-w-3xl mx-auto space-y-4">
           {messages.length === 0 ? (
             <div className="relative overflow-hidden rounded-2xl border border-indigo-100 dark:border-indigo-950 bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-indigo-950 dark:via-gray-900 dark:to-purple-950 px-6 py-14 sm:py-16 text-center">
@@ -272,6 +272,6 @@ export default function AiChatView() {
       </footer>
 
       {hasContent && <AiChatExportTemplate ref={exportRef} messages={messages} />}
-    </div>
+    </>
   );
 }
