@@ -90,6 +90,22 @@ export const FEATURES = [
     ],
     mockup: "multilang",
   },
+  {
+    id: "pdf-store",
+    emoji: "📚",
+    color: "amber",
+    title: "PDF Store",
+    description:
+      "Downloadable language-learning PDFs for specific language pairs — preview a few pages free, then unlock the full guide with a one-time purchase.",
+    bullets: [
+      "Curated PDF guides for specific language pairs",
+      "Filter the catalog by the languages you're learning",
+      "Free preview pages before you buy",
+      "One-time payment via Razorpay — no subscription",
+      "Password-protected download, yours to keep forever",
+    ],
+    mockup: "pdf-store",
+  },
 ];
 
 export const STATS = [
@@ -159,6 +175,11 @@ export const FAQ_ITEMS = [
     answer:
       "It's a language tutor you can ask about grammar, vocabulary, and pronunciation, with example sentences in the target language.",
   },
+  {
+    question: "What's in the PDF Store?",
+    answer:
+      "Downloadable language-learning guides for specific language pairs. Preview a few sample pages for free, then unlock the full PDF with a one-time payment — no subscription, no recurring charges.",
+  },
 ];
 
 // Maps a feature's `color` name to a light/dark class pair. Kept in one place
@@ -171,6 +192,7 @@ export function colorClasses(color) {
     orange: "bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-300",
     sky: "bg-sky-100 text-sky-600 dark:bg-sky-900 dark:text-sky-300",
     rose: "bg-rose-100 text-rose-600 dark:bg-rose-900 dark:text-rose-300",
+    amber: "bg-amber-100 text-amber-600 dark:bg-amber-900 dark:text-amber-300",
   };
   return map[color] ?? map.indigo;
 }
