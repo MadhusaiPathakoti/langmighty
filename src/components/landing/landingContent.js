@@ -62,8 +62,8 @@ export const FEATURES = [
     id: "playground",
     emoji: "🎮",
     color: "rose",
-    title: "Playground: 7 Learning Games",
-    description: "Seven different games — audio, visual & text challenges — free to play, no credits used.",
+    title: "Playground: 8 Learning Games",
+    description: "Eight different games — audio, visual, text & conversation challenges. Most are free to play; Scenario Roleplay uses your AI Chat credits.",
     bullets: [
       "🎤 Read Aloud — speak a sentence, get instant pronunciation feedback",
       "🧠 Language Quiz — multiple-choice translation practice",
@@ -72,8 +72,9 @@ export const FEATURES = [
       "🎧 Listen & Guess — audio-only listening challenge",
       "🔗 Word Chain — build sentences by tapping words in order",
       "📝 Guess the Sentence — full-sentence multiple choice with pronunciation",
+      "🎭 New: Scenario Roleplay — live-chat an AI character through real scenes (café, directions, market & more) by typing or speaking, then get a personalized feedback report",
     ],
-    note: "Every game exercises a different sense — reading, listening, speaking, or racing the clock — so practice never gets stale. Try all 7!",
+    note: "Every game exercises a different sense — reading, listening, speaking, or racing the clock — so practice never gets stale. Try all 8!",
     mockup: "playground",
   },
   {

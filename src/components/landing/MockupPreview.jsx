@@ -134,6 +134,7 @@ const PLAYGROUND_GAMES = [
   { emoji: "🎧", title: "Listen & Guess" },
   { emoji: "🔗", title: "Word Chain" },
   { emoji: "📝", title: "Guess the Sentence" },
+  { emoji: "🎭", title: "Scenario Roleplay", isNew: true },
 ];
 
 function PlaygroundMockup() {
@@ -143,8 +144,13 @@ function PlaygroundMockup() {
         {PLAYGROUND_GAMES.map((game) => (
           <div
             key={game.title}
-            className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-2 py-3 text-center"
+            className="relative rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-2 py-3 text-center"
           >
+            {game.isNew && (
+              <span className="absolute -top-1.5 -right-1.5 text-[9px] font-semibold uppercase tracking-wide text-white bg-rose-500 rounded-full px-1.5 py-0.5">
+                New
+              </span>
+            )}
             <div className="text-xl">{game.emoji}</div>
             <div className="mt-1 text-xs font-medium text-gray-700 dark:text-gray-200">{game.title}</div>
           </div>

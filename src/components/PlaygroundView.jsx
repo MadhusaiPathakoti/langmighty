@@ -3,6 +3,7 @@ import GuessSentenceGame from "./GuessSentenceGame.jsx";
 import ListenGuessGame from "./ListenGuessGame.jsx";
 import QuizGame from "./QuizGame.jsx";
 import ReadAloudGame from "./ReadAloudGame.jsx";
+import ScenarioRoleplayGame from "./ScenarioRoleplayGame.jsx";
 import SpeedTranslateGame from "./SpeedTranslateGame.jsx";
 import WordChainGame from "./WordChainGame.jsx";
 import WordMatchGame from "./WordMatchGame.jsx";
@@ -57,6 +58,13 @@ const GAMES = [
     description: "Multiple-choice, but for full sentences — each option comes with pronunciation.",
     available: true,
   },
+  {
+    id: "roleplay",
+    emoji: "🎭",
+    title: "Scenario Roleplay",
+    description: "Chat your way through real scenes — order at a café, ask for directions — with an AI character. Uses your AI Chat credits.",
+    available: true,
+  },
 ];
 
 export default function PlaygroundView() {
@@ -80,6 +88,7 @@ export default function PlaygroundView() {
           {activeGame === "word-chain" && <WordChainGame onExit={() => setActiveGame(null)} />}
           {activeGame === "guess-sentence" && <GuessSentenceGame onExit={() => setActiveGame(null)} />}
           {activeGame === "read-aloud" && <ReadAloudGame onExit={() => setActiveGame(null)} />}
+          {activeGame === "roleplay" && <ScenarioRoleplayGame onExit={() => setActiveGame(null)} />}
         </div>
       </div>
     );
@@ -92,7 +101,8 @@ export default function PlaygroundView() {
           🎮 Playground
         </h2>
         <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400">
-          Practice what you've learned with quick games — free to play, no prompt credits used.
+          Practice what you've learned with quick games — most are free to play; Scenario Roleplay uses your AI
+          Chat credits.
         </p>
 
         <div className="mt-6 grid sm:grid-cols-2 gap-4">

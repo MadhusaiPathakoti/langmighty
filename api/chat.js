@@ -1,4 +1,4 @@
-import { LANGUAGES } from "langmighty-shared";
+import { LANGUAGES, QUIZ_TARGET_LANGUAGES } from "langmighty-shared";
 import { applyCors } from "./_lib/cors.js";
 import { enforceCreditGate } from "./_lib/creditGate.js";
 
@@ -19,6 +19,55 @@ When teaching a grammar point (e.g. "teach me pronouns in Kannada"):
 
 Be encouraging and concise. If the user doesn't say which language they mean, ask.`;
 
+// Server-side source of truth for roleplay personas — the client only ever
+// sends a scenario id, never free-text persona/setup, so a request can't be
+// used to inject arbitrary system-prompt content.
+const ROLEPLAY_SCENARIOS = {
+  cafe: {
+    title: "Order at a Café",
+    setup: "You are a friendly barista at a small neighborhood café. The learner is a customer who just walked in.",
+    goal: "greet the barista, order a drink and a snack, ask the price, and pay",
+  },
+  directions: {
+    title: "Ask for Directions",
+    setup: "You are a helpful local stopped on a street corner. The learner is a lost visitor who needs help finding a place nearby (e.g. a train station, market, or hotel).",
+    goal: "greet the local, explain where you're trying to go, and understand their directions well enough to thank them",
+  },
+  market: {
+    title: "Haggle at the Market",
+    setup: "You are a market vendor selling fruit, vegetables, or handicrafts from a stall. The learner is a customer browsing your stall.",
+    goal: "ask about a couple of items, ask the price, negotiate politely, and agree on a price",
+  },
+  hotel: {
+    title: "Check In at a Hotel",
+    setup: "You are the front-desk receptionist at a hotel. The learner is a guest checking in who has a reservation.",
+    goal: "confirm the reservation, answer the receptionist's questions, and ask about breakfast time and the wifi password",
+  },
+  introductions: {
+    title: "Meet Someone New",
+    setup: "You are a friendly stranger meeting the learner for the first time at a casual social gathering.",
+    goal: "introduce yourself, ask and answer a few getting-to-know-you questions (name, where you're from, what you do), and end the conversation warmly",
+  },
+};
+
+// Distinct from SYSTEM_INSTRUCTION (the tutor persona): this scopes the model
+// to stay in character as the scenario's NPC rather than teaching, and asks
+// for the same script+pronunciation+gloss shape the tutor uses so a learner
+// mid-conversation isn't lost, without breaking character to correct mistakes
+// (corrections are saved for the end-of-game report instead).
+function buildRoleplaySystemPrompt(scenarioDef, languageLabel) {
+  return `You are role-playing as a character in a language-learning simulation inside Linguist.ai. ${scenarioDef.setup}
+
+The learner's goal for this conversation: ${scenarioDef.goal}.
+
+Rules:
+- Stay fully in character as this NPC. Never break character to explain grammar or correct mistakes — just continue the conversation naturally, the way a real person would (asking for clarification if the learner's meaning is unclear).
+- Speak your in-character lines entirely in ${languageLabel}, one short turn at a time (1-3 sentences), never switching to English even if the learner writes in English.
+- Respond with three fields: "line" is your in-character reply written PURELY in ${languageLabel}'s own native script — not one single Latin letter anywhere in it, not even for numbers or punctuation; "pronunciation" is a roman (English-letter) pronunciation guide for that same line; "translation" is the English translation of that line.
+- If the learner seems stuck or writes something unrelated, have your character naturally prompt them again (e.g. repeat or rephrase) rather than lecturing them.
+- Keep the scene moving toward the learner's goal; don't drag the conversation out indefinitely.`;
+}
+
 // `lang.script.test(text)` alone only checks the string CONTAINS at least one
 // character of that script — see the identical helper in api/translate.js for
 // why purity (not just presence) is what actually catches the model copying a
@@ -26,6 +75,15 @@ Be encouraging and concise. If the user doesn't say which language they mean, as
 function isPureScript(text, lang) {
   if (!lang.script.test(text)) return false;
   return LANGUAGES.every((other) => other.key === lang.key || !other.script.test(text));
+}
+
+// isPureScript above only flags cross-contamination between the 5 target
+// Indian scripts — it doesn't catch stray Latin/romanized text (LANGUAGES has
+// no English entry), which is exactly the failure mode roleplay's freeform
+// "line" field is prone to (the model slipping into English/roman mid-line).
+// A native script reply should contain zero Latin letters at all.
+function isPureNativeScript(text, lang) {
+  return typeof text === "string" && lang.script.test(text) && !/[A-Za-z]/.test(text);
 }
 
 function parseTableRow(line) {
@@ -186,14 +244,14 @@ function toGeminiContents(history, message) {
   return contents;
 }
 
-async function callGemini(apiKey, contents) {
+async function callGemini(apiKey, contents, systemInstruction = SYSTEM_INSTRUCTION) {
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        system_instruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+        system_instruction: { parts: [{ text: systemInstruction }] },
         contents,
         generationConfig: { temperature: 0.4 },
       }),
@@ -214,6 +272,111 @@ async function callGemini(apiKey, contents) {
   return reply;
 }
 
+const ROLEPLAY_TURN_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    line: { type: "STRING" },
+    pronunciation: { type: "STRING" },
+    translation: { type: "STRING" },
+  },
+  required: ["line", "pronunciation", "translation"],
+};
+
+// Structured (schema-constrained) rather than the tutor's freeform markdown —
+// splitting the native-script line, pronunciation, and translation into
+// separate fields is what makes isPureNativeScript's per-field check possible
+// below, instead of trying to regex-parse a 3-line markdown convention that
+// the model isn't reliably following.
+async function callRoleplayTurn(apiKey, contents, systemInstruction) {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: systemInstruction }] },
+        contents,
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: ROLEPLAY_TURN_SCHEMA,
+          temperature: 0.5,
+        },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errText = await response.text();
+    console.error("Gemini roleplay-turn API error:", errText);
+    throw new Error("The character couldn't respond right now. Please try again.");
+  }
+
+  const data = await response.json();
+  const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!raw) throw new Error("Received an empty response from the character.");
+  return JSON.parse(raw);
+}
+
+const ROLEPLAY_REPORT_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    rating: { type: "STRING" },
+    headline: { type: "STRING" },
+    wentWell: { type: "ARRAY", items: { type: "STRING" } },
+    tryNext: { type: "ARRAY", items: { type: "STRING" } },
+    phrasesUsed: { type: "ARRAY", items: { type: "STRING" } },
+  },
+  required: ["rating", "headline", "wentWell", "tryNext", "phrasesUsed"],
+};
+
+// One structured call (same responseSchema approach as translate.js and
+// correctMismatchedCells above) that grades the whole conversation at once,
+// rather than something the learner has to piece together turn by turn.
+async function generateRoleplayReport(apiKey, scenarioDef, languageLabel, history) {
+  const transcript = history
+    .map((turn) => `${turn.role === "assistant" ? "Character" : "Learner"}: ${turn.content}`)
+    .join("\n");
+
+  const prompt = `You are grading a language learner's roleplay practice conversation. Scenario: ${scenarioDef.title} — ${scenarioDef.setup} Learner's goal: ${scenarioDef.goal}. The learner was practicing ${languageLabel}.
+
+Transcript:
+${transcript}
+
+Write an encouraging but honest short report as JSON with these fields:
+- rating: one short word or phrase summarizing performance (e.g. "Great job", "Good effort", "Keep practicing")
+- headline: one encouraging sentence summarizing how it went
+- wentWell: 2-3 short bullet points on what the learner did well
+- tryNext: 2-3 short bullet points on what to try next time (grammar, vocabulary, or confidence tips)
+- phrasesUsed: 2-5 short useful phrases (in ${languageLabel}'s native script, with romanization in parentheses) the learner used or could have used to reach their goal`;
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: ROLEPLAY_REPORT_SCHEMA,
+          temperature: 0.4,
+        },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errText = await response.text();
+    console.error("Gemini roleplay-report API error:", errText);
+    throw new Error("Could not generate your feedback report. Please try again.");
+  }
+
+  const data = await response.json();
+  const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!raw) throw new Error("Received an empty feedback report.");
+  return JSON.parse(raw);
+}
+
 export default async function handler(req, res) {
   if (applyCors(req, res)) return;
 
@@ -222,10 +385,25 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { message, history } = req.body || {};
-  if (!message || !message.trim()) {
+  const { message, history, mode, scenario, targetLanguage } = req.body || {};
+  const isRoleplay = mode === "roleplay" || mode === "roleplay-report";
+
+  if (mode !== "roleplay-report" && (!message || !message.trim())) {
     res.status(400).json({ error: "Please enter a message." });
     return;
+  }
+
+  let scenarioDef = null;
+  let language = null;
+  let languageLabel = null;
+  if (isRoleplay) {
+    scenarioDef = ROLEPLAY_SCENARIOS[scenario];
+    language = LANGUAGES.find((l) => l.key === targetLanguage);
+    if (!scenarioDef || !language || !QUIZ_TARGET_LANGUAGES.includes(targetLanguage)) {
+      res.status(400).json({ error: "Unknown roleplay scenario or language." });
+      return;
+    }
+    languageLabel = language.label;
   }
 
   if (!(await enforceCreditGate(req, res))) return;
@@ -239,7 +417,35 @@ export default async function handler(req, res) {
   }
 
   try {
+    if (mode === "roleplay-report") {
+      const report = await generateRoleplayReport(apiKey, scenarioDef, languageLabel, Array.isArray(history) ? history : []);
+      res.status(200).json({ report });
+      return;
+    }
+
     const contents = toGeminiContents(Array.isArray(history) ? history : [], message.trim());
+
+    if (mode === "roleplay") {
+      const systemInstruction = buildRoleplaySystemPrompt(scenarioDef, languageLabel);
+      let reply = await callRoleplayTurn(apiKey, contents, systemInstruction);
+
+      if (!isPureNativeScript(reply.line, language)) {
+        try {
+          const retryReply = await callRoleplayTurn(
+            apiKey,
+            contents,
+            `${systemInstruction}\n\nIMPORTANT: your previous "line" contained non-${languageLabel} characters. Rewrite it — the "line" field must be ${languageLabel} native script ONLY, with absolutely no Latin letters.`
+          );
+          if (isPureNativeScript(retryReply.line, language)) reply = retryReply;
+        } catch (retryErr) {
+          console.error("Roleplay script-purity retry error:", retryErr);
+        }
+      }
+
+      res.status(200).json({ reply });
+      return;
+    }
+
     let reply = await callGemini(apiKey, contents);
 
     const mismatches = findTableScriptMismatches(reply);
