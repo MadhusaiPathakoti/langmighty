@@ -1,10 +1,26 @@
 import { TRUST_AVATARS, STATS, colorClasses } from "./landingContent.js";
 import MockupPreview from "./MockupPreview.jsx";
+import mandalaArt from "../../media/mandala_art.webp";
 
 function scrollToFeatures(e) {
   e.preventDefault();
   document.querySelector("#features")?.scrollIntoView({ behavior: "smooth" });
 }
+
+// Scattered along the hero's outer margins (not the centered content column)
+// so they never sit under the headline/CTAs even on very wide viewports.
+// Each carries its own color, size, tilt (--float-rotate) and animation
+// timing so the bobbing motion reads as organic rather than synchronized.
+const FLOATING_LETTERS = [
+  { char: "అ", top: "3%", left: "5%", size: "2.1rem", rotate: -12, delay: "0s", duration: "6s", color: "text-amber-600 dark:text-amber-300" },
+  { char: "अ", top: "8%", left: "40%", size: "1.8rem", rotate: 9, delay: "0.9s", duration: "5.4s", color: "text-sky-600 dark:text-sky-300" },
+  { char: "ಅ", top: "5%", left: "94%", size: "2.3rem", rotate: -7, delay: "1.5s", duration: "6.6s", color: "text-emerald-600 dark:text-emerald-300" },
+  { char: "ആ", top: "24%", left: "2%", size: "1.7rem", rotate: 14, delay: "2.1s", duration: "5.1s", color: "text-purple-600 dark:text-purple-300" },
+  { char: "ஆ", top: "90%", left: "8%", size: "2rem", rotate: -10, delay: "0.4s", duration: "6.2s", color: "text-rose-600 dark:text-rose-300" },
+  { char: "இ", top: "94%", left: "44%", size: "1.8rem", rotate: 9, delay: "1.2s", duration: "5.7s", color: "text-orange-600 dark:text-orange-300" },
+  { char: "ई", top: "90%", left: "78%", size: "2.1rem", rotate: -8, delay: "1.8s", duration: "6.3s", color: "text-teal-600 dark:text-teal-300" },
+  { char: "ಆ", top: "32%", left: "97%", size: "1.9rem", rotate: 11, delay: "0.6s", duration: "5.3s", color: "text-pink-600 dark:text-pink-300" },
+];
 
 export default function HeroSection({ onGetStarted }) {
   return (
@@ -17,6 +33,36 @@ export default function HeroSection({ onGetStarted }) {
         aria-hidden="true"
         className="pointer-events-none absolute -bottom-24 -left-16 w-72 h-72 rounded-full bg-indigo-200/40 dark:bg-indigo-500/10 blur-3xl"
       />
+
+      {/* Anchored mostly off the left edge — the section's overflow-hidden
+          clips it down to a slowly-rotating semi-circle sliver. rounded-full
+          crops the source image's square canvas down to just the circular
+          artwork, and opacity lets the page's own background show through. */}
+      <img
+        src={mandalaArt}
+        alt=""
+        aria-hidden="true"
+        className="hidden sm:block pointer-events-none absolute top-1/2 -left-48 md:-left-56 -translate-y-1/2 w-[420px] h-[420px] md:w-[520px] md:h-[520px] rounded-full object-cover opacity-20 dark:opacity-15 animate-spin-slow"
+      />
+
+      {FLOATING_LETTERS.map((l, i) => (
+        <span
+          key={i}
+          aria-hidden="true"
+          className={`hidden sm:block pointer-events-none absolute font-extrabold animate-float ${l.color}`}
+          style={{
+            top: l.top,
+            left: l.left,
+            fontSize: l.size,
+            "--float-rotate": `${l.rotate}deg`,
+            animationDelay: l.delay,
+            animationDuration: l.duration,
+          }}
+        >
+          {l.char}
+        </span>
+      ))}
+
       <div className="relative max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
         <div>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300 text-xs font-medium px-3 py-1 mb-5">
