@@ -50,8 +50,11 @@ also register it in `vite.config.js`** (method check, env injection, `ssrLoadMod
 404 in local dev while working fine on Vercel. `api/pdf-store/*` is the one exception: it's handled by
 a single generic dispatcher keyed off the URL path segment (`/api/pdf-store/<name>` →
 `ssrLoadModule("/api/pdf-store/<name>.js")`), so a new file under `api/pdf-store/` needs no new
-middleware block — it just needs the route name to match `/^[a-z-]+$/`. `api/support/*` uses the same
-generic-dispatcher exception.
+middleware block — it just needs the route name to match `/^[a-z-]+$/`. **Vercel's Hobby plan caps a
+deployment at 12 Serverless Functions** — each file under `api/` (outside `_lib/`) counts as one, so
+prefer adding an action to an existing action-dispatch endpoint (`pdf-store/admin.js`, `support.js`)
+over a new file when you're already near that limit; a build that silently exceeds it fails on Vercel
+even though it builds fine locally.
 
 ### Serverless API (`api/`)
 
@@ -112,24 +115,29 @@ same Supabase project as everything else:
   buyers must keep download access, so the only option at that point is deactivating
   (`set-active: false`), which hides it from the catalog but leaves existing purchases downloadable.
 
-### Contact Admin / support tickets (`api/support/`)
+### Contact Admin / support tickets (`api/support.js`)
 
 Lets any user (signed in or not — a "can't sign in" report must still work) file a bug/feedback
-report with attachments, which both emails the admin and shows up in the in-app admin inbox:
+report with attachments, which both emails the admin and shows up in the in-app admin inbox. A single
+action-dispatch endpoint (`{ action, ...body }` → `create-upload-url | submit | list |
+update-status`) rather than one file per route — this started as a 3-file `api/support/` folder, but
+that pushed the deployment over Vercel Hobby's 12-Serverless-Function cap (see above), so it was
+consolidated the same way `pdf-store/admin.js` already does it. `create-upload-url`/`submit` are
+public; `list`/`update-status` are gated inline by `_lib/adminAuth.js`'s `requireAdmin()` before the
+switch, rather than requiring every action to check it individually.
 
-- `create-upload-url.js` — public, mirrors `pdf-store/admin.js`'s `create-upload-url` action: the
-  client uploads the attachment directly to the private `support-attachments` bucket via a signed URL,
-  so file bytes never pass through this serverless function's request body (Vercel's body-size limits
-  would otherwise cap how large a screenshot could be).
-- `submit.js` — public, rate-limited by IP via a Redis counter (`_lib/redisCache.js`, not the
-  Supabase-backed translate/chat credit gate — a ticket report is a different kind of usage and
-  unauthenticated users must still be able to submit). Inserts a row into `support_tickets`, then
-  emails `ADMIN_NOTIFICATION_EMAIL` via `_lib/resend.js` — the email is a notification only (ticket
-  text + attachment count), not the attachments themselves, to sidestep email attachment size limits;
-  the actual files are only ever viewed through the admin inbox's signed URLs. A failed email send is
+- `create-upload-url` — the client uploads the attachment directly to the private
+  `support-attachments` bucket via a signed URL, so file bytes never pass through this serverless
+  function's request body (Vercel's body-size limits would otherwise cap how large a screenshot
+  could be).
+- `submit` — rate-limited by IP via a Redis counter (`_lib/redisCache.js`, not the Supabase-backed
+  translate/chat credit gate — a ticket report is a different kind of usage and unauthenticated users
+  must still be able to submit). Inserts a row into `support_tickets`, then emails
+  `ADMIN_NOTIFICATION_EMAIL` via `_lib/resend.js` — the email is a notification only (ticket text +
+  attachment count), not the attachments themselves, to sidestep email attachment size limits; the
+  actual files are only ever viewed through the admin inbox's signed URLs. A failed email send is
   logged but never fails the request — the ticket is already saved regardless.
-- `admin.js` — `requireAdmin()`-gated action-dispatch (`list | update-status`), same pattern as
-  `pdf-store/admin.js`. Surfaced as a "Support Tickets" tab inside the existing PDF admin panel
+- `list`/`update-status` — power the "Support Tickets" tab inside the existing PDF admin panel
   (`AdminPdfUploadView.jsx`) rather than a new admin surface, since that's the only admin area the app
   has.
 - `_lib/resend.js` — a single `fetch` call to Resend's REST API (no SDK dependency, matching how
@@ -178,11 +186,11 @@ pairs; follow that existing pattern rather than introducing a state library.
   post-purchase password reveal, and password-gated download. `components/AdminPdfUploadView.jsx`
   (shown only when `isAdmin`, itself derived from the `my-purchases` response) is the admin panel —
   its three tabs (`ManagePdfsView.jsx`, upload form, `SupportTicketsView.jsx`) drive
-  `api/pdf-store/admin.js`'s and `api/support/admin.js`'s actions respectively.
+  `api/pdf-store/admin.js`'s and `api/support.js`'s actions respectively.
 - `components/ContactAdminModal.jsx` — the "🛟" button in `NavBar.jsx` (always visible, no sign-in
-  required) opens this; uploads attachments straight to Supabase Storage via a signed URL (see
-  `api/support/create-upload-url.js`) before calling `api/support/submit.js` with just the resulting
-  paths, following the same two-step pattern as `AdminPdfUploadView.jsx`'s PDF upload.
+  required) opens this; uploads attachments straight to Supabase Storage via a signed URL
+  (`api/support.js`'s `create-upload-url` action) before calling its `submit` action with just the
+  resulting paths, following the same two-step pattern as `AdminPdfUploadView.jsx`'s PDF upload.
 
 ### Patches
 

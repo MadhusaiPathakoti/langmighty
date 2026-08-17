@@ -144,13 +144,9 @@ function localApiPlugin() {
         await handler(req, res);
       });
 
-      // Support (Contact Admin) tickets: same generic-dispatcher approach as
-      // pdf-store above, for the same reason (a handful of small routes under
-      // one prefix).
       server.middlewares.use("/api/support", async (req, res) => {
-        const sub = req.url.split("?")[0].replace(/^\/+/, "");
-        if (!/^[a-z-]+$/.test(sub)) {
-          res.statusCode = 404;
+        if (req.method !== "POST") {
+          res.statusCode = 405;
           res.end();
           return;
         }
@@ -166,7 +162,7 @@ function localApiPlugin() {
           "ADMIN_NOTIFICATION_EMAIL",
         ]);
 
-        const { default: handler } = await server.ssrLoadModule(`/api/support/${sub}.js`);
+        const { default: handler } = await server.ssrLoadModule("/api/support.js");
         await handler(req, res);
       });
     },

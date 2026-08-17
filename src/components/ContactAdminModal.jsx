@@ -57,10 +57,10 @@ export default function ContactAdminModal({ open, onClose }) {
 
   async function uploadAttachment(file) {
     const authHeaders = await getAuthHeaders();
-    const urlRes = await apiFetch("/api/support/create-upload-url", {
+    const urlRes = await apiFetch("/api/support", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeaders },
-      body: JSON.stringify({ fileName: file.name }),
+      body: JSON.stringify({ action: "create-upload-url", fileName: file.name }),
     });
     const urlData = await urlRes.json();
     if (!urlRes.ok) throw new Error(urlData.error || "Could not prepare the attachment upload.");
@@ -85,10 +85,10 @@ export default function ContactAdminModal({ open, onClose }) {
       }
 
       const authHeaders = await getAuthHeaders();
-      const res = await apiFetch("/api/support/submit", {
+      const res = await apiFetch("/api/support", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders },
-        body: JSON.stringify({ subject, message, email, attachments }),
+        body: JSON.stringify({ action: "submit", subject, message, email, attachments }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not submit your report.");

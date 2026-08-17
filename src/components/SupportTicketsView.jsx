@@ -19,7 +19,7 @@ export default function SupportTicketsView() {
     setError(null);
     try {
       const authHeaders = await getAuthHeaders();
-      const res = await apiFetch("/api/support/admin", {
+      const res = await apiFetch("/api/support", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ action: "list" }),
@@ -44,7 +44,7 @@ export default function SupportTicketsView() {
     setBusyId(ticket.id);
     try {
       const authHeaders = await getAuthHeaders();
-      const res = await apiFetch("/api/support/admin", {
+      const res = await apiFetch("/api/support", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ action: "update-status", ticketId: ticket.id, status: nextStatus }),
