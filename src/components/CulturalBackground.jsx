@@ -41,6 +41,14 @@ const GLYPHS = [
 export default function CulturalBackground() {
   return (
     <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none select-none" aria-hidden="true">
+      {/* Warm heritage wash instead of a flat white/gray page — a soft saffron
+          glow up top fading into a cooler indigo/teal tone lower down, so the
+          app doesn't read as stark white behind its cards. */}
+      <div className="absolute inset-0 bg-gradient-to-b from-amber-50 via-orange-50/60 to-sky-50 dark:from-amber-950/25 dark:via-gray-950 dark:to-indigo-950" />
+      <div className="absolute -top-40 left-1/4 w-[40rem] h-[40rem] rounded-full bg-amber-200/50 dark:bg-amber-500/10 blur-3xl" />
+      <div className="absolute -bottom-48 right-1/5 w-[42rem] h-[42rem] rounded-full bg-indigo-200/45 dark:bg-indigo-500/10 blur-3xl" />
+      <div className="absolute top-1/3 right-0 w-[26rem] h-[26rem] rounded-full bg-emerald-200/30 dark:bg-emerald-500/10 blur-3xl" />
+
       <div
         className="absolute inset-0 opacity-[0.05] dark:opacity-[0.08] text-gray-900 dark:text-gray-100"
         style={{
@@ -51,7 +59,9 @@ export default function CulturalBackground() {
       {GLYPHS.map((g, i) => (
         <span
           key={i}
-          className="absolute font-bold text-indigo-900 dark:text-indigo-200 opacity-[0.06] dark:opacity-[0.08]"
+          className={`absolute font-bold opacity-[0.11] dark:opacity-[0.14] ${
+            i % 2 === 0 ? "text-amber-800 dark:text-amber-200" : "text-indigo-900 dark:text-indigo-200"
+          }`}
           style={{ top: g.top, left: g.left, fontSize: g.size, transform: `rotate(${g.rotate}deg)` }}
         >
           {g.char}
