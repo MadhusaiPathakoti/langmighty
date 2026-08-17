@@ -37,6 +37,7 @@ export default function AiChatView() {
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const bottomRef = useRef(null);
   const exportRef = useRef(null);
+  const textareaRef = useRef(null);
   const { requestAccess, consumeCredit, reportServerRejection, getAuthHeaders } = useAuthGate();
 
   useEffect(() => {
@@ -46,6 +47,15 @@ export default function AiChatView() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Grows the textarea with its content (capped) instead of scrolling inside a
+  // fixed-height box, then resets to a single row once the field is cleared.
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
+  }, [inputText]);
 
   // Shared by sendMessage (new exchange) and handleRegenerate (existing one) —
   // the caller is responsible for the requestAccess() check, appending/resetting
@@ -115,6 +125,15 @@ export default function AiChatView() {
   function handleSubmit(e) {
     e.preventDefault();
     sendMessage(inputText);
+  }
+
+  // Enter sends (matching the old single-line input's behavior); Shift+Enter
+  // falls through to the textarea's default newline insertion instead.
+  function handleKeyDown(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(inputText);
+    }
   }
 
   async function handleRegenerate(assistantId) {
@@ -249,15 +268,17 @@ export default function AiChatView() {
 
       <footer className="relative z-10 border-t border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm px-4 sm:px-6 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
         <div className="max-w-3xl mx-auto w-full">
-          <form onSubmit={handleSubmit} className="flex gap-3">
-            <input
-              type="text"
+          <form onSubmit={handleSubmit} className="flex gap-3 items-end">
+            <textarea
+              ref={textareaRef}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="Ask about grammar, vocabulary, pronunciation..."
-              className="flex-1 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800
+              onKeyDown={handleKeyDown}
+              placeholder="Ask about grammar, vocabulary, pronunciation... (Shift+Enter for a new line)"
+              rows={1}
+              className="flex-1 resize-none rounded-2xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800
                          text-gray-900 dark:text-gray-100 px-5 py-3 text-base focus:outline-none focus:ring-2
-                         focus:ring-indigo-500 placeholder:text-gray-400"
+                         focus:ring-indigo-500 placeholder:text-gray-400 max-h-[200px] overflow-y-auto"
             />
             <button
               type="submit"
