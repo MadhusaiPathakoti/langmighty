@@ -1,0 +1,71 @@
+diff --git a/node_modules/langmighty-shared/src/wordChainData.js b/node_modules/langmighty-shared/src/wordChainData.js
+index 45a4be1..902c3c6 100644
+--- a/node_modules/langmighty-shared/src/wordChainData.js
++++ b/node_modules/langmighty-shared/src/wordChainData.js
+@@ -492,33 +492,54 @@ export function generateWordChainRound(count, { targetLanguage, excludeIds = [],
+ // requested language are eligible — this excludes any AI-generated sentence
+ // that hasn't been backfilled with pronunciation yet, rather than showing an
+ // option with no romanization under it.
++function isEligible(sentence, lang) {
++  return Boolean(sentence.translations[lang]?.length && sentence.pronunciation?.[lang]?.length);
++}
++
++function eligiblePool(allSentences, lang) {
++  return allSentences.filter((s) => isEligible(s, lang));
++}
++
++function optionFor(sentence, lang) {
++  return {
++    text: sentence.translations[lang].join(" "),
++    pronunciation: sentence.pronunciation[lang].join(" "),
++  };
++}
++
++// `targetLanguage` of "mixed" (or omitted) randomizes the language per question —
++// matching generateQuiz/generateWordMatchRound's "mixed" behavior in quizData.js —
++// rather than silently collapsing the whole round to QUIZ_TARGET_LANGUAGES[0].
+ export function generateSentenceQuiz(questionCount, { targetLanguage, excludeIds = [], allSentences = WORD_CHAIN_SENTENCES } = {}) {
+-  const lang = QUIZ_TARGET_LANGUAGES.includes(targetLanguage) ? targetLanguage : QUIZ_TARGET_LANGUAGES[0];
+-  const pool = allSentences.filter((s) => s.translations[lang]?.length && s.pronunciation?.[lang]?.length);
++  const fixedLanguage = QUIZ_TARGET_LANGUAGES.includes(targetLanguage) ? targetLanguage : null;
++
++  // A sentence belongs in the pool if it's eligible in at least one candidate
++  // language, since a mixed-mode question only needs one of those languages.
++  const pool = fixedLanguage
++    ? eligiblePool(allSentences, fixedLanguage)
++    : allSentences.filter((s) => QUIZ_TARGET_LANGUAGES.some((l) => isEligible(s, l)));
+ 
+   const exclude = new Set(excludeIds);
+   const fresh = shuffle(pool.filter((s) => !exclude.has(s.id)));
+   const stale = shuffle(pool.filter((s) => exclude.has(s.id)));
+   const ordered = [...fresh, ...stale];
+ 
+-  function optionFor(sentence) {
+-    return {
+-      text: sentence.translations[lang].join(" "),
+-      pronunciation: sentence.pronunciation[lang].join(" "),
+-    };
+-  }
+-
+   const questions = [];
+   const usedIds = [];
+   const count = Math.min(questionCount, ordered.length || 1);
+   for (let i = 0; i < count; i++) {
+     const sentence = ordered[i % ordered.length];
+-    const correctOption = optionFor(sentence);
++    const eligibleLangs = fixedLanguage
++      ? [fixedLanguage]
++      : QUIZ_TARGET_LANGUAGES.filter((l) => isEligible(sentence, l));
++    const lang = eligibleLangs[Math.floor(Math.random() * eligibleLangs.length)];
++
++    const correctOption = optionFor(sentence, lang);
+ 
+-    const distractorPool = pool.filter((s) => s.id !== sentence.id);
++    const distractorPool = eligiblePool(allSentences, lang).filter((s) => s.id !== sentence.id);
+     const distractorOptions = shuffle(distractorPool)
+       .slice(0, 3)
+-      .map(optionFor);
++      .map((s) => optionFor(s, lang));
+ 
+     const options = shuffle([correctOption, ...distractorOptions]);
+ 
