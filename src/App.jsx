@@ -321,7 +321,11 @@ export default function App() {
       />
 
       {view === "roadmap" ? (
-        <RoadmapView language={roadmapLanguage} onSelectLanguage={setRoadmapLanguage} />
+        <RoadmapView
+          language={roadmapLanguage}
+          onSelectLanguage={setRoadmapLanguage}
+          onNavigatePdfStore={() => setView("pdf-store")}
+        />
       ) : view === "ai-chat" ? (
         <AiChatView />
       ) : view === "playground" ? (
