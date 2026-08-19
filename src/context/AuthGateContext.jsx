@@ -4,6 +4,7 @@ import { isSupabaseConfigured, supabase } from "../lib/supabaseClient.js";
 const FREE_CREDIT_LIMIT = 3;
 const CREDITS_KEY = "langlearn_credits_used";
 const PENDING_OPT_IN_KEY = "langlearn_pending_marketing_opt_in";
+const STREAK_KEY = "langlearn_streak";
 
 function loadCreditsUsed() {
   const raw = localStorage.getItem(CREDITS_KEY);
@@ -11,11 +12,53 @@ function loadCreditsUsed() {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function yesterdayKey() {
+  const d = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// Local calendar days, not a rolling 24h window, so a streak survives visiting
+// at 11pm one day and 7am the next rather than requiring exactly 24h between
+// visits. `stored` may be null/malformed (first-ever visit, or corrupt JSON).
+function nextStreak(stored) {
+  const today = todayKey();
+  if (!stored || typeof stored.count !== "number" || !stored.lastDate) {
+    return { count: 1, lastDate: today };
+  }
+  if (stored.lastDate === today) return { count: stored.count, lastDate: today };
+  const count = stored.lastDate === yesterdayKey() ? stored.count + 1 : 1;
+  return { count, lastDate: today };
+}
+
+function loadLocalStreak() {
+  try {
+    const raw = localStorage.getItem(STREAK_KEY);
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+// Device-local guest streak — used as-is for signed-out visitors, and as a
+// one-time seed value the first time a signed-in account starts being tracked
+// server-side (see the streak-sync effect below).
+function updateLocalStreak() {
+  const result = nextStreak(loadLocalStreak());
+  localStorage.setItem(STREAK_KEY, JSON.stringify(result));
+  return result.count;
+}
+
 const AuthGateContext = createContext(null);
 
 export function AuthGateProvider({ children }) {
   const [session, setSession] = useState(null);
   const [creditsUsed, setCreditsUsed] = useState(loadCreditsUsed);
+  const [streak, setStreak] = useState(() => updateLocalStreak());
   // null | "signup" | "login" | "forgot-password" | "reset-password"
   const [authView, setAuthView] = useState(null);
 
@@ -39,6 +82,50 @@ export function AuthGateProvider({ children }) {
 
     return () => listener.subscription.unsubscribe();
   }, []);
+
+  // Once signed in, the account's own streak_count/last_streak_date in
+  // `profiles` becomes the source of truth instead of this device's local
+  // guest streak, so the same account shows the same streak on every device
+  // (mobile, laptop, ...) rather than each one counting separately. The very
+  // first time an account gets tracked (no streak_count yet), it's seeded
+  // from this device's current local streak instead of starting over at 1.
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId || !isSupabaseConfigured) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("profiles")
+          .select("streak_count, last_streak_date")
+          .eq("id", userId)
+          .maybeSingle();
+
+        const result = data?.streak_count
+          ? nextStreak({ count: data.streak_count, lastDate: data.last_streak_date })
+          : { count: Math.max(loadLocalStreak()?.count ?? 1, 1), lastDate: todayKey() };
+
+        if (cancelled) return;
+        setStreak(result.count);
+        // The account is now authoritative — clear the local guest count so a
+        // later sign-out on this device starts a fresh guest streak instead
+        // of resurrecting this now-irrelevant number.
+        localStorage.removeItem(STREAK_KEY);
+        await supabase
+          .from("profiles")
+          .update({ streak_count: result.count, last_streak_date: result.lastDate })
+          .eq("id", userId);
+      } catch {
+        // Fails open — keep showing whatever streak value is already set
+        // rather than blocking on a network/RLS issue.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.user?.id]);
 
   async function saveProfileOnSignIn(user) {
     const pending = localStorage.getItem(PENDING_OPT_IN_KEY);
@@ -174,6 +261,7 @@ export function AuthGateProvider({ children }) {
         isSignedIn,
         userEmail: session?.user?.email ?? null,
         hasPasswordIdentity,
+        streak,
         freeCreditLimit: FREE_CREDIT_LIMIT,
         remainingCredits,
         canUseFeature,

@@ -49,7 +49,7 @@ export default function HeroSection({ onGetStarted }) {
         <span
           key={i}
           aria-hidden="true"
-          className={`hidden sm:block pointer-events-none absolute font-extrabold animate-float ${l.color}`}
+          className={`hidden sm:block pointer-events-none absolute font-extrabold animate-float opacity-30 dark:opacity-25 ${l.color}`}
           style={{
             top: l.top,
             left: l.left,

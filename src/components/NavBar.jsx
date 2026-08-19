@@ -45,22 +45,121 @@ export default function NavBar({
   }
 
   return (
-    <nav className="flex flex-wrap items-center justify-between gap-y-2 px-4 sm:px-6 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top))] border-b border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm shadow-sm sticky top-0 z-30">
-      <div className="flex items-center gap-3">
+    <nav className="flex flex-wrap items-center gap-y-2 px-4 sm:px-6 pb-2.5 pt-[calc(0.625rem+env(safe-area-inset-top))] border-b border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm shadow-sm sticky top-0 z-30">
+      {/* Brand — row 1 on mobile, far left on desktop (sm:mr-auto pushes
+          everything else into one clustered group on the right, matching
+          the original single-row desktop layout). */}
+      <div className="flex items-center gap-3 sm:mr-auto">
         <button type="button" onClick={onNavigateLanding} className="flex items-center gap-2 group">
           <LmLogo className="w-8 h-8 group-hover:scale-105 transition-transform" />
-          <span className="font-bold text-lg bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
+          <span className="hidden sm:inline font-bold text-lg bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
             LangMighty
           </span>
         </button>
         <StreakBadge />
       </div>
 
-      <div className="flex items-center gap-1 flex-wrap justify-end">
+      {/* Account/utility controls — still row 1 on mobile (pushed to the
+          right edge via ml-auto), tail end of the single desktop row. */}
+      <div className="flex items-center gap-1 flex-wrap justify-end order-2 sm:order-3 ml-auto sm:ml-0">
+        {isSignedIn ? (
+          <div
+            className="relative"
+            ref={accountMenuRef}
+            onMouseEnter={() => setAccountMenuOpen(true)}
+            onMouseLeave={() => setAccountMenuOpen(false)}
+          >
+            <button
+              type="button"
+              onClick={() => setAccountMenuOpen((o) => !o)}
+              title={userEmail}
+              aria-haspopup="true"
+              aria-expanded={accountMenuOpen}
+              aria-label="Account menu"
+              className="w-8 h-8 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold
+                         flex items-center justify-center transition-colors"
+            >
+              {userEmail?.charAt(0).toUpperCase() || "?"}
+            </button>
+
+            {accountMenuOpen && (
+              <div
+                className="absolute right-0 mt-1 w-56 rounded-lg border border-gray-200 dark:border-gray-700
+                           bg-white dark:bg-gray-900 shadow-lg py-1 z-20"
+              >
+                <p
+                  className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 truncate border-b border-gray-100 dark:border-gray-800"
+                  title={userEmail}
+                >
+                  {userEmail}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAccountMenuOpen(false);
+                    setChangePasswordOpen(true);
+                  }}
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  Change password
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAccountMenuOpen(false);
+                    signOut();
+                  }}
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  Sign out
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            <span className="hidden sm:inline px-3 py-1.5 text-xs font-medium text-gray-400 dark:text-gray-500 whitespace-nowrap">
+              {remainingCredits} free {remainingCredits === 1 ? "prompt" : "prompts"} left
+            </span>
+            <button
+              type="button"
+              onClick={() => openAuthModal("login")}
+              className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300
+                         hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              Sign in
+            </button>
+          </>
+        )}
+
+        <button
+          type="button"
+          onClick={onOpenContactAdmin}
+          title="Contact Admin"
+          aria-label="Contact Admin"
+          className="px-2.5 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400
+                     hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        >
+          🛟
+        </button>
+
+        <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+      </div>
+
+      {/* Primary nav links — row 2 on mobile, a single horizontally
+          scrollable strip (w-full forces the wrap onto its own row; the
+          scrolling container is why Roadmap gets a plain non-dropdown
+          button below instead of reusing the desktop popup, which would
+          get clipped by overflow-x-auto's implied overflow-y: auto). Inline
+          with everything else on desktop, matching the original layout. */}
+      <div
+        className="order-3 sm:order-2 w-full sm:w-auto flex items-center gap-1 overflow-x-auto sm:overflow-visible
+                   flex-nowrap sm:flex-wrap -mx-4 px-4 sm:mx-0 sm:px-0"
+      >
         <button
           type="button"
           onClick={onNavigateLanding}
-          className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+          className="flex-shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition-colors text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
         >
           Home
         </button>
@@ -68,7 +167,7 @@ export default function NavBar({
         <button
           type="button"
           onClick={onNavigateChat}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+          className={`flex-shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             view === "chat"
               ? "bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300"
               : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -80,7 +179,7 @@ export default function NavBar({
         <button
           type="button"
           onClick={onNavigateAiChat}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+          className={`flex-shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             view === "ai-chat"
               ? "bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300"
               : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -92,7 +191,7 @@ export default function NavBar({
         <button
           type="button"
           onClick={onNavigatePlayground}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+          className={`flex-shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             view === "playground"
               ? "bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300"
               : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -104,7 +203,7 @@ export default function NavBar({
         <button
           type="button"
           onClick={onNavigatePdfStore}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+          className={`flex-shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             view === "pdf-store"
               ? "bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300"
               : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -113,7 +212,21 @@ export default function NavBar({
           PDF Store
         </button>
 
-        <div className="relative" ref={roadmapMenuRef}>
+        {/* Mobile: plain nav item, no language dropdown (see comment above) */}
+        <button
+          type="button"
+          onClick={() => onNavigateRoadmap(roadmapLanguage)}
+          className={`sm:hidden flex-shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            view === "roadmap"
+              ? "bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300"
+              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+          }`}
+        >
+          Roadmap
+        </button>
+
+        {/* Desktop: full dropdown with per-language shortcuts */}
+        <div className="hidden sm:block relative" ref={roadmapMenuRef}>
           <button
             type="button"
             onClick={() => setRoadmapMenuOpen((o) => !o)}
@@ -150,77 +263,6 @@ export default function NavBar({
             </div>
           )}
         </div>
-
-        {isSignedIn ? (
-          <div className="relative" ref={accountMenuRef}>
-            <button
-              type="button"
-              onClick={() => setAccountMenuOpen((o) => !o)}
-              title={userEmail}
-              aria-haspopup="true"
-              aria-expanded={accountMenuOpen}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 dark:text-gray-400
-                         hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            >
-              {userEmail} ▾
-            </button>
-
-            {accountMenuOpen && (
-              <div
-                className="absolute right-0 mt-1 w-48 rounded-lg border border-gray-200 dark:border-gray-700
-                           bg-white dark:bg-gray-900 shadow-lg py-1 z-20"
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAccountMenuOpen(false);
-                    setChangePasswordOpen(true);
-                  }}
-                  className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-                >
-                  Change password
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAccountMenuOpen(false);
-                    signOut();
-                  }}
-                  className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-                >
-                  Sign out
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <>
-            <span className="px-3 py-1.5 text-xs font-medium text-gray-400 dark:text-gray-500">
-              {remainingCredits} free {remainingCredits === 1 ? "prompt" : "prompts"} left
-            </span>
-            <button
-              type="button"
-              onClick={() => openAuthModal("login")}
-              className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300
-                         hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            >
-              Sign in
-            </button>
-          </>
-        )}
-
-        <button
-          type="button"
-          onClick={onOpenContactAdmin}
-          title="Contact Admin"
-          aria-label="Contact Admin"
-          className="px-2.5 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400
-                     hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        >
-          🛟
-        </button>
-
-        <ThemeToggle theme={theme} onToggle={onToggleTheme} />
       </div>
 
       <ChangePasswordModal open={changePasswordOpen} onClose={() => setChangePasswordOpen(false)} />
