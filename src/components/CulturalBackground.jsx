@@ -59,7 +59,7 @@ export default function CulturalBackground() {
       {GLYPHS.map((g, i) => (
         <span
           key={i}
-          className={`absolute font-bold opacity-[0.11] dark:opacity-[0.14] ${
+          className={`absolute font-bold opacity-[0.06] dark:opacity-[0.08] ${
             i % 2 === 0 ? "text-amber-800 dark:text-amber-200" : "text-indigo-900 dark:text-indigo-200"
           }`}
           style={{ top: g.top, left: g.left, fontSize: g.size, transform: `rotate(${g.rotate}deg)` }}
