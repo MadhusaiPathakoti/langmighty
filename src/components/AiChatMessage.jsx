@@ -1,3 +1,4 @@
+import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -25,12 +26,92 @@ const markdownComponents = {
   td: (props) => <td className="px-3 py-2 border-b border-gray-100 dark:border-gray-800" {...props} />,
 };
 
-export default function AiChatMessage({ message, onDelete, onRegenerate, disableActions }) {
+export default function AiChatMessage({ message, onDelete, onRegenerate, onEdit, disableActions }) {
   const isUser = message.role === "user";
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState(message.content);
+
+  function startEdit() {
+    setDraft(message.content);
+    setIsEditing(true);
+  }
+
+  function cancelEdit() {
+    setIsEditing(false);
+  }
+
+  function saveEdit() {
+    const trimmed = draft.trim();
+    if (!trimmed) return;
+    setIsEditing(false);
+    onEdit?.(message.id, trimmed);
+  }
 
   if (isUser) {
+    if (isEditing) {
+      return (
+        <div className="flex justify-end group">
+          <div className="min-w-0 w-full max-w-[80%] sm:max-w-md rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm">
+            <textarea
+              autoFocus
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  saveEdit();
+                } else if (e.key === "Escape") {
+                  cancelEdit();
+                }
+              }}
+              rows={3}
+              className="w-full resize-none rounded-lg bg-indigo-700 text-white placeholder:text-indigo-200 px-2.5 py-2 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-indigo-300"
+            />
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => onDelete?.(message.id)}
+                className="text-xs font-medium text-indigo-200 hover:text-red-200 hover:underline"
+              >
+                Delete
+              </button>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  className="text-xs font-medium text-indigo-100 hover:underline"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={saveEdit}
+                  disabled={!draft.trim() || disableActions}
+                  className="text-xs font-semibold bg-white text-indigo-700 rounded-full px-3 py-1
+                             hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Save & resend
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="flex justify-end items-center gap-2 group">
+        <button
+          type="button"
+          onClick={startEdit}
+          disabled={disableActions}
+          className="text-gray-300 dark:text-gray-600 hover:text-indigo-500 dark:hover:text-indigo-400 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Edit this message"
+          aria-label="Edit this message"
+        >
+          ✏️
+        </button>
         <button
           type="button"
           onClick={() => onDelete?.(message.id)}

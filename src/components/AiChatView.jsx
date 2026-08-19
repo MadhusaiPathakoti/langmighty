@@ -164,6 +164,41 @@ export default function AiChatView() {
     );
   }
 
+  async function handleEditSubmit(userId, newText) {
+    if (isSubmitting) return;
+    const index = messages.findIndex((m) => m.id === userId);
+    if (index === -1) return;
+    const assistantMessage = messages[index + 1];
+    if (!assistantMessage || assistantMessage.role !== "assistant") return;
+    if (!requestAccess()) return;
+
+    // Same context slice handleRegenerate uses — everything before this
+    // question/answer pair, since the edited text replaces it rather than
+    // extending it.
+    const history = messages
+      .slice(0, index)
+      .filter((m) => m.status === "done")
+      .map((m) => ({ role: m.role, content: m.content }));
+
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id === userId) return { ...m, content: newText };
+        if (m.id === assistantMessage.id) return { ...m, status: "loading", content: "", error: null };
+        return m;
+      })
+    );
+
+    await runChat(assistantMessage.id, newText, history, () =>
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantMessage.id
+            ? { ...m, status: "error", error: "You've used your free prompts. Please sign in to continue." }
+            : m
+        )
+      )
+    );
+  }
+
   function handleDelete(id) {
     setMessages((prev) => {
       const index = prev.findIndex((m) => m.id === id);
@@ -259,6 +294,7 @@ export default function AiChatView() {
               message={message}
               onDelete={handleDelete}
               onRegenerate={handleRegenerate}
+              onEdit={handleEditSubmit}
               disableActions={isSubmitting}
             />
           ))}

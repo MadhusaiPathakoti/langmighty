@@ -56,6 +56,13 @@ export default function ReadAloudGame({ onExit }) {
   const [status, setStatus] = useState("idle"); // idle | listening | correct | wrong | error
   const [transcript, setTranscript] = useState("");
   const [showHint, setShowHint] = useState(false);
+  const recognitionRef = useRef(null);
+
+  // Releases the mic if the player navigates away (or switches sentence/language)
+  // mid-listen, rather than leaving recognition running in the background.
+  useEffect(() => {
+    return () => recognitionRef.current?.stop();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,6 +82,7 @@ export default function ReadAloudGame({ onExit }) {
   const pool = bucketByDifficulty(allSentences, language)[difficulty];
 
   function startNewSentence(pool, excludeIds) {
+    recognitionRef.current?.stop();
     if (pool.length === 0) {
       setSentence(null);
       return;
@@ -109,14 +117,22 @@ export default function ReadAloudGame({ onExit }) {
     setStatus("listening");
     setTranscript("");
 
-    listenOnce(LANGUAGE_TO_SPEECH_LOCALE[language], {
+    recognitionRef.current = listenOnce(LANGUAGE_TO_SPEECH_LOCALE[language], {
       onResult: (text) => {
         setTranscript(text);
         const expected = sentence.translations[language].join(" ");
         setStatus(similarity(text, expected) >= CORRECT_THRESHOLD ? "correct" : "wrong");
       },
       onError: () => setStatus("error"),
+      // Recognition can end with no result (silence, or the user stopping it
+      // manually) without onResult/onError ever firing — without this, status
+      // would stay stuck on "listening" forever with no way back to idle.
+      onEnd: () => setStatus((s) => (s === "listening" ? "idle" : s)),
     });
+  }
+
+  function handleStopListening() {
+    recognitionRef.current?.stop();
   }
 
   function handleNext() {
@@ -226,19 +242,18 @@ export default function ReadAloudGame({ onExit }) {
 
         <button
           type="button"
-          onClick={handleRecord}
-          disabled={status === "listening"}
+          onClick={status === "listening" ? handleStopListening : handleRecord}
           className={`mt-6 w-16 h-16 rounded-full flex items-center justify-center text-2xl mx-auto transition-colors ${
             status === "listening"
-              ? "bg-red-500 text-white animate-pulse"
+              ? "bg-red-500 hover:bg-red-600 text-white animate-pulse"
               : "bg-indigo-600 hover:bg-indigo-700 text-white"
           }`}
-          title="Tap and read the sentence aloud"
+          title={status === "listening" ? "Tap to stop listening" : "Tap and read the sentence aloud"}
         >
-          🎤
+          {status === "listening" ? "⏹" : "🎤"}
         </button>
         <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
-          {status === "listening" ? "Listening..." : "Tap the mic and read the sentence aloud"}
+          {status === "listening" ? "Listening... tap to stop" : "Tap the mic and read the sentence aloud"}
         </p>
 
         {!showHint && status !== "correct" && (
