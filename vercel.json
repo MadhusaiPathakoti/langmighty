@@ -4,5 +4,8 @@
       "includeFiles": "node_modules/muhammara/**",
       "maxDuration": 30
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/checkout", "destination": "/index.html" }
+  ]
 }
