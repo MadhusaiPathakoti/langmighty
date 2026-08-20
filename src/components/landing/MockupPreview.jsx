@@ -114,6 +114,34 @@ function ChatMockup() {
   );
 }
 
+function VoiceAssistantMockup() {
+  return (
+    <Card>
+      <div className="flex items-center justify-center gap-3 mb-4">
+        <span className="w-12 h-12 rounded-full bg-teal-600 flex items-center justify-center text-white text-xl">
+          🎤
+        </span>
+        <div className="flex items-end gap-0.5 h-8">
+          {[8, 16, 24, 14, 20, 10, 18, 12].map((h, i) => (
+            <span key={i} className="w-1.5 rounded-full bg-teal-400 dark:bg-teal-500" style={{ height: `${h}px` }} />
+          ))}
+        </div>
+      </div>
+      <div className="space-y-2">
+        <div className="max-w-[85%] ml-auto rounded-2xl rounded-tr-sm bg-indigo-600 px-3 py-2 text-sm text-white">
+          I want to learn Kannada
+        </div>
+        <div className="max-w-[90%] rounded-2xl rounded-tl-sm bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm text-gray-700 dark:text-gray-200">
+          A common greeting is "namaskara" (ನಮಸ್ಕಾರ). Can you try saying it?
+          <div className="mt-1.5 text-sm font-medium text-teal-700 dark:text-teal-300">
+            🗣️ ನಮಸ್ಕಾರ <span className="font-normal italic text-teal-500 dark:text-teal-400">(namaskara)</span>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 function MultilangMockup() {
   return (
     <Card>
@@ -197,6 +225,7 @@ const MOCKUPS = {
   pronunciation: PronunciationMockup,
   history: HistoryMockup,
   chat: ChatMockup,
+  "voice-assistant": VoiceAssistantMockup,
   playground: PlaygroundMockup,
   multilang: MultilangMockup,
   "pdf-store": PdfStoreMockup,

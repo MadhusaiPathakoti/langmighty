@@ -59,6 +59,22 @@ export const FEATURES = [
     mockup: "chat",
   },
   {
+    id: "voice-assistant",
+    emoji: "🎙️",
+    color: "teal",
+    title: "AI Voice Adaptive Chat",
+    description:
+      "New: Talk with an AI language partner out loud — it replies with real speech in whichever of the six languages you use, and adapts as the conversation goes.",
+    bullets: [
+      "Speak or type in English, Telugu, Hindi, Kannada, Malayalam, or Tamil",
+      "The assistant replies out loud, mirroring whichever language you used",
+      "Every reply comes with native script, romanization & an English translation",
+      "Teaches you exactly how to answer, not just what it's asking",
+      "Follows you when you switch topics or languages mid-conversation",
+    ],
+    mockup: "voice-assistant",
+  },
+  {
     id: "playground",
     emoji: "🎮",
     color: "rose",
@@ -177,6 +193,11 @@ export const FAQ_ITEMS = [
       "It's a language tutor you can ask about grammar, vocabulary, and pronunciation, with example sentences in the target language.",
   },
   {
+    question: "What is the AI Voice Adaptive Chat?",
+    answer:
+      "A spoken back-and-forth with an AI language partner — tap the mic, speak in any of the six languages, and it replies out loud in whichever one you used, mirroring you as the conversation goes and teaching you how to respond, not just what it's asking.",
+  },
+  {
     question: "What's in the PDF Store?",
     answer:
       "Downloadable language-learning guides for specific language pairs. Preview a few sample pages for free, then unlock the full PDF with a one-time payment — no subscription, no recurring charges.",
@@ -194,6 +215,7 @@ export function colorClasses(color) {
     sky: "bg-sky-100 text-sky-600 dark:bg-sky-900 dark:text-sky-300",
     rose: "bg-rose-100 text-rose-600 dark:bg-rose-900 dark:text-rose-300",
     amber: "bg-amber-100 text-amber-600 dark:bg-amber-900 dark:text-amber-300",
+    teal: "bg-teal-100 text-teal-600 dark:bg-teal-900 dark:text-teal-300",
   };
   return map[color] ?? map.indigo;
 }
