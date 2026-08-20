@@ -25,6 +25,8 @@ itself proxies `/api/*` requests to the handler files (see "Local API dev server
 
 Copy `.env.example` to `.env` and fill in:
 - `GEMINI_API_KEY` — required for translate/chat/game-content generation
+- `GROQ_API_KEY` — required for the AI Chat Voice Assistant's replies (`mode: "voice-assistant"` in
+  `api/chat.js`) — the one chat mode that's Groq-backed instead of Gemini-backed
 - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — client-side Supabase (Google sign-in)
 - `SUPABASE_SERVICE_ROLE_KEY` — server-only, never prefix with `VITE_`
 - `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` — server-only, Redis cache
@@ -67,7 +69,12 @@ even though it builds fine locally.
   `CACHE_VERSION` — bump it if `buildPrompt`/`buildResponseSchema` shape changes, so old cache entries
   don't get served against a new contract). `regenerate: true` bypasses the cache and refreshes it.
 - `chat.js` — Gemini-backed language tutor with multi-turn history, same backend approach as
-  translate.
+  translate. One exception: `mode: "voice-assistant"` (used by the Voice Assistant view) calls Groq
+  instead — its free tier suits a feature that's called many times per spoken session — via its
+  OpenAI-compatible `chat.completions` endpoint with `response_format: { type: "json_object" }`.
+  Unlike Gemini's `responseSchema`, that only guarantees valid JSON syntax, not the right keys/enum
+  values, so `sanitizeVoiceAssistantTurn` defends against a malformed reply before it reaches the
+  script-purity checks shared with the other structured modes.
 - `tts.js` — Microsoft Edge neural TTS via `edge-tts-universal` (patched, see below).
 - `game-content.js` — read-only endpoint serving AI-generated Playground vocab/sentences that were
   bulk-generated once by `scripts/seedGameContent.mjs` (and later backfilled for pronunciation by

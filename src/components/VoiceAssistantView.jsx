@@ -3,7 +3,11 @@ import { useAuthGate } from "../context/AuthGateContext.jsx";
 import { apiFetch } from "../lib/apiClient.js";
 import { playTranslation, stopAudio } from "../utils/tts.js";
 import { isSpeechRecognitionSupported, listenContinuous } from "../utils/speechRecognition.js";
-import { VOICE_ASSISTANT_SPEECH_LOCALE, voiceAssistantLanguageInfo } from "../voiceAssistantLanguages.js";
+import {
+  VOICE_ASSISTANT_LANGUAGES,
+  VOICE_ASSISTANT_SPEECH_LOCALE,
+  voiceAssistantLanguageInfo,
+} from "../voiceAssistantLanguages.js";
 
 const VOICE_ASSISTANT_KEY = "langlearn_voice_assistant";
 
@@ -38,11 +42,14 @@ export default function VoiceAssistantView() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState("");
   const [micError, setMicError] = useState(null);
-  // Tracks the language the assistant last replied in, so the NEXT mic
-  // session listens in that same locale — the closest browser speech
-  // recognition can get to "adapting" to the learner without a manual
-  // language picker, since it has no way to detect a spoken language before
-  // it starts capturing audio.
+  // Defaults to whatever language the assistant/practice-phrase last used, so
+  // the NEXT mic session listens in that locale — the closest browser speech
+  // recognition can get to "adapting" without a manual picker, since it has
+  // no way to detect a spoken language before it starts capturing audio. That
+  // guess is wrong whenever the learner wants to interject in a different
+  // language than the one being practiced (e.g. asking "teach me verbs" in
+  // English mid-Kannada-practice) — the selector below lets them override it
+  // for a turn instead of getting garbled speech-to-text back.
   const [currentLanguage, setCurrentLanguage] = useState("english");
 
   const speechSupported = isSpeechRecognitionSupported();
@@ -127,7 +134,15 @@ export default function VoiceAssistantView() {
             : m
         )
       );
-      setCurrentLanguage(data.language);
+      // When the reply teaches/asks the learner to try a phrase in a
+      // different language than the reply itself (e.g. an English reply
+      // asking them to try a Kannada phrase), the learner's next utterance
+      // is almost certainly an attempt at THAT phrase, not more English —
+      // so the next mic session should listen in the phrase's locale, not
+      // the reply's own. Recognizing Kannada speech with an English-locale
+      // recognizer is exactly what was producing garbled transcripts like
+      // "Nanu Chennai" for "naanu chennagiddēne".
+      setCurrentLanguage(data.practicePhraseLanguage || data.language);
       speakTurn({
         content: data.reply,
         language: data.language,
@@ -345,6 +360,23 @@ export default function VoiceAssistantView() {
         <div className="max-w-3xl mx-auto w-full flex flex-col items-center gap-3">
           {speechSupported ? (
             <>
+              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <label htmlFor="voice-assistant-speak-language">Speaking in:</label>
+                <select
+                  id="voice-assistant-speak-language"
+                  value={currentLanguage}
+                  onChange={(e) => setCurrentLanguage(e.target.value)}
+                  disabled={isListening || isSpeaking}
+                  title="Override which language the mic listens for — useful if you want to say something in a different language than the conversation is currently in"
+                  className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 px-2 py-1 disabled:opacity-60"
+                >
+                  {VOICE_ASSISTANT_LANGUAGES.map((lang) => (
+                    <option key={lang.key} value={lang.key}>
+                      {lang.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <button
                 type="button"
                 onClick={isListening ? handleStopListening : handleMicClick}

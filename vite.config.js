@@ -87,7 +87,10 @@ function localApiPlugin() {
         }
         await prepareApiRequest(req, res);
 
-        injectEnv(["GEMINI_API_KEY", "VITE_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]);
+        // GROQ_API_KEY is only used by chat.js's "voice-assistant" mode
+        // (Groq, not Gemini, backs that one mode — see the comment on
+        // GROQ_MODEL in api/chat.js for why).
+        injectEnv(["GEMINI_API_KEY", "GROQ_API_KEY", "VITE_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]);
 
         const { default: handler } = await server.ssrLoadModule("/api/chat.js");
         await handler(req, res);

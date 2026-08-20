@@ -86,11 +86,20 @@ CRITICAL — the learner may be a total beginner in the language they're learnin
 - This reply will be read aloud by text-to-speech, not displayed as formatted text: write plain natural spoken sentences only. Never use markdown, bullet points, tables, headings, asterisks, or other formatting. Keep replies short and conversational (1-3 sentences) unless the learner explicitly asks for a longer explanation or list.
 - Whenever you reply in a regional language (not English), also give a natural English translation of that same reply — a total beginner reading a native-script sentence with no gloss has no way to know what you said.
 
-CRITICAL — when you ask the learner to say/repeat/practice a phrase in a language other than the one you're replying in (e.g. you're replying in English but teaching a Kannada phrase like "hege idheera"), a text-to-speech voice for your reply's own language would mispronounce that phrase badly if it's just inline romanized text in "reply" — it has to be spoken separately, by a voice for the RIGHT language, from the phrase's own native script. So whenever this happens, duplicate that phrase into three extra fields (leave "practicePhraseLanguage" as "none" and the other two as "" when this doesn't apply):
-- "practicePhraseNative": the exact phrase, written in its own native script (never romanized here).
-- "practicePhraseRomanized": a roman pronunciation guide for that same phrase (this can match what you already wrote inline in "reply", if anything).
-- "practicePhraseLanguage": which of "telugu", "hindi", "kannada", "malayalam", "tamil" that phrase is in, or "none" if this doesn't apply.
-"reply" can still mention the phrase inline (romanized, for readability) as you normally would — these three fields are additional, not a replacement.
+CRITICAL — never let the conversation dead-end. This is a practice session, not a one-off Q&A, so almost every reply must end by moving things forward: ask a follow-up question, suggest the next word/phrase to try, offer a related topic, or invite them to make a sentence with what they just learned. A reply like "You nailed it! You're doing wonderful with your practice today." with nothing after it leaves the learner with nowhere to go — always land on a concrete next step or question instead (e.g. "You nailed it! Want to try another common phrase, like how to say goodbye?"). The only exception is when the learner clearly signals they want to stop (e.g. "that's enough for now", "bye") — then wrap up warmly without pushing further.
+
+CRITICAL — never ask the learner a question IN the language they're learning and then just wait, as if they already know how to answer it — a total beginner who can't yet construct sentences in that language has no way to reply to "nimma hesaru ēnu?" on their own. Every time you ask such a question, immediately also teach them the answer pattern in the same turn: give the response phrase or fill-in-the-blank template they can say back (e.g. after asking "what is your name?" in Kannada, also say something like "You can answer with nanna hesaru and then your name."). Never leave them to guess how to respond.
+
+CRITICAL — always follow the learner's lead over your own plan. If at any point — in any language — they ask to change topic, say they're bored or want to stop this exercise, or name something specific they'd rather practice instead (e.g. "I'm bored with this, let's learn feelings in Kannada"), immediately drop whatever you were doing and switch to what they asked for, starting fresh on that new topic. Don't finish your old question or steer them back to it first.
+
+CRITICAL — whenever your reply teaches, introduces, or offers a NEW word or phrase from a language other than the one you're replying in for the learner to learn or try right now (e.g. "the verb to go is hogo", "we say hege idheera for that", "shall we try baruttene for I come", or an answer pattern you just taught per the rule above) — a text-to-speech voice for your reply's own language would mispronounce that word badly if it only exists as inline romanized text in "reply". It has to be spoken separately, by a voice for the RIGHT language, from the word's own native script, and the learner (who likely can't read that script yet) needs to see it written out too. So whenever this happens, duplicate that exact new word/phrase into three extra fields:
+- "practicePhraseNative": the exact word or phrase you just taught, written in its own native script (never romanized here). If a turn both asks a question in the target language AND teaches the answer pattern for it, capture the ANSWER pattern here, not the question — the answer is what the learner is about to actually try saying next.
+- "practicePhraseRomanized": a roman pronunciation guide for that same word/phrase — this must exactly match the romanized spelling you used inline in "reply", so the two don't contradict each other.
+- "practicePhraseLanguage": which of "telugu", "hindi", "kannada", "malayalam", "tamil" that word/phrase is in.
+Leave "practicePhraseLanguage" as "none" and the other two as "" whenever your reply does NOT teach a new word this turn — in particular:
+- Merely acknowledging, confirming, or repeating back a word the LEARNER already said correctly (e.g. "Wonderful, you said namaskara, which is hello!") is not teaching something new — don't re-surface a word just because you mentioned it in passing.
+- A reply that only asks what to learn/practice next, without yet giving the actual phrase (e.g. "would you like to learn how to ask how someone is doing next?"), has nothing new to show yet — wait until the following turn where you actually give that phrase.
+"reply" should still mention any new word inline (romanized, for readability) as you normally would — these three fields are additional, not a replacement, and only for genuinely NEW content.
 
 Respond with six fields:
 - "language": exactly one of "english", "telugu", "hindi", "kannada", "malayalam", "tamil" — whichever you are replying in, per the script rule above.
@@ -98,58 +107,92 @@ Respond with six fields:
 - "translation": if "language" is "english", repeat the exact same text as "reply". Otherwise, a natural English translation of "reply" so a total beginner can follow along.
 - "practicePhraseNative", "practicePhraseRomanized", "practicePhraseLanguage": per the rule above — "none"/""/"" if you aren't asking the learner to practice a specific phrase in a different language than "reply".`;
 
-const VOICE_ASSISTANT_SCHEMA = {
-  type: "OBJECT",
-  properties: {
-    language: { type: "STRING", enum: VOICE_ASSISTANT_LANGUAGES.map((l) => l.key) },
-    reply: { type: "STRING" },
-    translation: { type: "STRING" },
-    practicePhraseNative: { type: "STRING" },
-    practicePhraseRomanized: { type: "STRING" },
-    practicePhraseLanguage: { type: "STRING", enum: ["none", ...LANGUAGES.map((l) => l.key)] },
-  },
-  required: [
-    "language",
-    "reply",
-    "translation",
-    "practicePhraseNative",
-    "practicePhraseRomanized",
-    "practicePhraseLanguage",
-  ],
-};
+const VOICE_ASSISTANT_LANGUAGE_KEYS = VOICE_ASSISTANT_LANGUAGES.map((l) => l.key);
+const PRACTICE_PHRASE_LANGUAGE_KEYS = ["none", ...LANGUAGES.map((l) => l.key)];
 
-// Same structured-JSON approach as callRoleplayTurn — knowing the reply
-// language as its own field (rather than sniffing the script afterward) is
-// what lets the client pick the right TTS voice and the right recognition
-// locale for the learner's next turn.
-async function callVoiceAssistantTurn(apiKey, contents, systemInstruction = VOICE_ASSISTANT_SYSTEM_INSTRUCTION) {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemInstruction }] },
-        contents,
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: VOICE_ASSISTANT_SCHEMA,
-          temperature: 0.5,
-        },
-      }),
-    }
-  );
+// Groq (not Gemini) backs this one mode — its free tier is a better fit for
+// a feature that's spoken back-and-forth many times per session than paying
+// per Gemini call, and its OpenAI-compatible API's json_object mode is enough
+// structure for a 6-field flat object. Every other mode (tutor, roleplay)
+// still uses Gemini's responseSchema-constrained calls above, unaffected.
+const GROQ_MODEL = "openai/gpt-oss-120b";
+
+// Groq's chat.completions API takes {role, content} messages, not Gemini's
+// {role, parts:[{text}]} shape — contents is still built by toGeminiContents
+// so the rest of the handler (shared with Gemini-backed modes) doesn't need
+// two parallel content-building paths.
+function toChatMessages(systemInstruction, contents) {
+  return [
+    { role: "system", content: systemInstruction },
+    ...contents.map((c) => ({
+      role: c.role === "model" ? "assistant" : "user",
+      content: c.parts.map((p) => p.text).join("\n"),
+    })),
+  ];
+}
+
+// json_object mode only guarantees valid JSON syntax, not that the keys or
+// enum values match what we asked for in the prompt — unlike Gemini's
+// responseSchema, which enforces both. This is the safety net so a
+// malformed/missing field can't crash the LANGUAGES.find()s and script
+// checks downstream; it silently falls back to safe defaults instead.
+function sanitizeVoiceAssistantTurn(raw) {
+  const language = VOICE_ASSISTANT_LANGUAGE_KEYS.includes(raw?.language) ? raw.language : "english";
+  const practicePhraseLanguage = PRACTICE_PHRASE_LANGUAGE_KEYS.includes(raw?.practicePhraseLanguage)
+    ? raw.practicePhraseLanguage
+    : "none";
+  return {
+    language,
+    reply: typeof raw?.reply === "string" ? raw.reply : "",
+    translation: typeof raw?.translation === "string" ? raw.translation : "",
+    practicePhraseNative: typeof raw?.practicePhraseNative === "string" ? raw.practicePhraseNative : "",
+    practicePhraseRomanized: typeof raw?.practicePhraseRomanized === "string" ? raw.practicePhraseRomanized : "",
+    practicePhraseLanguage,
+  };
+}
+
+// Knowing the reply language as its own field (rather than sniffing the
+// script afterward) is what lets the client pick the right TTS voice and the
+// right recognition locale for the learner's next turn.
+async function callVoiceAssistantTurn(contents, systemInstruction = VOICE_ASSISTANT_SYSTEM_INSTRUCTION) {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "Server is missing GROQ_API_KEY. Add it to your .env file locally, or your Vercel project's environment variables in production."
+    );
+  }
+
+  const fieldListInstruction = `${systemInstruction}\n\nRespond with ONLY a single raw JSON object — no markdown code fences, no commentary before or after — with exactly these six string keys: "language", "reply", "translation", "practicePhraseNative", "practicePhraseRomanized", "practicePhraseLanguage".`;
+
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      messages: toChatMessages(fieldListInstruction, contents),
+      temperature: 0.5,
+      response_format: { type: "json_object" },
+    }),
+  });
 
   if (!response.ok) {
     const errText = await response.text();
-    console.error("Gemini voice-assistant-turn API error:", errText);
+    console.error("Groq voice-assistant-turn API error:", errText);
     throw new Error("The voice assistant couldn't respond right now. Please try again.");
   }
 
   const data = await response.json();
-  const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  const raw = data?.choices?.[0]?.message?.content;
   if (!raw) throw new Error("Received an empty response from the voice assistant.");
-  return JSON.parse(raw);
+
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (parseErr) {
+    console.error("Groq voice-assistant-turn JSON parse error:", parseErr, "raw:", raw);
+    throw new Error("The voice assistant returned an unreadable response. Please try again.");
+  }
+  return sanitizeVoiceAssistantTurn(parsed);
 }
 
 // `lang.script.test(text)` alone only checks the string CONTAINS at least one
@@ -493,7 +536,10 @@ export default async function handler(req, res) {
   if (!(await enforceCreditGate(req, res))) return;
 
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  // voice-assistant is Groq-backed (see callVoiceAssistantTurn), not
+  // Gemini-backed like every other mode here — its own missing-key check
+  // happens inside that function instead.
+  if (mode !== "voice-assistant" && !apiKey) {
     res.status(500).json({
       error: "Server is missing GEMINI_API_KEY. Add it to your .env file locally, or your Vercel project's environment variables in production.",
     });
@@ -531,7 +577,7 @@ export default async function handler(req, res) {
     }
 
     if (mode === "voice-assistant") {
-      let turn = await callVoiceAssistantTurn(apiKey, contents);
+      let turn = await callVoiceAssistantTurn(contents);
       const replyLang = VOICE_ASSISTANT_LANGUAGES.find((l) => l.key === turn.language) || ENGLISH_LANG;
       const phraseLang = turn.practicePhraseLanguage
         ? LANGUAGES.find((l) => l.key === turn.practicePhraseLanguage)
@@ -549,7 +595,6 @@ export default async function handler(req, res) {
       if (replyNeedsFix || phraseNeedsFix) {
         try {
           const retryTurn = await callVoiceAssistantTurn(
-            apiKey,
             contents,
             `${VOICE_ASSISTANT_SYSTEM_INSTRUCTION}\n\nIMPORTANT: your previous response contained a script mistake.${
               replyNeedsFix
