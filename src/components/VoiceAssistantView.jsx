@@ -113,15 +113,27 @@ export default function VoiceAssistantView() {
 
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === assistantMessage.id ? { ...m, status: "done", content: data.reply, language: data.language } : m
+          m.id === assistantMessage.id
+            ? {
+                ...m,
+                status: "done",
+                content: data.reply,
+                language: data.language,
+                translation: data.translation,
+                practicePhraseNative: data.practicePhraseNative,
+                practicePhraseRomanized: data.practicePhraseRomanized,
+                practicePhraseLanguage: data.practicePhraseLanguage,
+              }
+            : m
         )
       );
       setCurrentLanguage(data.language);
-
-      setIsSpeaking(true);
-      playTranslation(data.reply, voiceAssistantLanguageInfo(data.language).ttsVoice, {
-        onEnded: () => setIsSpeaking(false),
-      }).catch(() => setIsSpeaking(false));
+      speakTurn({
+        content: data.reply,
+        language: data.language,
+        practicePhraseNative: data.practicePhraseNative,
+        practicePhraseLanguage: data.practicePhraseLanguage,
+      });
     } catch {
       setMessages((prev) =>
         prev.map((m) =>
@@ -133,6 +145,25 @@ export default function VoiceAssistantView() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  // A taught phrase is often in a different language than the reply itself
+  // (e.g. an English reply teaching a Kannada greeting) — speaking it with
+  // the reply's own voice would badly mispronounce it, so it's played as a
+  // second, separate TTS call with the phrase's own language's voice, back
+  // to back with the main reply rather than mixed into one voice track.
+  function speakTurn({ content, language, practicePhraseNative, practicePhraseLanguage }) {
+    setIsSpeaking(true);
+    const playPhrase = () => {
+      if (practicePhraseNative && practicePhraseLanguage) {
+        playTranslation(practicePhraseNative, voiceAssistantLanguageInfo(practicePhraseLanguage).ttsVoice, {
+          onEnded: () => setIsSpeaking(false),
+        }).catch(() => setIsSpeaking(false));
+      } else {
+        setIsSpeaking(false);
+      }
+    };
+    playTranslation(content, voiceAssistantLanguageInfo(language).ttsVoice, { onEnded: playPhrase }).catch(playPhrase);
   }
 
   function handleMicClick() {
@@ -183,10 +214,7 @@ export default function VoiceAssistantView() {
 
   function replayMessage(message) {
     if (message.status !== "done" || !message.content) return;
-    setIsSpeaking(true);
-    playTranslation(message.content, voiceAssistantLanguageInfo(message.language).ttsVoice, {
-      onEnded: () => setIsSpeaking(false),
-    }).catch(() => setIsSpeaking(false));
+    speakTurn(message);
   }
 
   const micStatusLabel = isSpeaking
@@ -267,6 +295,21 @@ export default function VoiceAssistantView() {
                   {message.status === "done" && (
                     <>
                       <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                      {!isUser && message.language !== "english" && message.translation && (
+                        <p className="mt-1 text-xs italic text-gray-500 dark:text-gray-400 break-words">
+                          {message.translation}
+                        </p>
+                      )}
+                      {!isUser && message.practicePhraseNative && (
+                        <p className="mt-1.5 text-sm font-medium text-indigo-700 dark:text-indigo-300 break-words">
+                          🗣️ {message.practicePhraseNative}
+                          {message.practicePhraseRomanized && (
+                            <span className="ml-1 font-normal italic text-indigo-500 dark:text-indigo-400">
+                              ({message.practicePhraseRomanized})
+                            </span>
+                          )}
+                        </p>
+                      )}
                       <div className="mt-1.5 flex items-center gap-2">
                         {langInfo && (
                           <span

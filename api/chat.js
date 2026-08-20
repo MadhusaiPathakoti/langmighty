@@ -80,21 +80,42 @@ const VOICE_ASSISTANT_SYSTEM_INSTRUCTION = `You are a warm, adaptive voice conve
 
 Only discuss language-learning topics: grammar, vocabulary, pronunciation, practice conversation, cultural usage notes, and casual chat that helps the learner practice. If asked about anything unrelated, briefly say you can only help with language learning and invite a related question.
 
-CRITICAL — language mirroring: always detect which of the six languages the learner's latest message is in, and reply naturally in that SAME language. Never switch languages on your own initiative — only follow the learner when they switch. If a message mixes languages, reply in whichever language dominates it.
+CRITICAL — language mirroring: detect which language to reply in from the SCRIPT the learner actually wrote their latest message in, not from the topic they're asking about. A message written in Latin/English letters means reply in English, even if it's a question about Kannada, or an attempt at a romanized Kannada word (e.g. "puttamadu") — the learner typing in Latin letters can't yet read the native script, so switching to it would leave them unable to understand you. Only reply in a regional language (Telugu/Hindi/Kannada/Malayalam/Tamil) when the learner's own message contains that language's native script. Never switch languages on your own initiative — only follow the learner when they switch scripts.
 
-CRITICAL — this reply will be read aloud by text-to-speech, not displayed as formatted text: write plain natural spoken sentences only. Never use markdown, bullet points, tables, headings, asterisks, or other formatting. Keep replies short and conversational (1-3 sentences) unless the learner explicitly asks for a longer explanation or list.
+CRITICAL — the learner may be a total beginner in the language they're learning, so however you reply, they must always be able to understand it:
+- This reply will be read aloud by text-to-speech, not displayed as formatted text: write plain natural spoken sentences only. Never use markdown, bullet points, tables, headings, asterisks, or other formatting. Keep replies short and conversational (1-3 sentences) unless the learner explicitly asks for a longer explanation or list.
+- Whenever you reply in a regional language (not English), also give a natural English translation of that same reply — a total beginner reading a native-script sentence with no gloss has no way to know what you said.
 
-Respond with two fields:
-- "language": exactly one of "english", "telugu", "hindi", "kannada", "malayalam", "tamil" — whichever you are replying in.
-- "reply": your natural spoken reply, written ENTIRELY in that language's own native script (for English, plain English text) — no mixing in words or letters from a different script.`;
+CRITICAL — when you ask the learner to say/repeat/practice a phrase in a language other than the one you're replying in (e.g. you're replying in English but teaching a Kannada phrase like "hege idheera"), a text-to-speech voice for your reply's own language would mispronounce that phrase badly if it's just inline romanized text in "reply" — it has to be spoken separately, by a voice for the RIGHT language, from the phrase's own native script. So whenever this happens, duplicate that phrase into three extra fields (leave "practicePhraseLanguage" as "none" and the other two as "" when this doesn't apply):
+- "practicePhraseNative": the exact phrase, written in its own native script (never romanized here).
+- "practicePhraseRomanized": a roman pronunciation guide for that same phrase (this can match what you already wrote inline in "reply", if anything).
+- "practicePhraseLanguage": which of "telugu", "hindi", "kannada", "malayalam", "tamil" that phrase is in, or "none" if this doesn't apply.
+"reply" can still mention the phrase inline (romanized, for readability) as you normally would — these three fields are additional, not a replacement.
+
+Respond with six fields:
+- "language": exactly one of "english", "telugu", "hindi", "kannada", "malayalam", "tamil" — whichever you are replying in, per the script rule above.
+- "reply": your natural spoken reply, written ENTIRELY in that language's own native script (for English, plain English text) — no mixing in words or letters from a different script.
+- "translation": if "language" is "english", repeat the exact same text as "reply". Otherwise, a natural English translation of "reply" so a total beginner can follow along.
+- "practicePhraseNative", "practicePhraseRomanized", "practicePhraseLanguage": per the rule above — "none"/""/"" if you aren't asking the learner to practice a specific phrase in a different language than "reply".`;
 
 const VOICE_ASSISTANT_SCHEMA = {
   type: "OBJECT",
   properties: {
     language: { type: "STRING", enum: VOICE_ASSISTANT_LANGUAGES.map((l) => l.key) },
     reply: { type: "STRING" },
+    translation: { type: "STRING" },
+    practicePhraseNative: { type: "STRING" },
+    practicePhraseRomanized: { type: "STRING" },
+    practicePhraseLanguage: { type: "STRING", enum: ["none", ...LANGUAGES.map((l) => l.key)] },
   },
-  required: ["language", "reply"],
+  required: [
+    "language",
+    "reply",
+    "translation",
+    "practicePhraseNative",
+    "practicePhraseRomanized",
+    "practicePhraseLanguage",
+  ],
 };
 
 // Same structured-JSON approach as callRoleplayTurn — knowing the reply
@@ -512,24 +533,60 @@ export default async function handler(req, res) {
     if (mode === "voice-assistant") {
       let turn = await callVoiceAssistantTurn(apiKey, contents);
       const replyLang = VOICE_ASSISTANT_LANGUAGES.find((l) => l.key === turn.language) || ENGLISH_LANG;
+      const phraseLang = turn.practicePhraseLanguage
+        ? LANGUAGES.find((l) => l.key === turn.practicePhraseLanguage)
+        : null;
 
       // English has no native-script purity check (any English sentence is
       // full of Latin letters, which is what isPureNativeScript flags for the
       // 5 regional scripts) — only the regional languages need the retry.
-      if (replyLang.key !== "english" && !isPureNativeScript(turn.reply, replyLang)) {
+      const replyNeedsFix = replyLang.key !== "english" && !isPureNativeScript(turn.reply, replyLang);
+      // The practice phrase gets spoken with a different, language-specific
+      // TTS voice than the main reply (see the client), so a script mismatch
+      // here isn't cosmetic — it would come out mispronounced.
+      const phraseNeedsFix = phraseLang && turn.practicePhraseNative && !isPureNativeScript(turn.practicePhraseNative, phraseLang);
+
+      if (replyNeedsFix || phraseNeedsFix) {
         try {
           const retryTurn = await callVoiceAssistantTurn(
             apiKey,
             contents,
-            `${VOICE_ASSISTANT_SYSTEM_INSTRUCTION}\n\nIMPORTANT: your previous "reply" contained non-${replyLang.label} characters. Rewrite it — the "reply" field must be ${replyLang.label} native script ONLY, with absolutely no Latin letters, and "language" must stay "${replyLang.key}".`
+            `${VOICE_ASSISTANT_SYSTEM_INSTRUCTION}\n\nIMPORTANT: your previous response contained a script mistake.${
+              replyNeedsFix
+                ? ` The "reply" field must be ${replyLang.label} native script ONLY, with absolutely no Latin letters, and "language" must stay "${replyLang.key}".`
+                : ""
+            }${
+              phraseNeedsFix
+                ? ` The "practicePhraseNative" field must be ${phraseLang.label} native script ONLY, with absolutely no Latin letters, and "practicePhraseLanguage" must stay "${phraseLang.key}".`
+                : ""
+            }`
           );
-          if (isPureNativeScript(retryTurn.reply, replyLang)) turn = retryTurn;
+          const retryReplyOk = replyLang.key === "english" || isPureNativeScript(retryTurn.reply, replyLang);
+          const retryPhraseOk = !phraseLang || !retryTurn.practicePhraseNative || isPureNativeScript(retryTurn.practicePhraseNative, phraseLang);
+          if (retryReplyOk && retryPhraseOk) turn = retryTurn;
         } catch (retryErr) {
           console.error("Voice-assistant script-purity retry error:", retryErr);
         }
       }
 
-      res.status(200).json({ reply: turn.reply, language: replyLang.key });
+      // If the practice phrase still isn't clean native script after the
+      // retry, drop it rather than risk the client speaking/showing it
+      // wrong — the main reply (with its inline romanized mention) still
+      // stands on its own.
+      const finalPhraseLang = turn.practicePhraseLanguage
+        ? LANGUAGES.find((l) => l.key === turn.practicePhraseLanguage)
+        : null;
+      const practicePhraseValid =
+        finalPhraseLang && turn.practicePhraseNative && isPureNativeScript(turn.practicePhraseNative, finalPhraseLang);
+
+      res.status(200).json({
+        reply: turn.reply,
+        language: replyLang.key,
+        translation: turn.translation,
+        practicePhraseNative: practicePhraseValid ? turn.practicePhraseNative : null,
+        practicePhraseRomanized: practicePhraseValid ? turn.practicePhraseRomanized : null,
+        practicePhraseLanguage: practicePhraseValid ? finalPhraseLang.key : null,
+      });
       return;
     }
 
