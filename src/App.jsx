@@ -15,6 +15,7 @@ import PlaygroundView from "./components/PlaygroundView.jsx";
 import RoadmapView from "./components/RoadmapView.jsx";
 import TranslatePreferences from "./components/TranslatePreferences.jsx";
 import TypewriterText from "./components/TypewriterText.jsx";
+import VoiceAssistantView from "./components/VoiceAssistantView.jsx";
 import { useAuthGate } from "./context/AuthGateContext.jsx";
 import { exportNodeToPdf } from "./utils/pdfExport.js";
 import {
@@ -40,7 +41,7 @@ const INPUT_LANGUAGE_KEY = "langlearn_input_language";
 // without permanently skipping the landing page on a fresh visit in a new tab.
 const VIEW_KEY = "langlearn_view";
 const ROADMAP_LANGUAGE_KEY = "langlearn_roadmap_language";
-const VALID_VIEWS = ["landing", "chat", "ai-chat", "roadmap", "playground", "pdf-store"];
+const VALID_VIEWS = ["landing", "chat", "ai-chat", "voice-assistant", "roadmap", "playground", "pdf-store"];
 
 function loadView() {
   const saved = sessionStorage.getItem(VIEW_KEY);
@@ -312,6 +313,7 @@ export default function App() {
         onNavigateLanding={() => setView("landing")}
         onNavigateChat={() => setView("chat")}
         onNavigateAiChat={() => setView("ai-chat")}
+        onNavigateVoiceAssistant={() => setView("voice-assistant")}
         onNavigateRoadmap={handleNavigateRoadmap}
         onNavigatePlayground={() => setView("playground")}
         onNavigatePdfStore={() => setView("pdf-store")}
@@ -328,6 +330,8 @@ export default function App() {
         />
       ) : view === "ai-chat" ? (
         <AiChatView />
+      ) : view === "voice-assistant" ? (
+        <VoiceAssistantView />
       ) : view === "playground" ? (
         <PlaygroundView />
       ) : view === "pdf-store" ? (

@@ -68,6 +68,69 @@ Rules:
 - Keep the scene moving toward the learner's goal; don't drag the conversation out indefinitely.`;
 }
 
+// LANGUAGES (from langmighty-shared) only covers the 5 regional scripts the
+// tutor teaches — it has no English entry, since English is never a
+// translation *target* elsewhere in the app. The voice assistant is the one
+// feature where English is also a reply language in its own right, so it's
+// added here locally rather than touching the shared package.
+const ENGLISH_LANG = { key: "english", label: "English", script: /[A-Za-z]/ };
+const VOICE_ASSISTANT_LANGUAGES = [ENGLISH_LANG, ...LANGUAGES];
+
+const VOICE_ASSISTANT_SYSTEM_INSTRUCTION = `You are a warm, adaptive voice conversation partner inside Linguist.ai, a learning app for English, Telugu, Hindi, Kannada, Malayalam, and Tamil. You speak all six of these languages fluently and are having a natural spoken back-and-forth with a language learner — like two people talking, not a lecture.
+
+Only discuss language-learning topics: grammar, vocabulary, pronunciation, practice conversation, cultural usage notes, and casual chat that helps the learner practice. If asked about anything unrelated, briefly say you can only help with language learning and invite a related question.
+
+CRITICAL — language mirroring: always detect which of the six languages the learner's latest message is in, and reply naturally in that SAME language. Never switch languages on your own initiative — only follow the learner when they switch. If a message mixes languages, reply in whichever language dominates it.
+
+CRITICAL — this reply will be read aloud by text-to-speech, not displayed as formatted text: write plain natural spoken sentences only. Never use markdown, bullet points, tables, headings, asterisks, or other formatting. Keep replies short and conversational (1-3 sentences) unless the learner explicitly asks for a longer explanation or list.
+
+Respond with two fields:
+- "language": exactly one of "english", "telugu", "hindi", "kannada", "malayalam", "tamil" — whichever you are replying in.
+- "reply": your natural spoken reply, written ENTIRELY in that language's own native script (for English, plain English text) — no mixing in words or letters from a different script.`;
+
+const VOICE_ASSISTANT_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    language: { type: "STRING", enum: VOICE_ASSISTANT_LANGUAGES.map((l) => l.key) },
+    reply: { type: "STRING" },
+  },
+  required: ["language", "reply"],
+};
+
+// Same structured-JSON approach as callRoleplayTurn — knowing the reply
+// language as its own field (rather than sniffing the script afterward) is
+// what lets the client pick the right TTS voice and the right recognition
+// locale for the learner's next turn.
+async function callVoiceAssistantTurn(apiKey, contents, systemInstruction = VOICE_ASSISTANT_SYSTEM_INSTRUCTION) {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: systemInstruction }] },
+        contents,
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: VOICE_ASSISTANT_SCHEMA,
+          temperature: 0.5,
+        },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errText = await response.text();
+    console.error("Gemini voice-assistant-turn API error:", errText);
+    throw new Error("The voice assistant couldn't respond right now. Please try again.");
+  }
+
+  const data = await response.json();
+  const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!raw) throw new Error("Received an empty response from the voice assistant.");
+  return JSON.parse(raw);
+}
+
 // `lang.script.test(text)` alone only checks the string CONTAINS at least one
 // character of that script — see the identical helper in api/translate.js for
 // why purity (not just presence) is what actually catches the model copying a
@@ -443,6 +506,30 @@ export default async function handler(req, res) {
       }
 
       res.status(200).json({ reply });
+      return;
+    }
+
+    if (mode === "voice-assistant") {
+      let turn = await callVoiceAssistantTurn(apiKey, contents);
+      const replyLang = VOICE_ASSISTANT_LANGUAGES.find((l) => l.key === turn.language) || ENGLISH_LANG;
+
+      // English has no native-script purity check (any English sentence is
+      // full of Latin letters, which is what isPureNativeScript flags for the
+      // 5 regional scripts) — only the regional languages need the retry.
+      if (replyLang.key !== "english" && !isPureNativeScript(turn.reply, replyLang)) {
+        try {
+          const retryTurn = await callVoiceAssistantTurn(
+            apiKey,
+            contents,
+            `${VOICE_ASSISTANT_SYSTEM_INSTRUCTION}\n\nIMPORTANT: your previous "reply" contained non-${replyLang.label} characters. Rewrite it — the "reply" field must be ${replyLang.label} native script ONLY, with absolutely no Latin letters, and "language" must stay "${replyLang.key}".`
+          );
+          if (isPureNativeScript(retryTurn.reply, replyLang)) turn = retryTurn;
+        } catch (retryErr) {
+          console.error("Voice-assistant script-purity retry error:", retryErr);
+        }
+      }
+
+      res.status(200).json({ reply: turn.reply, language: replyLang.key });
       return;
     }
 

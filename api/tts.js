@@ -2,7 +2,11 @@ import { EdgeTTS } from "edge-tts-universal";
 import { LANGUAGES } from "langmighty-shared";
 import { applyCors } from "./_lib/cors.js";
 
-const ALLOWED_VOICES = new Set(LANGUAGES.map((l) => l.ttsVoice));
+// LANGUAGES (from langmighty-shared) covers only the 5 regional translation
+// targets — the voice assistant is the one feature that also needs to speak
+// English replies, so its voice is added to the whitelist locally.
+const ENGLISH_VOICE = "en-US-AriaNeural";
+const ALLOWED_VOICES = new Set([...LANGUAGES.map((l) => l.ttsVoice), ENGLISH_VOICE]);
 
 export default async function handler(req, res) {
   if (applyCors(req, res)) return;

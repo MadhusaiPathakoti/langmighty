@@ -256,14 +256,25 @@ export default function ReadAloudGame({ onExit }) {
           {status === "listening" ? "Listening... tap to stop" : "Tap the mic and read the sentence aloud"}
         </p>
 
-        {!showHint && status !== "correct" && (
-          <button
-            type="button"
-            onClick={() => setShowHint(true)}
-            className="mt-3 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
-          >
-            Hint (show pronunciation)
-          </button>
+        {status !== "correct" && (
+          <div className="mt-3 flex items-center justify-center gap-4">
+            {!showHint && (
+              <button
+                type="button"
+                onClick={() => setShowHint(true)}
+                className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+              >
+                Hint (show pronunciation)
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleNext}
+              className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:underline"
+            >
+              Skip →
+            </button>
+          </div>
         )}
 
         {transcript && status !== "idle" && status !== "listening" && (

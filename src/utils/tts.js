@@ -30,7 +30,7 @@ async function fetchTtsAudioUrl(text, voice) {
   return url;
 }
 
-export async function playTranslation(text, voice) {
+export async function playTranslation(text, voice, { onEnded } = {}) {
   const url = await fetchTtsAudioUrl(text, voice);
 
   if (currentAudio) {
@@ -38,5 +38,14 @@ export async function playTranslation(text, voice) {
   }
 
   currentAudio = new Audio(url);
+  if (onEnded) currentAudio.addEventListener("ended", onEnded, { once: true });
   await currentAudio.play();
+}
+
+// Lets a caller interrupt in-progress playback (e.g. the learner wants to
+// speak again before the assistant finishes talking). Pausing doesn't fire
+// the "ended" event, so a caller relying on onEnded to clear its own
+// "speaking" state must also clear it directly when it calls this.
+export function stopAudio() {
+  currentAudio?.pause();
 }

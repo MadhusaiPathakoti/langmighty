@@ -12,6 +12,7 @@ export default function NavBar({
   onNavigateLanding,
   onNavigateChat,
   onNavigateAiChat,
+  onNavigateVoiceAssistant,
   onNavigateRoadmap,
   onNavigatePlayground,
   onNavigatePdfStore,
@@ -186,6 +187,18 @@ export default function NavBar({
           }`}
         >
           AI Chat
+        </button>
+
+        <button
+          type="button"
+          onClick={onNavigateVoiceAssistant}
+          className={`flex-shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            view === "voice-assistant"
+              ? "bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300"
+              : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+          }`}
+        >
+          Voice Chat
         </button>
 
         <button

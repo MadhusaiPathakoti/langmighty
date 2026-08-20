@@ -4,6 +4,7 @@ import AiChatMessage from "./AiChatMessage.jsx";
 import { useAuthGate } from "../context/AuthGateContext.jsx";
 import { apiFetch } from "../lib/apiClient.js";
 import { exportNodeToPdf } from "../utils/pdfExport.js";
+import { isSpeechRecognitionSupported, listenContinuous } from "../utils/speechRecognition.js";
 
 const AI_CHAT_KEY = "langlearn_ai_chat";
 
@@ -35,10 +36,21 @@ export default function AiChatView() {
   const [inputText, setInputText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [micError, setMicError] = useState(null);
+  const speechSupported = isSpeechRecognitionSupported();
   const bottomRef = useRef(null);
   const exportRef = useRef(null);
   const textareaRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const voiceBaseTextRef = useRef("");
   const { requestAccess, consumeCredit, reportServerRejection, getAuthHeaders } = useAuthGate();
+
+  // Releases the mic if the player navigates away mid-listen, rather than
+  // leaving recognition running in the background.
+  useEffect(() => {
+    return () => recognitionRef.current?.stop();
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(AI_CHAT_KEY, JSON.stringify(messages));
@@ -134,6 +146,27 @@ export default function AiChatView() {
       e.preventDefault();
       sendMessage(inputText);
     }
+  }
+
+  function handleMicClick() {
+    if (isListening) return;
+    setMicError(null);
+    setIsListening(true);
+    // Recorded fresh each session so live updates below replace only what was
+    // spoken this session, not text that was already in the box beforehand.
+    voiceBaseTextRef.current = inputText.trim();
+
+    recognitionRef.current = listenContinuous("en-US", {
+      onResult: (transcript) => {
+        setInputText(voiceBaseTextRef.current ? `${voiceBaseTextRef.current} ${transcript}` : transcript);
+      },
+      onError: () => setMicError("Couldn't hear you clearly — check your mic permission and try again."),
+      onEnd: () => setIsListening(false),
+    });
+  }
+
+  function handleStopListening() {
+    recognitionRef.current?.stop();
   }
 
   async function handleRegenerate(assistantId) {
@@ -316,6 +349,21 @@ export default function AiChatView() {
                          text-gray-900 dark:text-gray-100 px-5 py-3 text-base focus:outline-none focus:ring-2
                          focus:ring-indigo-500 placeholder:text-gray-400 max-h-[200px] overflow-y-auto"
             />
+            {speechSupported && (
+              <button
+                type="button"
+                onClick={isListening ? handleStopListening : handleMicClick}
+                disabled={isSubmitting}
+                title={isListening ? "Tap to stop listening" : "Speak your question"}
+                className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-lg transition-colors ${
+                  isListening
+                    ? "bg-red-500 hover:bg-red-600 text-white animate-pulse"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                } disabled:opacity-60 disabled:cursor-not-allowed`}
+              >
+                {isListening ? "⏹" : "🎤"}
+              </button>
+            )}
             <button
               type="submit"
               disabled={isSubmitting || !inputText.trim()}
@@ -325,6 +373,12 @@ export default function AiChatView() {
               {isSubmitting ? "..." : "Send"}
             </button>
           </form>
+          {isListening && (
+            <p className="text-sm text-indigo-600 dark:text-indigo-400 mt-1.5 px-2">
+              🎤 Listening... speak now, or tap ⏹ to stop
+            </p>
+          )}
+          {micError && <p className="text-sm text-red-600 dark:text-red-400 mt-1.5 px-2">{micError}</p>}
         </div>
       </footer>
 
