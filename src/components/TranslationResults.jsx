@@ -2,6 +2,9 @@ import { useState } from "react";
 import { LANGUAGES } from "langmighty-shared";
 import SpeakerButton from "./SpeakerButton.jsx";
 
+// Hindi displays last regardless of LANGUAGES' own ordering.
+const DISPLAY_LANGUAGES = [...LANGUAGES.filter((l) => l.key !== "hindi"), ...LANGUAGES.filter((l) => l.key === "hindi")];
+
 export default function TranslationResults({ results }) {
   const [copiedKey, setCopiedKey] = useState(null);
 
@@ -29,7 +32,7 @@ export default function TranslationResults({ results }) {
     <>
       {/* Mobile: stacked cards, one per language */}
       <div className="sm:hidden space-y-2">
-        {LANGUAGES.map(({ key, label, ttsVoice }) => {
+        {DISPLAY_LANGUAGES.map(({ key, label, ttsVoice }) => {
           const row = results[key];
           if (!row) return null;
 
@@ -64,7 +67,7 @@ export default function TranslationResults({ results }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {LANGUAGES.map(({ key, label, ttsVoice }) => {
+            {DISPLAY_LANGUAGES.map(({ key, label, ttsVoice }) => {
               const row = results[key];
               if (!row) return null;
 

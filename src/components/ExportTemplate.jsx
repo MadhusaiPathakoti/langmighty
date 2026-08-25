@@ -1,6 +1,9 @@
 import { forwardRef } from "react";
 import { LANGUAGES, getInputLanguage } from "langmighty-shared";
 
+// Hindi displays last regardless of LANGUAGES' own ordering.
+const DISPLAY_LANGUAGES = [...LANGUAGES.filter((l) => l.key !== "hindi"), ...LANGUAGES.filter((l) => l.key === "hindi")];
+
 const ExportTemplate = forwardRef(function ExportTemplate({ conversation }, ref) {
   const doneTurns = conversation.filter((t) => t.status === "done");
 
@@ -47,7 +50,7 @@ const ExportTemplate = forwardRef(function ExportTemplate({ conversation }, ref)
               </tr>
             </thead>
             <tbody>
-              {LANGUAGES.map(({ key, label }) => {
+              {DISPLAY_LANGUAGES.map(({ key, label }) => {
                 const row = turn.results[key];
                 if (!row) return null;
                 return (

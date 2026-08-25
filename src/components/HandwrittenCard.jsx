@@ -3,6 +3,9 @@ import { LANGUAGES, getInputLanguage } from "langmighty-shared";
 import { getLatinFont, getNativeFont, DEFAULT_LATIN_FONT_ID, DEFAULT_NATIVE_FONT_SET_ID } from "./handwrittenFonts.js";
 import { PREVIEW_WIDTH, previewHeightFor } from "./aspectRatios.js";
 
+// Hindi displays last regardless of LANGUAGES' own ordering.
+const DISPLAY_LANGUAGES = [...LANGUAGES.filter((l) => l.key !== "hindi"), ...LANGUAGES.filter((l) => l.key === "hindi")];
+
 const HandwrittenCard = forwardRef(function HandwrittenCard(
   {
     turn,
@@ -101,7 +104,7 @@ const HandwrittenCard = forwardRef(function HandwrittenCard(
           <span style={{ fontSize: `${16 * fontScale}px`, fontWeight: 500, opacity: 0.7 }}> — {sourceLabel}</span>
         </p>
 
-        {LANGUAGES.map(({ key, label }, i) => {
+        {DISPLAY_LANGUAGES.map(({ key, label }, i) => {
           const row = turn.results?.[key];
           if (!row) return null;
           return (
