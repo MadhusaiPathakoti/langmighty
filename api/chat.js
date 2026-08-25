@@ -1,6 +1,6 @@
 import { LANGUAGES, QUIZ_TARGET_LANGUAGES } from "langmighty-shared";
 import { applyCors } from "./_lib/cors.js";
-import { enforceCreditGate } from "./_lib/creditGate.js";
+import { requireSignedIn } from "./_lib/creditGate.js";
 
 const GEMINI_MODEL = "gemini-3.5-flash-lite";
 const MAX_HISTORY_TURNS = 16;
@@ -533,7 +533,7 @@ export default async function handler(req, res) {
     languageLabel = language.label;
   }
 
-  if (!(await enforceCreditGate(req, res))) return;
+  if (!(await requireSignedIn(req, res))) return;
 
   const apiKey = process.env.GEMINI_API_KEY;
   // voice-assistant is Groq-backed (see callVoiceAssistantTurn), not

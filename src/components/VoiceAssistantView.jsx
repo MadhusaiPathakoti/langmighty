@@ -55,7 +55,7 @@ export default function VoiceAssistantView() {
   const speechSupported = isSpeechRecognitionSupported();
   const bottomRef = useRef(null);
   const recognitionRef = useRef(null);
-  const { requestAccess, consumeCredit, reportServerRejection, getAuthHeaders } = useAuthGate();
+  const { reportAuthRequired, getAuthHeaders } = useAuthGate();
 
   useEffect(() => {
     localStorage.setItem(VOICE_ASSISTANT_KEY, JSON.stringify(messages));
@@ -77,7 +77,6 @@ export default function VoiceAssistantView() {
   async function sendMessage(text, spokenLanguageGuess) {
     const trimmed = text.trim();
     if (!trimmed || isSubmitting) return;
-    if (!requestAccess()) return;
 
     const history = messages
       .filter((m) => m.status === "done")
@@ -89,7 +88,6 @@ export default function VoiceAssistantView() {
     setMessages((prev) => [...prev, userMessage, assistantMessage]);
     setInputText("");
     setIsSubmitting(true);
-    consumeCredit();
 
     try {
       const authHeaders = await getAuthHeaders();
@@ -99,8 +97,8 @@ export default function VoiceAssistantView() {
         body: JSON.stringify({ mode: "voice-assistant", message: trimmed, history }),
       });
 
-      if (res.status === 403) {
-        reportServerRejection();
+      if (res.status === 401) {
+        reportAuthRequired();
         setMessages((prev) => prev.filter((m) => m.id !== userMessage.id && m.id !== assistantMessage.id));
         return;
       }
@@ -360,38 +358,42 @@ export default function VoiceAssistantView() {
         <div className="max-w-3xl mx-auto w-full flex flex-col items-center gap-3">
           {speechSupported ? (
             <>
-              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                <label htmlFor="voice-assistant-speak-language">Speaking in:</label>
-                <select
-                  id="voice-assistant-speak-language"
-                  value={currentLanguage}
-                  onChange={(e) => setCurrentLanguage(e.target.value)}
-                  disabled={isListening || isSpeaking}
-                  title="Override which language the mic listens for — useful if you want to say something in a different language than the conversation is currently in"
-                  className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 px-2 py-1 disabled:opacity-60"
-                >
-                  {VOICE_ASSISTANT_LANGUAGES.map((lang) => (
-                    <option key={lang.key} value={lang.key}>
-                      {lang.label}
-                    </option>
-                  ))}
-                </select>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                  <label htmlFor="voice-assistant-speak-language">Speaking in:</label>
+                  <select
+                    id="voice-assistant-speak-language"
+                    value={currentLanguage}
+                    onChange={(e) => setCurrentLanguage(e.target.value)}
+                    disabled={isListening || isSpeaking}
+                    title="Override which language the mic listens for — useful if you want to say something in a different language than the conversation is currently in"
+                    className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 px-2 py-1 disabled:opacity-60"
+                  >
+                    {VOICE_ASSISTANT_LANGUAGES.map((lang) => (
+                      <option key={lang.key} value={lang.key}>
+                        {lang.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={isListening ? handleStopListening : handleMicClick}
+                    disabled={isSpeaking || isSubmitting}
+                    title={isListening ? "Tap to stop listening" : "Tap and speak"}
+                    className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-colors ${
+                      isListening
+                        ? "bg-red-500 hover:bg-red-600 text-white animate-pulse"
+                        : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                    } disabled:opacity-60 disabled:cursor-not-allowed`}
+                  >
+                    {isListening ? "⏹" : "🎤"}
+                  </button>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{micStatusLabel}</p>
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={isListening ? handleStopListening : handleMicClick}
-                disabled={isSpeaking || isSubmitting}
-                title={isListening ? "Tap to stop listening" : "Tap and speak"}
-                className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-colors ${
-                  isListening
-                    ? "bg-red-500 hover:bg-red-600 text-white animate-pulse"
-                    : "bg-indigo-600 hover:bg-indigo-700 text-white"
-                } disabled:opacity-60 disabled:cursor-not-allowed`}
-              >
-                {isListening ? "⏹" : "🎤"}
-              </button>
               <div className="text-center">
-                <p className="text-xs text-gray-500 dark:text-gray-400">{micStatusLabel}</p>
                 {isSpeaking && (
                   <button
                     type="button"

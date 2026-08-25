@@ -55,7 +55,7 @@ export default function ScenarioRoleplayGame({ onExit }) {
   const [listening, setListening] = useState(false);
   const [micError, setMicError] = useState(null);
   const bottomRef = useRef(null);
-  const { requestAccess, consumeCredit, reportServerRejection, getAuthHeaders } = useAuthGate();
+  const { reportAuthRequired, getAuthHeaders } = useAuthGate();
   const speechSupported = isSpeechRecognitionSupported();
 
   useEffect(() => {
@@ -88,10 +88,8 @@ export default function ScenarioRoleplayGame({ onExit }) {
   }
 
   async function runTurn(userText) {
-    if (!requestAccess()) return;
     setIsSubmitting(true);
     setRejected(false);
-    consumeCredit();
 
     const history = messages.filter((m) => m.status === "done").map((m) => ({ role: m.role, content: turnContent(m) }));
 
@@ -115,8 +113,8 @@ export default function ScenarioRoleplayGame({ onExit }) {
         }),
       });
 
-      if (res.status === 403) {
-        reportServerRejection();
+      if (res.status === 401) {
+        reportAuthRequired();
         setRejected(true);
         setMessages((prev) => prev.filter((m) => m.id !== assistantId && m.id !== userMessage?.id));
         return;
@@ -171,11 +169,9 @@ export default function ScenarioRoleplayGame({ onExit }) {
 
   async function handleFinish() {
     if (isSubmitting) return;
-    if (!requestAccess()) return;
     setIsSubmitting(true);
     setReportError(null);
     setRejected(false);
-    consumeCredit();
 
     const history = messages.filter((m) => m.status === "done").map((m) => ({ role: m.role, content: turnContent(m) }));
 
@@ -187,8 +183,8 @@ export default function ScenarioRoleplayGame({ onExit }) {
         body: JSON.stringify({ mode: "roleplay-report", scenario: scenarioId, targetLanguage, history }),
       });
 
-      if (res.status === 403) {
-        reportServerRejection();
+      if (res.status === 401) {
+        reportAuthRequired();
         setRejected(true);
         return;
       }
@@ -241,7 +237,7 @@ export default function ScenarioRoleplayGame({ onExit }) {
         </div>
 
         <p className="text-center text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Pick a scene to chat your way through — uses your AI Chat credits.
+          Pick a scene to chat your way through.
         </p>
 
         <div className="grid sm:grid-cols-2 gap-4">
@@ -365,7 +361,7 @@ export default function ScenarioRoleplayGame({ onExit }) {
 
       {rejected && (
         <p className="mt-3 text-center text-sm text-amber-600 dark:text-amber-400">
-          You've used your free prompts — sign in to keep chatting.
+          Your session expired — sign in to keep chatting.
         </p>
       )}
       {reportError && <p className="mt-3 text-center text-sm text-red-600 dark:text-red-400">{reportError}</p>}

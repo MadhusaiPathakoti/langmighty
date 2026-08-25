@@ -1,16 +1,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient.js";
 
-const FREE_CREDIT_LIMIT = 3;
-const CREDITS_KEY = "langlearn_credits_used";
 const PENDING_OPT_IN_KEY = "langlearn_pending_marketing_opt_in";
 const STREAK_KEY = "langlearn_streak";
-
-function loadCreditsUsed() {
-  const raw = localStorage.getItem(CREDITS_KEY);
-  const parsed = raw ? Number(raw) : 0;
-  return Number.isFinite(parsed) ? parsed : 0;
-}
 
 function todayKey() {
   const d = new Date();
@@ -57,7 +49,6 @@ const AuthGateContext = createContext(null);
 
 export function AuthGateProvider({ children }) {
   const [session, setSession] = useState(null);
-  const [creditsUsed, setCreditsUsed] = useState(loadCreditsUsed);
   const [streak, setStreak] = useState(() => updateLocalStreak());
   // null | "signup" | "login" | "forgot-password" | "reset-password"
   const [authView, setAuthView] = useState(null);
@@ -140,37 +131,19 @@ export function AuthGateProvider({ children }) {
   }
 
   const isSignedIn = Boolean(session?.user);
-  const remainingCredits = Math.max(0, FREE_CREDIT_LIMIT - creditsUsed);
-  const canUseFeature = isSignedIn || remainingCredits > 0;
   // Whether this account has a password set (vs. Google-only) — determines whether
   // "change password" needs to verify a current password first.
   const hasPasswordIdentity = Boolean(
     session?.user?.identities?.some((identity) => identity.provider === "email")
   );
 
-  function consumeCredit() {
-    if (isSignedIn) return;
-    setCreditsUsed((prev) => {
-      const next = prev + 1;
-      localStorage.setItem(CREDITS_KEY, String(next));
-      return next;
-    });
-  }
-
-  function requestAccess() {
-    if (canUseFeature) return true;
-    setAuthView("signup");
-    return false;
-  }
-
-  // The client-side check above is just a UX shortcut to skip an obviously-doomed
-  // request; the server enforces the real limit (see api/_lib/creditGate.js), since
-  // localStorage can be cleared or bypassed entirely. Call this when a request comes
-  // back 403 so the badge and modal reflect the server's authoritative decision.
-  function reportServerRejection() {
-    setCreditsUsed(FREE_CREDIT_LIMIT);
-    localStorage.setItem(CREDITS_KEY, String(FREE_CREDIT_LIMIT));
-    setAuthView("signup");
+  // The client-side view gate (see App.jsx) is just a UX shortcut to keep signed-out
+  // visitors off the feature views entirely; the server enforces the real requirement
+  // (see api/_lib/creditGate.js's requireSignedIn), since that gate can't be bypassed
+  // by calling the API directly. Call this when a request comes back 401
+  // AUTH_REQUIRED (e.g. the session expired mid-use) so the login prompt reappears.
+  function reportAuthRequired() {
+    setAuthView("login");
   }
 
   async function getAuthHeaders() {
@@ -262,12 +235,7 @@ export function AuthGateProvider({ children }) {
         userEmail: session?.user?.email ?? null,
         hasPasswordIdentity,
         streak,
-        freeCreditLimit: FREE_CREDIT_LIMIT,
-        remainingCredits,
-        canUseFeature,
-        consumeCredit,
-        requestAccess,
-        reportServerRejection,
+        reportAuthRequired,
         getAuthHeaders,
         authView,
         openAuthModal: (view = "login") => setAuthView(view),

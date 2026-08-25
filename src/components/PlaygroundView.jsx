@@ -62,7 +62,7 @@ const GAMES = [
     id: "roleplay",
     emoji: "🎭",
     title: "Scenario Roleplay",
-    description: "Chat your way through real scenes — order at a café, ask for directions — with an AI character. Uses your AI Chat credits.",
+    description: "Chat your way through real scenes — order at a café, ask for directions — with an AI character.",
     available: true,
   },
 ];
@@ -101,8 +101,7 @@ export default function PlaygroundView() {
           🎮 Playground
         </h2>
         <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400">
-          Practice what you've learned with quick games — most are free to play; Scenario Roleplay uses your AI
-          Chat credits.
+          Practice what you've learned with quick games.
         </p>
 
         <div className="mt-6 grid sm:grid-cols-2 gap-4">

@@ -20,7 +20,7 @@ export default function NavBar({
   theme,
   onToggleTheme,
 }) {
-  const { isSignedIn, userEmail, remainingCredits, signOut, openAuthModal } = useAuthGate();
+  const { isSignedIn, userEmail, signOut, openAuthModal } = useAuthGate();
   const [roadmapMenuOpen, setRoadmapMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
@@ -119,9 +119,6 @@ export default function NavBar({
           </div>
         ) : (
           <>
-            <span className="hidden sm:inline px-3 py-1.5 text-xs font-medium text-gray-400 dark:text-gray-500 whitespace-nowrap">
-              {remainingCredits} free {remainingCredits === 1 ? "prompt" : "prompts"} left
-            </span>
             <button
               type="button"
               onClick={() => openAuthModal("login")}
@@ -129,6 +126,13 @@ export default function NavBar({
                          hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >
               Sign in
+            </button>
+            <button
+              type="button"
+              onClick={() => openAuthModal("signup")}
+              className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition-colors"
+            >
+              Create account
             </button>
           </>
         )}

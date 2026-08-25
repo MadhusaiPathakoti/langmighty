@@ -13,13 +13,14 @@ import NavBar from "./components/NavBar.jsx";
 import PdfStoreView from "./components/PdfStoreView.jsx";
 import PlaygroundView from "./components/PlaygroundView.jsx";
 import RoadmapView from "./components/RoadmapView.jsx";
+import SignInWall from "./components/SignInWall.jsx";
 import TranslatePreferences from "./components/TranslatePreferences.jsx";
 import TypewriterText from "./components/TypewriterText.jsx";
 import VoiceAssistantView from "./components/VoiceAssistantView.jsx";
 import { useAuthGate } from "./context/AuthGateContext.jsx";
+import { isSupabaseConfigured } from "./lib/supabaseClient.js";
 import { exportNodeToPdf } from "./utils/pdfExport.js";
 import {
-  DEFAULT_LANGUAGE_KEYS,
   DEFAULT_INPUT_LANGUAGE_KEY,
   INPUT_LANGUAGES,
   LANGUAGES,
@@ -76,7 +77,9 @@ function loadLanguagePrefs() {
   } catch {
     // fall through to default
   }
-  return DEFAULT_LANGUAGE_KEYS;
+  // Default to every language rather than langmighty-shared's smaller
+  // DEFAULT_LANGUAGE_KEYS — ensureValidOutputs strips out the input language.
+  return LANGUAGES.map((l) => l.key);
 }
 
 function loadInputLanguage() {
@@ -114,7 +117,8 @@ export default function App() {
   );
   const [inputError, setInputError] = useState(null);
   const [contactAdminOpen, setContactAdminOpen] = useState(false);
-  const { requestAccess, consumeCredit, reportServerRejection, getAuthHeaders } = useAuthGate();
+  const { isSignedIn, reportAuthRequired, getAuthHeaders, openAuthModal } = useAuthGate();
+  const authRequired = isSupabaseConfigured && !isSignedIn;
 
   const exportRef = useRef(null);
   const bottomRef = useRef(null);
@@ -149,11 +153,10 @@ export default function App() {
   }, [conversation, view]);
 
   // Shared by handleSubmit (new turn) and handleRegenerate (existing turn) — the
-  // caller is responsible for the requestAccess() check and putting the turn into
-  // "loading" state before calling this.
+  // caller is responsible for putting the turn into "loading" state before
+  // calling this.
   async function runTranslate(turnId, { text, sourceLanguage, languages, regenerate }) {
     setIsSubmitting(true);
-    consumeCredit();
 
     try {
       const authHeaders = await getAuthHeaders();
@@ -163,14 +166,12 @@ export default function App() {
         body: JSON.stringify({ text, sourceLanguage, languages, regenerate }),
       });
 
-      if (res.status === 403) {
-        reportServerRejection();
+      if (res.status === 401) {
+        reportAuthRequired();
         setConversation((prev) =>
           regenerate
             ? prev.map((t) =>
-                t.id === turnId
-                  ? { ...t, status: "error", error: "You've used your free prompts. Please sign in to continue." }
-                  : t
+                t.id === turnId ? { ...t, status: "error", error: "Please sign in to continue." } : t
               )
             : prev.filter((t) => t.id !== turnId)
         );
@@ -208,7 +209,6 @@ export default function App() {
   async function handleSubmit(overrideText) {
     const text = (overrideText ?? inputText).trim();
     if (!text || isSubmitting) return;
-    if (!requestAccess()) return;
 
     const inputLang = INPUT_LANGUAGES.find((l) => l.key === inputLanguage);
     if (!matchesScript(text, inputLanguage)) {
@@ -252,7 +252,6 @@ export default function App() {
     if (isSubmitting) return;
     const turn = conversation.find((t) => t.id === turnId);
     if (!turn) return;
-    if (!requestAccess()) return;
 
     setConversation((prev) => prev.map((t) => (t.id === turnId ? { ...t, status: "loading", error: null } : t)));
 
@@ -322,7 +321,9 @@ export default function App() {
         onToggleTheme={toggleTheme}
       />
 
-      {view === "roadmap" ? (
+      {authRequired ? (
+        <SignInWall onSignIn={() => openAuthModal("login")} onSignUp={() => openAuthModal("signup")} />
+      ) : view === "roadmap" ? (
         <RoadmapView
           language={roadmapLanguage}
           onSelectLanguage={setRoadmapLanguage}

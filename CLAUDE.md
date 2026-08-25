@@ -81,13 +81,11 @@ even though it builds fine locally.
   `scripts/backfillSentencePronunciation.mjs`) and cached permanently in Redis. Gameplay itself never
   calls Gemini, keeping Playground free and abuse-proof; falls back to an empty list (client falls
   back to its static bank) if Redis is unconfigured or empty.
-- `_lib/creditGate.js` — server-side enforcement of the 3-free-prompt limit shared across
-  Translate/AI Chat, keyed by an `X-Anon-Id` header (see `src/lib/apiClient.js`) plus a per-IP daily
-  cap as backstop against discarding the anon id. A header is used instead of a server-set cookie so
-  it behaves the same for the web app and a native WebView calling cross-origin. Signed-in users
-  (verified via Supabase access token) are exempt. Every request handler that should be gated must
-  call `enforceCreditGate(req, res)` and bail out (`return`) when it returns `null` — it has already
-  written the response.
+- `_lib/creditGate.js` — server-side enforcement that Translate/AI Chat can only be used signed in
+  (verified via Supabase access token). Every request handler that should be gated must call
+  `requireSignedIn(req, res)` and bail out (`return`) when it returns `null` — it has already written
+  the response (401, `code: "AUTH_REQUIRED"`). Also exports `getSignedInUser`/`getClientIp`, used
+  independently by `support.js`, `_lib/adminAuth.js`, and the PDF store routes.
 - `_lib/redisCache.js`, `_lib/supabaseAdmin.js` — lazy singleton clients, re-read env vars per call.
 - `_lib/cors.js` — call `applyCors(req, res)` first in every handler; returns truthy for
   already-handled OPTIONS preflight, in which case the handler should return immediately.
@@ -168,16 +166,20 @@ playground | pdf-store`) — there is no router. Conversation state (`conversati
 theme, input language) is persisted to `localStorage` directly in `App.jsx` via small `load*`/effect
 pairs; follow that existing pattern rather than introducing a state library.
 
-- `context/AuthGateContext.jsx` — the client-side half of the credit-gate system. Tracks
-  `creditsUsed` in `localStorage` purely as a UX shortcut to skip obviously-doomed requests before
-  they hit the network; `_lib/creditGate.js` on the server is the actual source of truth.
-  `reportServerRejection()` syncs client state when the server 403s (e.g. after `localStorage` was
-  cleared) — call it whenever an API response is a 403 with `code: "CREDIT_LIMIT_REACHED"`.
-  Signing in is Google OAuth via Supabase (`lib/supabaseClient.js`); a pending marketing-opt-in
-  checkbox value is stashed in `localStorage` before the OAuth redirect and applied to the `profiles`
-  row on the subsequent `SIGNED_IN` event, since the redirect flow can't carry it directly.
-- `lib/apiClient.js` — `apiFetch()` wraps `fetch` to attach the `X-Anon-Id` header everywhere; use it
-  instead of raw `fetch` for any `/api/*` call so the credit gate keeps working.
+- `context/AuthGateContext.jsx` — auth state and account actions (Google OAuth + email/password via
+  Supabase, password reset/change, streak tracking). `App.jsx` treats `isSignedIn` (combined with
+  `isSupabaseConfigured` from `lib/supabaseClient.js`) as a hard gate: every view except `landing`
+  renders `components/SignInWall.jsx` instead of its real content when signed out, so the app can only
+  be used after creating an account or logging in — this fails open (no wall) when Supabase isn't
+  configured, matching this codebase's fail-open-on-missing-config pattern. The server independently
+  enforces the same requirement on Translate/AI Chat via `_lib/creditGate.js`'s `requireSignedIn`, so
+  it can't be bypassed by calling the API directly; `reportAuthRequired()` reopens the login modal if
+  a request ever comes back 401 `AUTH_REQUIRED` (e.g. the session expired mid-use). A pending
+  marketing-opt-in checkbox value is stashed in `localStorage` before the OAuth redirect and applied to
+  the `profiles` row on the subsequent `SIGNED_IN` event, since the redirect flow can't carry it
+  directly.
+- `lib/apiClient.js` — `apiFetch()` is a thin `fetch` wrapper; use it instead of raw `fetch` for any
+  `/api/*` call for consistency.
 - `components/*Game.jsx` — the six Playground games (Quiz, Word Match, Speed Translate, Listen &
   Guess, Word Chain, Guess the Sentence, Read Aloud). Each pulls from a shared static bank
   (`src/quizData.js`, `src/wordChainData.js`, `src/readAloudData.js`) supplemented by

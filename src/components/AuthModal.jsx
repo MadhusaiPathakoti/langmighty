@@ -47,9 +47,6 @@ export default function AuthModal() {
     authView,
     closeAuthModal,
     openAuthModal,
-    freeCreditLimit,
-    remainingCredits,
-    isSignedIn,
     signInWithGoogle,
     signUpWithEmail,
     signInWithEmail,
@@ -197,9 +194,9 @@ export default function AuthModal() {
           )}
         </div>
 
-        {authView === "signup" && !isSignedIn && remainingCredits === 0 && (
+        {authView === "signup" && (
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            You've used your {freeCreditLimit} free prompts — create a free account to keep going, no limits.
+            Create a free account to start using LangMighty.
           </p>
         )}
 

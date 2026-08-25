@@ -79,7 +79,7 @@ export const FEATURES = [
     emoji: "🎮",
     color: "rose",
     title: "Playground: 8 Learning Games",
-    description: "Eight different games — audio, visual, text & conversation challenges. Most are free to play; Scenario Roleplay uses your AI Chat credits.",
+    description: "Eight different games — audio, visual, text & conversation challenges, all included with your account.",
     bullets: [
       "🎤 Read Aloud — speak a sentence, get instant pronunciation feedback",
       "🧠 Language Quiz — multiple-choice translation practice",
@@ -171,7 +171,7 @@ export const FAQ_ITEMS = [
   {
     question: "Is LangMighty free to use?",
     answer:
-      "Yes — every visitor gets a few free translations and AI chat messages before being asked to sign in with Google for unlimited use.",
+      "Yes — create a free account or sign in with Google to start translating and chatting, with no limit on how much you use it.",
   },
   {
     question: "Can I hear how a translation is pronounced?",

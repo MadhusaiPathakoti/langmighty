@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { LANGUAGES, INPUT_LANGUAGES, DEFAULT_LANGUAGE_KEYS, DEFAULT_INPUT_LANGUAGE_KEY } from "langmighty-shared";
 import { applyCors } from "./_lib/cors.js";
-import { enforceCreditGate } from "./_lib/creditGate.js";
+import { requireSignedIn } from "./_lib/creditGate.js";
 import { getRedis } from "./_lib/redisCache.js";
 
 const GEMINI_MODEL = "gemini-3.5-flash-lite";
@@ -131,7 +131,7 @@ export default async function handler(req, res) {
   }
   const trimmedText = text.trim();
 
-  if (!(await enforceCreditGate(req, res))) return;
+  if (!(await requireSignedIn(req, res))) return;
 
   const sourceKey = VALID_INPUT_KEYS.has(sourceLanguage) ? sourceLanguage : DEFAULT_INPUT_LANGUAGE_KEY;
 

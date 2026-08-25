@@ -44,7 +44,7 @@ export default function AiChatView() {
   const textareaRef = useRef(null);
   const recognitionRef = useRef(null);
   const voiceBaseTextRef = useRef("");
-  const { requestAccess, consumeCredit, reportServerRejection, getAuthHeaders } = useAuthGate();
+  const { reportAuthRequired, getAuthHeaders } = useAuthGate();
 
   // Releases the mic if the player navigates away mid-listen, rather than
   // leaving recognition running in the background.
@@ -70,11 +70,10 @@ export default function AiChatView() {
   }, [inputText]);
 
   // Shared by sendMessage (new exchange) and handleRegenerate (existing one) —
-  // the caller is responsible for the requestAccess() check, appending/resetting
-  // the assistant message into "loading" state, and building `history`.
-  async function runChat(assistantId, message, history, onCreditLimitReached) {
+  // the caller is responsible for appending/resetting the assistant message
+  // into "loading" state and building `history`.
+  async function runChat(assistantId, message, history, onAuthRequired) {
     setIsSubmitting(true);
-    consumeCredit();
 
     try {
       const authHeaders = await getAuthHeaders();
@@ -84,9 +83,9 @@ export default function AiChatView() {
         body: JSON.stringify({ message, history }),
       });
 
-      if (res.status === 403) {
-        reportServerRejection();
-        onCreditLimitReached();
+      if (res.status === 401) {
+        reportAuthRequired();
+        onAuthRequired();
         return;
       }
 
@@ -117,7 +116,6 @@ export default function AiChatView() {
   async function sendMessage(text) {
     const trimmed = text.trim();
     if (!trimmed || isSubmitting) return;
-    if (!requestAccess()) return;
 
     const history = messages
       .filter((m) => m.status === "done")
@@ -175,7 +173,6 @@ export default function AiChatView() {
     if (index === -1) return;
     const userMessage = messages[index - 1];
     if (!userMessage || userMessage.role !== "user") return;
-    if (!requestAccess()) return;
 
     // Everything before this question/answer pair — regenerating shouldn't feed
     // the answer being replaced back in as its own prior context.
@@ -188,11 +185,7 @@ export default function AiChatView() {
 
     await runChat(assistantId, userMessage.content, history, () =>
       setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantId
-            ? { ...m, status: "error", error: "You've used your free prompts. Please sign in to continue." }
-            : m
-        )
+        prev.map((m) => (m.id === assistantId ? { ...m, status: "error", error: "Please sign in to continue." } : m))
       )
     );
   }
@@ -203,7 +196,6 @@ export default function AiChatView() {
     if (index === -1) return;
     const assistantMessage = messages[index + 1];
     if (!assistantMessage || assistantMessage.role !== "assistant") return;
-    if (!requestAccess()) return;
 
     // Same context slice handleRegenerate uses — everything before this
     // question/answer pair, since the edited text replaces it rather than
@@ -223,11 +215,7 @@ export default function AiChatView() {
 
     await runChat(assistantMessage.id, newText, history, () =>
       setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantMessage.id
-            ? { ...m, status: "error", error: "You've used your free prompts. Please sign in to continue." }
-            : m
-        )
+        prev.map((m) => (m.id === assistantMessage.id ? { ...m, status: "error", error: "Please sign in to continue." } : m))
       )
     );
   }
