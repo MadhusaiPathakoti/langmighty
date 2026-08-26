@@ -230,6 +230,7 @@ export default function ReadAloudGame({ onExit }) {
         }`}
       >
         <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{text}</p>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Meaning: {sentence.english}</p>
 
         {showHint && (
           <p className="mt-2 text-gray-500 dark:text-gray-400 italic">{pronunciation}</p>
@@ -296,9 +297,6 @@ export default function ReadAloudGame({ onExit }) {
           <div className="mt-4">
             <p className="text-2xl">🎉</p>
             <p className="font-semibold text-green-700 dark:text-green-300">Correct!</p>
-            <p className="mt-1 text-gray-600 dark:text-gray-400">
-              Meaning: <span className="font-medium">{sentence.english}</span>
-            </p>
             <button
               type="button"
               onClick={handleNext}
