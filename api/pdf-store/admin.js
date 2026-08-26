@@ -10,7 +10,8 @@ const PREVIEW_BUCKET = "pdf-store-previews";
 // Random rather than first-N pages, so the free preview can't be fully
 // judged from just the opening pages — picks `count` distinct indices out
 // of `pageCount`, returned in ascending order so the preview still reads
-// front-to-back.
+// front-to-back. Used only as the fallback when the admin doesn't supply an
+// explicit page selection.
 function pickRandomPageIndices(pageCount, count) {
   const indices = Array.from({ length: pageCount }, (_, i) => i);
   for (let i = indices.length - 1; i > 0; i--) {
@@ -18,6 +19,35 @@ function pickRandomPageIndices(pageCount, count) {
     [indices[i], indices[j]] = [indices[j], indices[i]];
   }
   return indices.slice(0, count).sort((a, b) => a - b);
+}
+
+// The admin panel lets the page numbers be picked in any click order, so
+// this re-derives a clean, validated, ascending, 0-based list from whatever
+// 1-based numbers the client sent — never trusting them to already be sane.
+function sanitizePageIndices(rawIndices, pageCount) {
+  if (!Array.isArray(rawIndices)) return null;
+  const unique = [...new Set(rawIndices.map((n) => Math.round(Number(n))))];
+  const inRange = unique.filter((n) => Number.isInteger(n) && n >= 1 && n <= pageCount);
+  if (inRange.length === 0) return null;
+  return inRange.sort((a, b) => a - b);
+}
+
+// Shared by finalize (new upload) and regenerate-preview (editing an
+// existing item) — builds the preview PDF bytes plus the 1-based page list
+// that was actually used, from either an explicit admin-chosen selection or
+// (finalize only, as a fallback) a random spread.
+async function buildPreview(sourceDoc, pageCount, { previewPageIndices, previewPageCount }) {
+  const chosen1Based = sanitizePageIndices(previewPageIndices, pageCount);
+  const zeroBasedIndices = chosen1Based
+    ? chosen1Based.map((n) => n - 1)
+    : pickRandomPageIndices(pageCount, Math.max(1, Math.min(Number(previewPageCount) || 3, pageCount)));
+
+  const previewDoc = await PDFDocument.create();
+  const copiedPages = await previewDoc.copyPages(sourceDoc, zeroBasedIndices);
+  copiedPages.forEach((page) => previewDoc.addPage(page));
+  const previewBytes = await previewDoc.save();
+
+  return { previewBytes, chosenPages: chosen1Based || zeroBasedIndices.map((n) => n + 1) };
 }
 
 async function handleCreateUploadUrl(supabaseAdmin, body, res) {
@@ -36,9 +66,39 @@ async function handleCreateUploadUrl(supabaseAdmin, body, res) {
   res.status(200).json({ path, token: data.token, signedUrl: data.signedUrl });
 }
 
+// Called after the original file lands in storage but before finalize, so
+// the admin panel can show a page-picker sized to the real page count
+// without having to re-download/re-parse the whole file again at finalize
+// time just to know how many pages exist.
+async function handleGetPageCount(supabaseAdmin, body, res) {
+  const { originalStoragePath } = body;
+  if (!originalStoragePath) {
+    res.status(400).json({ error: "Missing originalStoragePath." });
+    return;
+  }
+
+  const { data: originalBlob, error: downloadErr } = await supabaseAdmin.storage
+    .from(ORIGINALS_BUCKET)
+    .download(originalStoragePath);
+  if (downloadErr) throw downloadErr;
+  const originalBuffer = Buffer.from(await originalBlob.arrayBuffer());
+
+  const sourceDoc = await PDFDocument.load(originalBuffer);
+  res.status(200).json({ pageCount: sourceDoc.getPageCount() });
+}
+
 async function handleFinalize(supabaseAdmin, body, res) {
-  const { title, description, fromLang, toLang, pricePaise, originalPricePaise, previewPageCount, originalStoragePath } =
-    body;
+  const {
+    title,
+    description,
+    fromLang,
+    toLang,
+    pricePaise,
+    originalPricePaise,
+    previewPageCount,
+    previewPageIndices,
+    originalStoragePath,
+  } = body;
 
   if (!title || !fromLang || !toLang || !originalStoragePath) {
     res.status(400).json({ error: "Missing required fields." });
@@ -57,12 +117,10 @@ async function handleFinalize(supabaseAdmin, body, res) {
 
   const sourceDoc = await PDFDocument.load(originalBuffer);
   const pageCount = sourceDoc.getPageCount();
-  const previewCount = Math.max(1, Math.min(Number(previewPageCount) || 3, pageCount));
-
-  const previewDoc = await PDFDocument.create();
-  const copiedPages = await previewDoc.copyPages(sourceDoc, pickRandomPageIndices(pageCount, previewCount));
-  copiedPages.forEach((page) => previewDoc.addPage(page));
-  const previewBytes = await previewDoc.save();
+  const { previewBytes, chosenPages } = await buildPreview(sourceDoc, pageCount, {
+    previewPageIndices,
+    previewPageCount,
+  });
 
   const previewPath = `${crypto.randomUUID()}.pdf`;
   const { error: uploadErr } = await supabaseAdmin.storage
@@ -82,7 +140,8 @@ async function handleFinalize(supabaseAdmin, body, res) {
       preview_storage_path: previewPath,
       original_storage_path: originalStoragePath,
       page_count: pageCount,
-      preview_page_count: previewCount,
+      preview_page_count: chosenPages.length,
+      preview_page_indices: chosenPages,
       is_active: true,
     })
     .select("id")
@@ -92,10 +151,71 @@ async function handleFinalize(supabaseAdmin, body, res) {
   res.status(200).json({ id: inserted.id });
 }
 
+// Rebuilds just the preview PDF for an already-finalized item — lets the
+// admin revise which pages are shown for free without re-uploading the
+// whole original file. Always requires an explicit selection (unlike
+// finalize, this has no random fallback — it's only ever reached from a
+// deliberate admin edit, not a first-time upload where a quick default is
+// still useful).
+async function handleRegeneratePreview(supabaseAdmin, body, res) {
+  const { pdfId, previewPageIndices } = body;
+  if (!pdfId || !Array.isArray(previewPageIndices) || previewPageIndices.length === 0) {
+    res.status(400).json({ error: "Missing pdfId or preview page selection." });
+    return;
+  }
+
+  const { data: item, error: itemErr } = await supabaseAdmin
+    .from("pdf_store_items")
+    .select("original_storage_path, preview_storage_path")
+    .eq("id", pdfId)
+    .maybeSingle();
+  if (itemErr) throw itemErr;
+  if (!item) {
+    res.status(404).json({ error: "PDF not found." });
+    return;
+  }
+
+  const { data: originalBlob, error: downloadErr } = await supabaseAdmin.storage
+    .from(ORIGINALS_BUCKET)
+    .download(item.original_storage_path);
+  if (downloadErr) throw downloadErr;
+  const originalBuffer = Buffer.from(await originalBlob.arrayBuffer());
+
+  const sourceDoc = await PDFDocument.load(originalBuffer);
+  const pageCount = sourceDoc.getPageCount();
+  const { previewBytes, chosenPages } = await buildPreview(sourceDoc, pageCount, { previewPageIndices });
+
+  const newPreviewPath = `${crypto.randomUUID()}.pdf`;
+  const { error: uploadErr } = await supabaseAdmin.storage
+    .from(PREVIEW_BUCKET)
+    .upload(newPreviewPath, previewBytes, { contentType: "application/pdf", upsert: true });
+  if (uploadErr) throw uploadErr;
+
+  const { error: updateErr } = await supabaseAdmin
+    .from("pdf_store_items")
+    .update({
+      preview_storage_path: newPreviewPath,
+      preview_page_count: chosenPages.length,
+      preview_page_indices: chosenPages,
+      page_count: pageCount,
+    })
+    .eq("id", pdfId);
+  if (updateErr) throw updateErr;
+
+  // Best-effort — an orphaned old preview blob is harmless clutter, not
+  // worth failing the whole request over.
+  const { error: removeErr } = await supabaseAdmin.storage.from(PREVIEW_BUCKET).remove([item.preview_storage_path]);
+  if (removeErr) console.error("regenerate-preview: could not remove old preview file:", removeErr);
+
+  res.status(200).json({ previewPageCount: chosenPages.length, previewPageIndices: chosenPages });
+}
+
 async function handleList(supabaseAdmin, res) {
   const { data: items, error: itemsErr } = await supabaseAdmin
     .from("pdf_store_items")
-    .select("id, title, from_lang, to_lang, price_paise, original_price_paise, is_active, created_at")
+    .select(
+      "id, title, from_lang, to_lang, price_paise, original_price_paise, is_active, created_at, page_count, preview_page_count, preview_page_indices"
+    )
     .order("created_at", { ascending: false });
   if (itemsErr) throw itemsErr;
 
@@ -119,6 +239,9 @@ async function handleList(supabaseAdmin, res) {
     originalPricePaise: item.original_price_paise,
     isActive: item.is_active,
     purchaseCount: purchaseCounts[item.id] || 0,
+    pageCount: item.page_count,
+    previewPageCount: item.preview_page_count,
+    previewPageIndices: item.preview_page_indices,
   }));
 
   res.status(200).json({ items: enriched });
@@ -241,6 +364,12 @@ export default async function handler(req, res) {
         return;
       case "finalize":
         await handleFinalize(supabaseAdmin, body, res);
+        return;
+      case "get-page-count":
+        await handleGetPageCount(supabaseAdmin, body, res);
+        return;
+      case "regenerate-preview":
+        await handleRegeneratePreview(supabaseAdmin, body, res);
         return;
       case "list":
         await handleList(supabaseAdmin, res);

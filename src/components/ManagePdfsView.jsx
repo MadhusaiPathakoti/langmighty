@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { INPUT_LANGUAGES } from "langmighty-shared";
 import { apiFetch } from "../lib/apiClient.js";
 import { useAuthGate } from "../context/AuthGateContext.jsx";
+import PdfPreviewPagePicker from "./PdfPreviewPagePicker.jsx";
 
 function languageLabel(key) {
   return INPUT_LANGUAGES.find((l) => l.key === key)?.label ?? key;
@@ -28,6 +29,8 @@ export default function ManagePdfsView() {
   const [editingId, setEditingId] = useState(null);
   const [editPriceRupees, setEditPriceRupees] = useState("");
   const [editOriginalPriceRupees, setEditOriginalPriceRupees] = useState("");
+  const [editingPreviewId, setEditingPreviewId] = useState(null);
+  const [editPreviewPages, setEditPreviewPages] = useState([]);
 
   async function loadItems() {
     setLoading(true);
@@ -106,6 +109,43 @@ export default function ManagePdfsView() {
       setEditingId(null);
     } catch (err) {
       setRowError(item.id, err.message || "Could not update the price.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  function startEditPreview(item) {
+    setEditingPreviewId(item.id);
+    setEditPreviewPages(item.previewPageIndices || []);
+    setRowError(item.id, null);
+  }
+
+  async function saveEditedPreview(item) {
+    if (editPreviewPages.length === 0) {
+      setRowError(item.id, "Select at least one page.");
+      return;
+    }
+    setBusyId(item.id);
+    setRowError(item.id, null);
+    try {
+      const authHeaders = await getAuthHeaders();
+      const res = await apiFetch("/api/pdf-store/admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({ action: "regenerate-preview", pdfId: item.id, previewPageIndices: editPreviewPages }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not update the preview.");
+      setItems((prev) =>
+        prev.map((it) =>
+          it.id === item.id
+            ? { ...it, previewPageCount: data.previewPageCount, previewPageIndices: data.previewPageIndices }
+            : it
+        )
+      );
+      setEditingPreviewId(null);
+    } catch (err) {
+      setRowError(item.id, err.message || "Could not update the preview.");
     } finally {
       setBusyId(null);
     }
@@ -254,6 +294,49 @@ export default function ManagePdfsView() {
               </div>
             )}
           </div>
+
+          {item.pageCount != null && (
+            <div className="mt-3">
+              {editingPreviewId === item.id ? (
+                <div>
+                  <PdfPreviewPagePicker
+                    pageCount={item.pageCount}
+                    selected={editPreviewPages}
+                    onChange={setEditPreviewPages}
+                    disabled={busyId === item.id}
+                  />
+                  <div className="flex items-center gap-3 mt-2">
+                    <button
+                      type="button"
+                      disabled={busyId === item.id}
+                      onClick={() => saveEditedPreview(item)}
+                      className="rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-medium px-3 py-1.5 text-sm transition-colors"
+                    >
+                      Save preview
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingPreviewId(null)}
+                      className="text-sm text-gray-500 dark:text-gray-400 hover:underline"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Preview: {item.previewPageCount} of {item.pageCount} pages ·{" "}
+                  <button
+                    type="button"
+                    onClick={() => startEditPreview(item)}
+                    className="hover:underline text-gray-600 dark:text-gray-300 font-medium"
+                  >
+                    Edit preview pages
+                  </button>
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="flex gap-2 mt-3">
             <button

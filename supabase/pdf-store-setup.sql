@@ -78,3 +78,10 @@ create unique index if not exists pdf_store_purchases_one_paid_per_user_pdf
 -- Migration: run this on its own if pdf_store_items already existed before
 -- the "was ₹399, now ₹99" discount display was added.
 alter table pdf_store_items add column if not exists original_price_paise integer;
+
+-- Migration: run this on its own if pdf_store_items already existed before
+-- admin-selectable preview pages were added. Stores the exact 1-based page
+-- numbers chosen for the preview (preview_page_count alone only recorded how
+-- many, not which) so the admin panel can show and re-edit the current
+-- selection instead of guessing.
+alter table pdf_store_items add column if not exists preview_page_indices integer[];
