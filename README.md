@@ -2,7 +2,7 @@
 
 **Learn. Speak. Connect. 🌍**
 
-Live app: **[LangMighty](https://langmighty.vercel.app/)**
+Live app: **[LangMighty](https://langmighty.in/)**
 
 A chat-style translator between English, Telugu, Hindi, Kannada, Malayalam, and Tamil — any of these languages to any other. Type a sentence and get back translations with romanized pronunciation, real spoken audio, a shareable handwritten-note image, and PDF export of the whole conversation.
 
@@ -128,7 +128,7 @@ handwritten note** under each translated turn.
 
 ## How to use it
 
-1. Open the [live app](https://langmighty.vercel.app/).
+1. Open the [live app](https://langmighty.in/).
 2. In **Preferences**, set the language you'll type in and the languages to translate into.
 3. Type a sentence and send it — get translations, pronunciation, and a Listen button for each
    output language. You get 3 free prompts (shared with AI Chat) before you're asked to sign in with
