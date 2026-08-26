@@ -18,7 +18,7 @@
     "edge-tts-universal": "^1.4.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
-    "langmighty-shared": "^1.1.0",
+    "langmighty-shared": "^1.2.0",
     "muhammara": "^6.0.5",
     "pdf-lib": "^1.17.1",
     "razorpay": "^2.9.8",
