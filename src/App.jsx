@@ -42,6 +42,12 @@ const INPUT_LANGUAGE_KEY = "langlearn_input_language";
 // without permanently skipping the landing page on a fresh visit in a new tab.
 const VIEW_KEY = "langlearn_view";
 const ROADMAP_LANGUAGE_KEY = "langlearn_roadmap_language";
+// Set from a share link's `?pdf=` param (see the effect below) and read back
+// by PdfStoreView to scroll to/highlight that item. sessionStorage (not a
+// piece of pure React state) so it survives the Google OAuth redirect
+// round-trip a signed-out visitor has to go through before reaching the
+// store — same reasoning as VIEW_KEY above.
+const SHARED_PDF_KEY = "langlearn_shared_pdf_id";
 const VALID_VIEWS = ["landing", "chat", "ai-chat", "voice-assistant", "roadmap", "playground", "pdf-store"];
 
 function loadView() {
@@ -117,6 +123,7 @@ export default function App() {
   );
   const [inputError, setInputError] = useState(null);
   const [contactAdminOpen, setContactAdminOpen] = useState(false);
+  const [sharedPdfId, setSharedPdfId] = useState(() => sessionStorage.getItem(SHARED_PDF_KEY));
   const { isSignedIn, reportAuthRequired, getAuthHeaders, openAuthModal } = useAuthGate();
   const authRequired = isSupabaseConfigured && !isSignedIn;
 
@@ -143,6 +150,24 @@ export default function App() {
   useEffect(() => {
     sessionStorage.setItem(VIEW_KEY, view);
   }, [view]);
+
+  // Share links (e.g. `https://langmighty.in/?pdf=<id>` sent via Instagram DM)
+  // land here — jump straight to the PDF store with that item queued to be
+  // highlighted, and strip the param so the URL is clean and a later refresh
+  // doesn't keep re-triggering the same jump.
+  useEffect(() => {
+    const sharedId = new URLSearchParams(window.location.search).get("pdf");
+    if (!sharedId) return;
+    setView("pdf-store");
+    setSharedPdfId(sharedId);
+    sessionStorage.setItem(SHARED_PDF_KEY, sharedId);
+    window.history.replaceState({}, "", window.location.pathname);
+  }, []);
+
+  function clearSharedPdfId() {
+    setSharedPdfId(null);
+    sessionStorage.removeItem(SHARED_PDF_KEY);
+  }
 
   useEffect(() => {
     sessionStorage.setItem(ROADMAP_LANGUAGE_KEY, roadmapLanguage);
@@ -336,7 +361,7 @@ export default function App() {
       ) : view === "playground" ? (
         <PlaygroundView />
       ) : view === "pdf-store" ? (
-        <PdfStoreView />
+        <PdfStoreView highlightPdfId={sharedPdfId} onHighlightConsumed={clearSharedPdfId} />
       ) : (
         <>
           <div className="relative z-10 flex-1 overflow-y-auto px-4 sm:px-6 py-6">

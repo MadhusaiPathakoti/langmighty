@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { INPUT_LANGUAGES } from "langmighty-shared";
 import { apiFetch } from "../lib/apiClient.js";
 import { useAuthGate } from "../context/AuthGateContext.jsx";
@@ -34,7 +34,7 @@ function loadRazorpayScript() {
   });
 }
 
-export default function PdfStoreView() {
+export default function PdfStoreView({ highlightPdfId, onHighlightConsumed }) {
   const { isSignedIn, getAuthHeaders, openAuthModal } = useAuthGate();
 
   const [showAdmin, setShowAdmin] = useState(false);
@@ -43,6 +43,9 @@ export default function PdfStoreView() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [highlightedId, setHighlightedId] = useState(null);
+  const [copiedShareId, setCopiedShareId] = useState(null);
+  const cardRefs = useRef({});
 
   const [purchasedIds, setPurchasedIds] = useState(new Set());
   const [isAdmin, setIsAdmin] = useState(false);
@@ -78,6 +81,46 @@ export default function PdfStoreView() {
       cancelled = true;
     };
   }, [fromFilter, toFilter, catalogRefreshKey]);
+
+  // Scrolls to and briefly highlights the item a share link pointed at, once
+  // the catalog has actually loaded (a matching ref won't exist before the
+  // card itself has rendered). Consumes highlightPdfId either way so a
+  // missing/deactivated item doesn't leave the intent dangling forever.
+  useEffect(() => {
+    if (loading || !highlightPdfId) return;
+    const found = items.some((item) => item.id === highlightPdfId);
+    if (found) {
+      cardRefs.current[highlightPdfId]?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlightedId(highlightPdfId);
+      setTimeout(() => setHighlightedId((id) => (id === highlightPdfId ? null : id)), 3000);
+    }
+    onHighlightConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, items, highlightPdfId]);
+
+  async function handleShare(item) {
+    const url = `${window.location.origin}/?pdf=${item.id}`;
+    const shareData = { title: item.title, text: `Check out "${item.title}" on LangMighty`, url };
+
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        // AbortError just means the user closed the native share sheet —
+        // not a failure worth reporting.
+        if (err?.name !== "AbortError") console.error("Share failed:", err);
+      }
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedShareId(item.id);
+      setTimeout(() => setCopiedShareId((id) => (id === item.id ? null : id)), 1500);
+    } catch {
+      setError("Could not copy the link. Please try again.");
+    }
+  }
 
   async function refreshPurchases() {
     if (!isSignedIn) {
@@ -300,10 +343,31 @@ export default function PdfStoreView() {
               return (
                 <div
                   key={item.id}
-                  className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 flex flex-col gap-3"
+                  ref={(el) => {
+                    cardRefs.current[item.id] = el;
+                  }}
+                  className={`rounded-2xl border bg-white dark:bg-gray-900 p-5 flex flex-col gap-3 transition-shadow ${
+                    highlightedId === item.id
+                      ? "border-indigo-400 dark:border-indigo-500 ring-2 ring-indigo-400 dark:ring-indigo-500"
+                      : "border-gray-200 dark:border-gray-800"
+                  }`}
                 >
                   <div>
-                    <h2 className="font-semibold text-gray-900 dark:text-gray-100 break-words">{item.title}</h2>
+                    <div className="flex items-start justify-between gap-2">
+                      <h2 className="font-semibold text-gray-900 dark:text-gray-100 break-words">{item.title}</h2>
+                      <button
+                        type="button"
+                        onClick={() => handleShare(item)}
+                        title="Share this PDF"
+                        className="shrink-0 text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                      >
+                        {copiedShareId === item.id ? (
+                          <span className="text-xs font-medium text-green-600 dark:text-green-400">Copied!</span>
+                        ) : (
+                          "🔗"
+                        )}
+                      </button>
+                    </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                       {languageLabel(item.fromLang)} → {languageLabel(item.toLang)}
                     </p>
