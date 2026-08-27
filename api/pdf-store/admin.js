@@ -214,7 +214,7 @@ async function handleList(supabaseAdmin, res) {
   const { data: items, error: itemsErr } = await supabaseAdmin
     .from("pdf_store_items")
     .select(
-      "id, title, from_lang, to_lang, price_paise, original_price_paise, is_active, created_at, page_count, preview_page_count, preview_page_indices"
+      "id, title, description, from_lang, to_lang, price_paise, original_price_paise, is_active, created_at, page_count, preview_page_count, preview_page_indices"
     )
     .order("created_at", { ascending: false });
   if (itemsErr) throw itemsErr;
@@ -233,6 +233,7 @@ async function handleList(supabaseAdmin, res) {
   const enriched = (items || []).map((item) => ({
     id: item.id,
     title: item.title,
+    description: item.description,
     fromLang: item.from_lang,
     toLang: item.to_lang,
     pricePaise: item.price_paise,
@@ -264,6 +265,22 @@ async function handleUpdatePrice(supabaseAdmin, body, res) {
       price_paise: Math.round(Number(pricePaise)),
       original_price_paise: originalPricePaise ? Math.round(Number(originalPricePaise)) : null,
     })
+    .eq("id", pdfId);
+  if (error) throw error;
+
+  res.status(200).json({ ok: true });
+}
+
+async function handleUpdateDetails(supabaseAdmin, body, res) {
+  const { pdfId, title, description } = body;
+  if (!pdfId || !title || !String(title).trim()) {
+    res.status(400).json({ error: "Missing pdfId or title." });
+    return;
+  }
+
+  const { error } = await supabaseAdmin
+    .from("pdf_store_items")
+    .update({ title: String(title).trim(), description: description ? String(description).trim() : null })
     .eq("id", pdfId);
   if (error) throw error;
 
@@ -376,6 +393,9 @@ export default async function handler(req, res) {
         return;
       case "update-price":
         await handleUpdatePrice(supabaseAdmin, body, res);
+        return;
+      case "update-details":
+        await handleUpdateDetails(supabaseAdmin, body, res);
         return;
       case "set-active":
         await handleSetActive(supabaseAdmin, body, res);

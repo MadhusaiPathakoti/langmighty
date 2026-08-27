@@ -31,6 +31,9 @@ export default function ManagePdfsView() {
   const [editOriginalPriceRupees, setEditOriginalPriceRupees] = useState("");
   const [editingPreviewId, setEditingPreviewId] = useState(null);
   const [editPreviewPages, setEditPreviewPages] = useState([]);
+  const [editingDetailsId, setEditingDetailsId] = useState(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
 
   async function loadItems() {
     setLoading(true);
@@ -66,6 +69,47 @@ export default function ManagePdfsView() {
     setEditPriceRupees(String(item.pricePaise / 100));
     setEditOriginalPriceRupees(item.originalPricePaise ? String(item.originalPricePaise / 100) : "");
     setRowError(item.id, null);
+  }
+
+  function startEditDetails(item) {
+    setEditingDetailsId(item.id);
+    setEditTitle(item.title);
+    setEditDescription(item.description || "");
+    setRowError(item.id, null);
+  }
+
+  async function saveEditedDetails(item) {
+    if (!editTitle.trim()) {
+      setRowError(item.id, "Enter a title.");
+      return;
+    }
+    setBusyId(item.id);
+    setRowError(item.id, null);
+    try {
+      const authHeaders = await getAuthHeaders();
+      const res = await apiFetch("/api/pdf-store/admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({
+          action: "update-details",
+          pdfId: item.id,
+          title: editTitle.trim(),
+          description: editDescription.trim() || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not update the details.");
+      setItems((prev) =>
+        prev.map((it) =>
+          it.id === item.id ? { ...it, title: editTitle.trim(), description: editDescription.trim() || null } : it
+        )
+      );
+      setEditingDetailsId(null);
+    } catch (err) {
+      setRowError(item.id, err.message || "Could not update the details.");
+    } finally {
+      setBusyId(null);
+    }
   }
 
   async function saveEditedPrice(item) {
@@ -210,13 +254,64 @@ export default function ManagePdfsView() {
           className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4"
         >
           <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="font-medium text-gray-900 dark:text-gray-100">{item.title}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                {languageLabel(item.fromLang)} → {languageLabel(item.toLang)} ·{" "}
-                {item.purchaseCount} purchase{item.purchaseCount === 1 ? "" : "s"}
-              </p>
-            </div>
+            {editingDetailsId === item.id ? (
+              <div className="flex-1 space-y-2">
+                <div>
+                  <label className="text-xs text-gray-500 dark:text-gray-400">Title</label>
+                  <input
+                    type="text"
+                    autoFocus
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 px-2 py-1 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 dark:text-gray-400">Description (optional)</label>
+                  <textarea
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    rows={2}
+                    className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 px-2 py-1 text-sm"
+                  />
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    disabled={busyId === item.id}
+                    onClick={() => saveEditedDetails(item)}
+                    className="rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-medium px-3 py-1.5 text-sm transition-colors"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingDetailsId(null)}
+                    className="text-sm text-gray-500 dark:text-gray-400 hover:underline"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <p className="font-medium text-gray-900 dark:text-gray-100">{item.title}</p>
+                {item.description && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{item.description}</p>
+                )}
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  {languageLabel(item.fromLang)} → {languageLabel(item.toLang)} ·{" "}
+                  {item.purchaseCount} purchase{item.purchaseCount === 1 ? "" : "s"} ·{" "}
+                  <button
+                    type="button"
+                    onClick={() => startEditDetails(item)}
+                    className="hover:underline text-gray-600 dark:text-gray-300 font-medium"
+                  >
+                    Edit name &amp; description
+                  </button>
+                </p>
+              </div>
+            )}
             <span
               className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${
                 item.isActive
