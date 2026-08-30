@@ -162,9 +162,19 @@ history for the pattern) rather than duplicating language config locally.
 ### Frontend (`src/`)
 
 `App.jsx` is a single-component view switcher (`view` state: `landing | chat | ai-chat | roadmap |
-playground | pdf-store`) — there is no router. Conversation state (`conversation`, language prefs,
-theme, input language) is persisted to `localStorage` directly in `App.jsx` via small `load*`/effect
-pairs; follow that existing pattern rather than introducing a state library.
+playground | pdf-store`) with no routes of its own — internal navigation is plain state, not URLs.
+Conversation state (`conversation`, language prefs, theme, input language) is persisted to
+`localStorage` directly in `App.jsx` via small `load*`/effect pairs; follow that existing pattern
+rather than introducing a state library. `main.jsx` does use `react-router-dom`, but only to choose
+*which top-level component* mounts for a handful of standalone SEO landing pages under
+`src/pages/seo/` (e.g. `/english-to-telugu-translator`) — every other path, including `/`, falls
+through to `<App />` unchanged. Those SEO pages set their own `<title>`/meta tags client-side via
+`hooks/useDocumentMeta.js` (there's no SSR, so this only helps browsers/scrapers that execute JS —
+the sitemap and static `index.html` tags are what non-JS crawlers see) and their "Get Started" CTAs
+link back to `/?start=<view>` (optionally `&to=<langKey>` or `&lang=<langKey>`), which `App.jsx` reads
+in a one-time effect to jump straight into the relevant feature instead of the marketing landing page.
+`vercel.json`'s catch-all rewrite (`/(.*)` → `/index.html`) is what makes a direct load or refresh of
+any of these routes work in production.
 
 - `context/AuthGateContext.jsx` — auth state and account actions (Google OAuth + email/password via
   Supabase, password reset/change, streak tracking). `App.jsx` treats `isSignedIn` (combined with

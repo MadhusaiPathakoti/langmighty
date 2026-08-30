@@ -189,8 +189,8 @@ function PlaygroundMockup() {
 }
 
 const PDF_STORE_ITEMS = [
-  { title: "Telugu Alphabet Workbook", langs: "English → Telugu", price: "₹99", original: "₹299", discount: "67% off" },
-  { title: "Malayalam Numbers & Counting", langs: "English → Malayalam", price: "₹79", original: null, discount: null },
+  { title: "Telugu Alphabet Workbook", langs: "English → Telugu" },
+  { title: "Malayalam Numbers & Counting", langs: "English → Malayalam" },
 ];
 
 function PdfStoreMockup() {
@@ -201,16 +201,7 @@ function PdfStoreMockup() {
           <div key={item.title} className="rounded-xl border border-gray-200 dark:border-gray-700 p-3">
             <div className="font-medium text-sm text-gray-900 dark:text-gray-100">{item.title}</div>
             <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{item.langs}</div>
-            <div className="mt-2 flex items-center justify-between">
-              <div className="flex items-baseline gap-1.5">
-                {item.original && (
-                  <span className="line-through text-gray-400 dark:text-gray-500 text-xs">{item.original}</span>
-                )}
-                <span className="font-semibold text-indigo-600 dark:text-indigo-400 text-sm">{item.price}</span>
-                {item.discount && (
-                  <span className="text-xs font-medium text-green-600 dark:text-green-400">{item.discount}</span>
-                )}
-              </div>
+            <div className="mt-2 flex items-center justify-end">
               <span className="text-xs text-gray-400 dark:text-gray-500">Preview (3 pages)</span>
             </div>
           </div>

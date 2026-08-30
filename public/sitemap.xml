@@ -5,4 +5,46 @@
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
+
+  <!-- Translator pages: every from/to pair the app actually supports (English
+       can only be a source, never a target — see TranslatorLandingPage.jsx) -->
+  <url><loc>https://langmighty.in/english-to-telugu-translator</loc><priority>0.8</priority></url>
+  <url><loc>https://langmighty.in/english-to-hindi-translator</loc><priority>0.8</priority></url>
+  <url><loc>https://langmighty.in/english-to-kannada-translator</loc><priority>0.8</priority></url>
+  <url><loc>https://langmighty.in/english-to-malayalam-translator</loc><priority>0.8</priority></url>
+  <url><loc>https://langmighty.in/english-to-tamil-translator</loc><priority>0.8</priority></url>
+
+  <url><loc>https://langmighty.in/telugu-to-hindi-translator</loc><priority>0.6</priority></url>
+  <url><loc>https://langmighty.in/telugu-to-kannada-translator</loc><priority>0.6</priority></url>
+  <url><loc>https://langmighty.in/telugu-to-malayalam-translator</loc><priority>0.6</priority></url>
+  <url><loc>https://langmighty.in/telugu-to-tamil-translator</loc><priority>0.6</priority></url>
+
+  <url><loc>https://langmighty.in/hindi-to-telugu-translator</loc><priority>0.6</priority></url>
+  <url><loc>https://langmighty.in/hindi-to-kannada-translator</loc><priority>0.6</priority></url>
+  <url><loc>https://langmighty.in/hindi-to-malayalam-translator</loc><priority>0.6</priority></url>
+  <url><loc>https://langmighty.in/hindi-to-tamil-translator</loc><priority>0.6</priority></url>
+
+  <url><loc>https://langmighty.in/kannada-to-telugu-translator</loc><priority>0.6</priority></url>
+  <url><loc>https://langmighty.in/kannada-to-hindi-translator</loc><priority>0.6</priority></url>
+  <url><loc>https://langmighty.in/kannada-to-malayalam-translator</loc><priority>0.6</priority></url>
+  <url><loc>https://langmighty.in/kannada-to-tamil-translator</loc><priority>0.6</priority></url>
+
+  <url><loc>https://langmighty.in/malayalam-to-telugu-translator</loc><priority>0.6</priority></url>
+  <url><loc>https://langmighty.in/malayalam-to-hindi-translator</loc><priority>0.6</priority></url>
+  <url><loc>https://langmighty.in/malayalam-to-kannada-translator</loc><priority>0.6</priority></url>
+  <url><loc>https://langmighty.in/malayalam-to-tamil-translator</loc><priority>0.6</priority></url>
+
+  <url><loc>https://langmighty.in/tamil-to-telugu-translator</loc><priority>0.6</priority></url>
+  <url><loc>https://langmighty.in/tamil-to-hindi-translator</loc><priority>0.6</priority></url>
+  <url><loc>https://langmighty.in/tamil-to-kannada-translator</loc><priority>0.6</priority></url>
+  <url><loc>https://langmighty.in/tamil-to-malayalam-translator</loc><priority>0.6</priority></url>
+
+  <!-- Learn pages -->
+  <url><loc>https://langmighty.in/learn-telugu-online</loc><priority>0.8</priority></url>
+  <url><loc>https://langmighty.in/learn-hindi-online</loc><priority>0.8</priority></url>
+  <url><loc>https://langmighty.in/learn-kannada-online</loc><priority>0.8</priority></url>
+  <url><loc>https://langmighty.in/learn-malayalam-online</loc><priority>0.8</priority></url>
+  <url><loc>https://langmighty.in/learn-tamil-online</loc><priority>0.8</priority></url>
+
+  <url><loc>https://langmighty.in/ai-language-tutor</loc><priority>0.8</priority></url>
 </urlset>

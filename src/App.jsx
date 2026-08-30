@@ -169,6 +169,30 @@ export default function App() {
     sessionStorage.removeItem(SHARED_PDF_KEY);
   }
 
+  // CTAs on the standalone SEO landing pages (src/pages/seo/*, e.g.
+  // /english-to-telugu-translator) link here as `?start=<view>` with an
+  // optional `to` (output language) or `lang` (roadmap language) so a search
+  // visitor lands straight in the relevant feature instead of the marketing
+  // landing page.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const start = params.get("start");
+    if (!start || !VALID_VIEWS.includes(start)) return;
+    setView(start);
+
+    const toLang = params.get("to");
+    if (toLang && LANGUAGES.some((l) => l.key === toLang)) {
+      setSelectedLanguages([toLang]);
+    }
+
+    const roadmapLang = params.get("lang");
+    if (roadmapLang && ROADMAP_LANGUAGES.some((l) => l.key === roadmapLang)) {
+      setRoadmapLanguage(roadmapLang);
+    }
+
+    window.history.replaceState({}, "", window.location.pathname);
+  }, []);
+
   useEffect(() => {
     sessionStorage.setItem(ROADMAP_LANGUAGE_KEY, roadmapLanguage);
   }, [roadmapLanguage]);
