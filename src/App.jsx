@@ -412,34 +412,11 @@ export default function App() {
                     Type a sentence in{" "}
                     {INPUT_LANGUAGES.find((l) => l.key === inputLanguage)?.label} below to get started.
                   </p>
-
-                  <span className="relative inline-flex items-center gap-1.5 mt-6 rounded-full bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 px-3 py-1 text-xs text-gray-500 dark:text-gray-400 shadow-sm">
-                    ✦ Created by{" "}
-                    <a
-                      href="https://in.linkedin.com/in/madhusai-pathakoti"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
-                    >
-                      Madhusai Pathakoti
-                    </a>
-                  </span>
                 </div>
               ) : (
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
                     <TypewriterText phrases={TAGLINES} className="text-gray-500 dark:text-gray-400 text-sm" />
-                    <p className="text-gray-400 dark:text-gray-600 text-xs mt-0.5">
-                      Created by{" "}
-                      <a
-                        href="https://in.linkedin.com/in/madhusai-pathakoti"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:text-indigo-500 dark:hover:text-indigo-400 hover:underline"
-                      >
-                        Madhusai Pathakoti
-                      </a>
-                    </p>
                   </div>
                   {hasContent && (
                     <button
