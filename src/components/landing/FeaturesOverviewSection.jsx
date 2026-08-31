@@ -14,13 +14,15 @@ export default function FeaturesOverviewSection() {
             ⭐ Powerful Features
           </span>
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100">
-            Everything You Need to{" "}
+            One Platform, Every Way to{" "}
             <span className="bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
-              Learn &amp; Translate
+              Learn a Language
             </span>
           </h2>
           <p className="mt-3 text-gray-500 dark:text-gray-400">
-            LangMighty combines AI technology with language learning to give you the best translation experience.
+            Other apps give you a translate box and stop there. LangMighty pairs AI translation with a tutor to
+            talk to, games to practice with, and a roadmap to guide you — so you don't just look up words, you
+            actually learn the language.
           </p>
         </div>
 

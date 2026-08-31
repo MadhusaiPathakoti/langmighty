@@ -66,19 +66,20 @@ export default function HeroSection({ onGetStarted }) {
       <div className="relative max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
         <div>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300 text-xs font-medium px-3 py-1 mb-5">
-            ✨ AI-Powered Language Learning
+            ✨ Not Just a Translator — A Full Language Companion
           </span>
 
           <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight text-gray-900 dark:text-gray-100">
             Translate. Learn.{" "}
             <span className="bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
-              Connect.
+              Play.
             </span>
           </h1>
 
           <p className="mt-5 text-gray-600 dark:text-gray-400 text-lg max-w-lg">
-            LangMighty helps you translate sentences across 5 South Indian languages and Hindi with pronunciation,
-            smart history, and AI chat.
+            Most translator apps stop at word-for-word text. LangMighty goes further — translate with natural
+            pronunciation, chat with an AI tutor by voice or text, practice through 8 interactive games, and
+            follow a guided roadmap, all for Telugu, Hindi, Kannada, Malayalam &amp; Tamil in one place.
           </p>
 
           <div className="mt-7 flex flex-wrap items-center gap-3">

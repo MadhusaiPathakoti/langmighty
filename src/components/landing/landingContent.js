@@ -127,8 +127,8 @@ export const FEATURES = [
 
 export const STATS = [
   { value: "6", label: "Languages Supported" },
-  { value: "AI", label: "Powered by AI" },
-  { value: "∞", label: "Unlimited Translations" },
+  { value: "8", label: "Learning Games" },
+  { value: "AI", label: "Tutor & Voice Chat" },
   { value: "1,000+", label: "Happy Learners" },
 ];
 
