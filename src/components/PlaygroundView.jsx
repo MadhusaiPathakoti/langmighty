@@ -83,7 +83,7 @@ export default function PlaygroundView() {
             ← Back to Playground
           </button>
           {game && (
-            <h2 className="mb-4 text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">
+            <h2 className="mb-4 text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 text-center">
               {game.emoji} {game.title}
             </h2>
           )}
