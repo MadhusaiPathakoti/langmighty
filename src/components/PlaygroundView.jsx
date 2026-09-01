@@ -71,6 +71,7 @@ export default function PlaygroundView() {
   const [activeGame, setActiveGame] = useState(null);
 
   if (activeGame) {
+    const game = GAMES.find((g) => g.id === activeGame);
     return (
       <div className="relative z-10 flex-1 overflow-y-auto px-4 sm:px-6 py-6">
         <div className="max-w-2xl mx-auto">
@@ -81,6 +82,11 @@ export default function PlaygroundView() {
           >
             ← Back to Playground
           </button>
+          {game && (
+            <h2 className="mb-4 text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">
+              {game.emoji} {game.title}
+            </h2>
+          )}
           {activeGame === "quiz" && <QuizGame onExit={() => setActiveGame(null)} />}
           {activeGame === "word-match" && <WordMatchGame onExit={() => setActiveGame(null)} />}
           {activeGame === "speed-translate" && <SpeedTranslateGame onExit={() => setActiveGame(null)} />}
