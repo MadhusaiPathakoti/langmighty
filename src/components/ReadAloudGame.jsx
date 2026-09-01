@@ -56,6 +56,7 @@ export default function ReadAloudGame({ onExit }) {
   const [status, setStatus] = useState("idle"); // idle | listening | correct | wrong | error
   const [transcript, setTranscript] = useState("");
   const [showHint, setShowHint] = useState(false);
+  const [showMeaning, setShowMeaning] = useState(false);
   const recognitionRef = useRef(null);
 
   // Releases the mic if the player navigates away (or switches sentence/language)
@@ -93,6 +94,7 @@ export default function ReadAloudGame({ onExit }) {
     setStatus("idle");
     setTranscript("");
     setShowHint(false);
+    setShowMeaning(false);
   }
 
   useEffect(() => {
@@ -230,7 +232,28 @@ export default function ReadAloudGame({ onExit }) {
         }`}
       >
         <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{text}</p>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Meaning: {sentence.english}</p>
+
+        {showMeaning ? (
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Meaning: {sentence.english}</p>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowMeaning(true)}
+            className="mt-1 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+          >
+            Reveal meaning
+          </button>
+        )}
+
+        {status !== "correct" && !showHint && (
+          <button
+            type="button"
+            onClick={() => setShowHint(true)}
+            className="mt-2 block mx-auto text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+          >
+            Hint (show pronunciation)
+          </button>
+        )}
 
         {showHint && (
           <p className="mt-2 text-gray-500 dark:text-gray-400 italic">{pronunciation}</p>
@@ -259,15 +282,6 @@ export default function ReadAloudGame({ onExit }) {
 
         {status !== "correct" && (
           <div className="mt-3 flex items-center justify-center gap-4">
-            {!showHint && (
-              <button
-                type="button"
-                onClick={() => setShowHint(true)}
-                className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
-              >
-                Hint (show pronunciation)
-              </button>
-            )}
             <button
               type="button"
               onClick={handleNext}

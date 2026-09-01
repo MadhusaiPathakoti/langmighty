@@ -7,13 +7,14 @@ import {
   trackSeenIds,
   LANGUAGES,
 } from "langmighty-shared";
-import { loadExtraPhrases } from "../quizData.js";
+import { loadExtraPhrases, bucketPhrasesByDifficulty, LISTEN_DIFFICULTIES } from "../quizData.js";
 import TopicPicker, { loadQuizCategories } from "./TopicPicker.jsx";
 import SpeakerButton from "./SpeakerButton.jsx";
 
 const QUESTION_COUNT = 10;
 const LISTEN_LANGUAGE_KEY = "langlearn_listen_language";
 const LISTEN_CATEGORIES_KEY = "langlearn_listen_categories";
+const LISTEN_DIFFICULTY_KEY = "langlearn_listen_difficulty";
 
 function languageInfo(key) {
   return LANGUAGES.find((l) => l.key === key);
@@ -24,9 +25,20 @@ function loadListenLanguage() {
   return saved === "mixed" || QUIZ_TARGET_LANGUAGES.includes(saved) ? saved : "mixed";
 }
 
+function loadListenDifficulty() {
+  const saved = localStorage.getItem(LISTEN_DIFFICULTY_KEY);
+  return LISTEN_DIFFICULTIES.some((d) => d.key === saved) ? saved : "easy";
+}
+
+// Category-filters, then difficulty-buckets, a phrase pool for one language.
+function difficultyPool(language, categories, difficultyKey, phrases) {
+  return bucketPhrasesByDifficulty(getPhrasesForCategories(categories, phrases), language)[difficultyKey];
+}
+
 export default function ListenGuessGame({ onExit }) {
   const [targetLanguage, setTargetLanguage] = useState(loadListenLanguage);
   const [categoryKeys, setCategoryKeys] = useState(() => loadQuizCategories(LISTEN_CATEGORIES_KEY));
+  const [difficulty, setDifficulty] = useState(loadListenDifficulty);
   // Phrase ids used in the round just played — passed as excludeIds so a replay
   // prefers fresh words over immediately reshowing the same ones.
   const recentIdsRef = useRef([]);
@@ -45,9 +57,16 @@ export default function ListenGuessGame({ onExit }) {
   }, []);
 
   const [questions, setQuestions] = useState(() => {
+    const pool = difficultyPool(
+      loadListenLanguage(),
+      loadQuizCategories(LISTEN_CATEGORIES_KEY),
+      loadListenDifficulty(),
+      QUIZ_PHRASES
+    );
+    if (pool.length === 0) return [];
     const result = generateQuiz(QUESTION_COUNT, {
       targetLanguage: loadListenLanguage(),
-      categoryKeys: loadQuizCategories(LISTEN_CATEGORIES_KEY),
+      allPhrases: pool,
     });
     recentIdsRef.current = result.usedIds;
     return result.questions;
@@ -57,18 +76,27 @@ export default function ListenGuessGame({ onExit }) {
   const [wrongOptions, setWrongOptions] = useState(new Set());
   const [answeredCorrectly, setAnsweredCorrectly] = useState(false);
 
-  const finished = questionIndex >= questions.length;
-  const availableCount = getPhrasesForCategories(categoryKeys, allPhrases).length;
+  const finished = questions.length > 0 && questionIndex >= questions.length;
+  const availableCount = difficultyPool(targetLanguage, categoryKeys, difficulty, allPhrases).length;
 
-  function startNewRound(language, categories, { resetHistory } = {}) {
+  function startNewRound(language, categories, difficultyKey, { resetHistory } = {}) {
     const excludeIds = resetHistory ? [] : recentIdsRef.current;
+    const pool = difficultyPool(language, categories, difficultyKey, allPhrases);
+    if (pool.length === 0) {
+      recentIdsRef.current = [];
+      setQuestions([]);
+      setQuestionIndex(0);
+      setScore(0);
+      setWrongOptions(new Set());
+      setAnsweredCorrectly(false);
+      return;
+    }
     const result = generateQuiz(QUESTION_COUNT, {
       targetLanguage: language,
-      categoryKeys: categories,
       excludeIds,
-      allPhrases,
+      allPhrases: pool,
     });
-    recentIdsRef.current = trackSeenIds(excludeIds, result.usedIds, getPhrasesForCategories(categories, allPhrases).length);
+    recentIdsRef.current = trackSeenIds(excludeIds, result.usedIds, pool.length);
     setQuestions(result.questions);
     setQuestionIndex(0);
     setScore(0);
@@ -76,21 +104,38 @@ export default function ListenGuessGame({ onExit }) {
     setAnsweredCorrectly(false);
   }
 
+  // Recovers automatically once the AI-generated extra phrases finish loading,
+  // for the case where the current difficulty/topic/language combo had zero
+  // words in the static bank alone (e.g. Hard, which the static bank barely
+  // covers). Doesn't touch an already-in-progress round.
+  useEffect(() => {
+    if (questions.length === 0) {
+      startNewRound(targetLanguage, categoryKeys, difficulty, { resetHistory: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allPhrases]);
+
   function handleRestart() {
-    startNewRound(targetLanguage, categoryKeys);
+    startNewRound(targetLanguage, categoryKeys, difficulty);
   }
 
   function handleLanguageChange(language) {
     setTargetLanguage(language);
     localStorage.setItem(LISTEN_LANGUAGE_KEY, language);
-    startNewRound(language, categoryKeys, { resetHistory: true });
+    startNewRound(language, categoryKeys, difficulty, { resetHistory: true });
+  }
+
+  function handleDifficultyChange(key) {
+    setDifficulty(key);
+    localStorage.setItem(LISTEN_DIFFICULTY_KEY, key);
+    startNewRound(targetLanguage, categoryKeys, key, { resetHistory: true });
   }
 
   function handleCategoryToggle(key) {
     setCategoryKeys((prev) => {
       const next = prev.includes(key) ? (prev.length === 1 ? prev : prev.filter((k) => k !== key)) : [...prev, key];
       localStorage.setItem(LISTEN_CATEGORIES_KEY, JSON.stringify(next));
-      startNewRound(targetLanguage, next, { resetHistory: true });
+      startNewRound(targetLanguage, next, difficulty, { resetHistory: true });
       return next;
     });
   }
@@ -117,11 +162,46 @@ export default function ListenGuessGame({ onExit }) {
       </div>
 
       <div className="flex items-center gap-2">
+        <label htmlFor="listen-difficulty" className="text-gray-500 dark:text-gray-400">
+          Difficulty:
+        </label>
+        <select
+          id="listen-difficulty"
+          value={difficulty}
+          onChange={(e) => handleDifficultyChange(e.target.value)}
+          className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 px-2.5 py-1.5"
+        >
+          {LISTEN_DIFFICULTIES.map((d) => (
+            <option key={d.key} value={d.key}>
+              {d.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex items-center gap-2">
         <span className="text-gray-500 dark:text-gray-400">Topics:</span>
         <TopicPicker selected={categoryKeys} onToggle={handleCategoryToggle} />
       </div>
     </div>
   );
+
+  if (questions.length === 0) {
+    return (
+      <div>
+        {controls}
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 px-6 py-14 text-center">
+          <span className="text-4xl">🌱</span>
+          <h2 className="mt-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
+            No words at this difficulty yet
+          </h2>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Try a different difficulty, topic, or language for now — more words are added over time.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (finished) {
     return (
