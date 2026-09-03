@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import AiChatExportTemplate from "./AiChatExportTemplate.jsx";
 import AiChatMessage from "./AiChatMessage.jsx";
 import { useAuthGate } from "../context/AuthGateContext.jsx";
-import { apiFetch } from "../lib/apiClient.js";
+import { apiFetch, isLimitReached, reportLimitFromResponse } from "../lib/apiClient.js";
 import { exportNodeToPdf } from "../utils/pdfExport.js";
 import { isSpeechRecognitionSupported, listenContinuous } from "../utils/speechRecognition.js";
 
@@ -44,7 +44,7 @@ export default function AiChatView() {
   const textareaRef = useRef(null);
   const recognitionRef = useRef(null);
   const voiceBaseTextRef = useRef("");
-  const { reportAuthRequired, getAuthHeaders } = useAuthGate();
+  const { reportAuthRequired, reportLimitReached, getAuthHeaders } = useAuthGate();
 
   // Releases the mic if the player navigates away mid-listen, rather than
   // leaving recognition running in the background.
@@ -72,7 +72,7 @@ export default function AiChatView() {
   // Shared by sendMessage (new exchange) and handleRegenerate (existing one) —
   // the caller is responsible for appending/resetting the assistant message
   // into "loading" state and building `history`.
-  async function runChat(assistantId, message, history, onAuthRequired) {
+  async function runChat(assistantId, message, history, onRejected) {
     setIsSubmitting(true);
 
     try {
@@ -85,7 +85,13 @@ export default function AiChatView() {
 
       if (res.status === 401) {
         reportAuthRequired();
-        onAuthRequired();
+        onRejected("auth");
+        return;
+      }
+
+      if (isLimitReached(res)) {
+        await reportLimitFromResponse(res, reportLimitReached);
+        onRejected("limit");
         return;
       }
 
@@ -129,7 +135,7 @@ export default function AiChatView() {
 
     await runChat(assistantMessage.id, trimmed, history, () =>
       setMessages((prev) => prev.filter((m) => m.id !== userMessage.id && m.id !== assistantMessage.id))
-    );
+    ); // same revert either way (auth or limit) — no rejection-reason-specific copy needed here
   }
 
   function handleSubmit(e) {
@@ -183,9 +189,13 @@ export default function AiChatView() {
 
     setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, status: "loading", error: null } : m)));
 
-    await runChat(assistantId, userMessage.content, history, () =>
+    await runChat(assistantId, userMessage.content, history, (reason) =>
       setMessages((prev) =>
-        prev.map((m) => (m.id === assistantId ? { ...m, status: "error", error: "Please sign in to continue." } : m))
+        prev.map((m) =>
+          m.id === assistantId
+            ? { ...m, status: "error", error: reason === "limit" ? "Daily free limit reached." : "Please sign in to continue." }
+            : m
+        )
       )
     );
   }
@@ -213,9 +223,13 @@ export default function AiChatView() {
       })
     );
 
-    await runChat(assistantMessage.id, newText, history, () =>
+    await runChat(assistantMessage.id, newText, history, (reason) =>
       setMessages((prev) =>
-        prev.map((m) => (m.id === assistantMessage.id ? { ...m, status: "error", error: "Please sign in to continue." } : m))
+        prev.map((m) =>
+          m.id === assistantMessage.id
+            ? { ...m, status: "error", error: reason === "limit" ? "Daily free limit reached." : "Please sign in to continue." }
+            : m
+        )
       )
     );
   }

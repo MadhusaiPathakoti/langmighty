@@ -3,6 +3,8 @@ import { LANGUAGES, INPUT_LANGUAGES, DEFAULT_LANGUAGE_KEYS, DEFAULT_INPUT_LANGUA
 import { applyCors } from "./_lib/cors.js";
 import { requireSignedIn } from "./_lib/creditGate.js";
 import { getRedis } from "./_lib/redisCache.js";
+import { checkAndConsumeUsage } from "./_lib/usageLimits.js";
+import { isAdminUser } from "./_lib/adminAuth.js";
 
 const GEMINI_MODEL = "gemini-3.5-flash-lite";
 const VALID_KEYS = new Set(LANGUAGES.map((l) => l.key));
@@ -131,7 +133,11 @@ export default async function handler(req, res) {
   }
   const trimmedText = text.trim();
 
-  if (!(await requireSignedIn(req, res))) return;
+  const authResult = await requireSignedIn(req, res);
+  if (!authResult) return;
+  if (authResult.signedIn && !(await isAdminUser(authResult.user.id))) {
+    if (!(await checkAndConsumeUsage(authResult.user.id, "translate", res))) return;
+  }
 
   const sourceKey = VALID_INPUT_KEYS.has(sourceLanguage) ? sourceLanguage : DEFAULT_INPUT_LANGUAGE_KEY;
 

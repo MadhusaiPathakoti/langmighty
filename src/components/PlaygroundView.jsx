@@ -7,6 +7,8 @@ import ScenarioRoleplayGame from "./ScenarioRoleplayGame.jsx";
 import SpeedTranslateGame from "./SpeedTranslateGame.jsx";
 import WordChainGame from "./WordChainGame.jsx";
 import WordMatchGame from "./WordMatchGame.jsx";
+import { useAuthGate } from "../context/AuthGateContext.jsx";
+import { apiFetch, isLimitReached, reportLimitFromResponse } from "../lib/apiClient.js";
 
 const GAMES = [
   {
@@ -69,6 +71,45 @@ const GAMES = [
 
 export default function PlaygroundView() {
   const [activeGame, setActiveGame] = useState(null);
+  const [enteringGame, setEnteringGame] = useState(null);
+  const { reportAuthRequired, reportLimitReached, getAuthHeaders } = useAuthGate();
+
+  // Consumes one daily "play" credit (api/game-content.js's POST branch) before
+  // entering a game — the natural single choke point, since every game beyond
+  // this reads its content once and replays it entirely client-side (see
+  // CLAUDE.md game-content notes). Fails open on a network error rather than
+  // blocking play over a transient hiccup — the server still enforces the real
+  // cap on every call, so this is only ever a UX shortcut, same principle as
+  // the sign-in gate in App.jsx.
+  async function handleSelectGame(gameId) {
+    if (enteringGame) return;
+    setEnteringGame(gameId);
+    try {
+      const authHeaders = await getAuthHeaders();
+      const res = await apiFetch("/api/game-content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({ gameId }),
+      });
+
+      if (res.status === 401) {
+        reportAuthRequired();
+        return;
+      }
+
+      if (isLimitReached(res)) {
+        await reportLimitFromResponse(res, reportLimitReached);
+        return;
+      }
+
+      setActiveGame(gameId);
+    } catch (err) {
+      console.error("Playground play-limit check failed, allowing entry:", err);
+      setActiveGame(gameId);
+    } finally {
+      setEnteringGame(null);
+    }
+  }
 
   if (activeGame) {
     const game = GAMES.find((g) => g.id === activeGame);
@@ -115,8 +156,8 @@ export default function PlaygroundView() {
             <button
               key={game.id}
               type="button"
-              disabled={!game.available}
-              onClick={() => game.available && setActiveGame(game.id)}
+              disabled={!game.available || enteringGame === game.id}
+              onClick={() => game.available && handleSelectGame(game.id)}
               className={`relative text-left rounded-2xl border p-5 transition-colors ${
                 game.available
                   ? "border-gray-200 dark:border-gray-700 hover:border-indigo-400 dark:hover:border-indigo-500 bg-white dark:bg-gray-900 cursor-pointer"

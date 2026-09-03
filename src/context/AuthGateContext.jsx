@@ -52,6 +52,8 @@ export function AuthGateProvider({ children }) {
   const [streak, setStreak] = useState(() => updateLocalStreak());
   // null | "signup" | "login" | "forgot-password" | "reset-password"
   const [authView, setAuthView] = useState(null);
+  // null | { feature: "translate" | "chat" | "game", limit: number }
+  const [limitReached, setLimitReached] = useState(null);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -144,6 +146,19 @@ export function AuthGateProvider({ children }) {
   // AUTH_REQUIRED (e.g. the session expired mid-use) so the login prompt reappears.
   function reportAuthRequired() {
     setAuthView("login");
+  }
+
+  // Same idea as reportAuthRequired, for the other server-enforced gate: call
+  // this when a request comes back 429 LIMIT_REACHED (see api/_lib/
+  // usageLimits.js) so the upgrade prompt appears. There's no paid tier to
+  // upgrade to yet — for now this just surfaces that the free daily cap was
+  // hit.
+  function reportLimitReached(feature, limit) {
+    setLimitReached({ feature, limit });
+  }
+
+  function dismissLimitReached() {
+    setLimitReached(null);
   }
 
   async function getAuthHeaders() {
@@ -240,6 +255,9 @@ export function AuthGateProvider({ children }) {
         authView,
         openAuthModal: (view = "login") => setAuthView(view),
         closeAuthModal: () => setAuthView(null),
+        limitReached,
+        reportLimitReached,
+        dismissLimitReached,
         signInWithGoogle,
         signUpWithEmail,
         signInWithEmail,

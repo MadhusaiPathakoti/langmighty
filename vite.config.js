@@ -89,8 +89,16 @@ function localApiPlugin() {
 
         // GROQ_API_KEY is only used by chat.js's "voice-assistant" mode
         // (Groq, not Gemini, backs that one mode — see the comment on
-        // GROQ_MODEL in api/chat.js for why).
-        injectEnv(["GEMINI_API_KEY", "GROQ_API_KEY", "VITE_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]);
+        // GROQ_MODEL in api/chat.js for why). UPSTASH_* is for usage-limit
+        // checks and the admin-flag cache (_lib/usageLimits.js, _lib/adminAuth.js).
+        injectEnv([
+          "GEMINI_API_KEY",
+          "GROQ_API_KEY",
+          "VITE_SUPABASE_URL",
+          "SUPABASE_SERVICE_ROLE_KEY",
+          "UPSTASH_REDIS_REST_URL",
+          "UPSTASH_REDIS_REST_TOKEN",
+        ]);
 
         const { default: handler } = await server.ssrLoadModule("/api/chat.js");
         await handler(req, res);
@@ -109,14 +117,21 @@ function localApiPlugin() {
       });
 
       server.middlewares.use("/api/game-content", async (req, res) => {
-        if (req.method !== "GET") {
+        if (req.method !== "GET" && req.method !== "POST") {
           res.statusCode = 405;
           res.end();
           return;
         }
         await prepareApiRequest(req, res);
 
-        injectEnv(["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"]);
+        // POST (consuming a daily "play" credit) additionally needs the auth env
+        // vars, since it calls requireSignedIn — GET (reading content) doesn't.
+        injectEnv([
+          "UPSTASH_REDIS_REST_URL",
+          "UPSTASH_REDIS_REST_TOKEN",
+          "VITE_SUPABASE_URL",
+          "SUPABASE_SERVICE_ROLE_KEY",
+        ]);
 
         const { default: handler } = await server.ssrLoadModule("/api/game-content.js");
         await handler(req, res);

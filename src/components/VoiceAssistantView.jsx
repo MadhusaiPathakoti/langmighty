@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuthGate } from "../context/AuthGateContext.jsx";
-import { apiFetch } from "../lib/apiClient.js";
+import { apiFetch, isLimitReached, reportLimitFromResponse } from "../lib/apiClient.js";
 import { playTranslation, stopAudio } from "../utils/tts.js";
 import { isSpeechRecognitionSupported, listenContinuous } from "../utils/speechRecognition.js";
 import {
@@ -55,7 +55,7 @@ export default function VoiceAssistantView() {
   const speechSupported = isSpeechRecognitionSupported();
   const bottomRef = useRef(null);
   const recognitionRef = useRef(null);
-  const { reportAuthRequired, getAuthHeaders } = useAuthGate();
+  const { reportAuthRequired, reportLimitReached, getAuthHeaders } = useAuthGate();
 
   useEffect(() => {
     localStorage.setItem(VOICE_ASSISTANT_KEY, JSON.stringify(messages));
@@ -99,6 +99,12 @@ export default function VoiceAssistantView() {
 
       if (res.status === 401) {
         reportAuthRequired();
+        setMessages((prev) => prev.filter((m) => m.id !== userMessage.id && m.id !== assistantMessage.id));
+        return;
+      }
+
+      if (isLimitReached(res)) {
+        await reportLimitFromResponse(res, reportLimitReached);
         setMessages((prev) => prev.filter((m) => m.id !== userMessage.id && m.id !== assistantMessage.id));
         return;
       }

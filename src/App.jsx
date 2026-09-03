@@ -16,8 +16,10 @@ import RoadmapView from "./components/RoadmapView.jsx";
 import SignInWall from "./components/SignInWall.jsx";
 import TranslatePreferences from "./components/TranslatePreferences.jsx";
 import TypewriterText from "./components/TypewriterText.jsx";
+import UpgradeWall from "./components/UpgradeWall.jsx";
 import VoiceAssistantView from "./components/VoiceAssistantView.jsx";
 import { useAuthGate } from "./context/AuthGateContext.jsx";
+import { isLimitReached, reportLimitFromResponse } from "./lib/apiClient.js";
 import { isSupabaseConfigured } from "./lib/supabaseClient.js";
 import { exportNodeToPdf } from "./utils/pdfExport.js";
 import {
@@ -124,7 +126,7 @@ export default function App() {
   const [inputError, setInputError] = useState(null);
   const [contactAdminOpen, setContactAdminOpen] = useState(false);
   const [sharedPdfId, setSharedPdfId] = useState(() => sessionStorage.getItem(SHARED_PDF_KEY));
-  const { isSignedIn, reportAuthRequired, getAuthHeaders, openAuthModal } = useAuthGate();
+  const { isSignedIn, reportAuthRequired, reportLimitReached, getAuthHeaders, openAuthModal } = useAuthGate();
   const authRequired = isSupabaseConfigured && !isSignedIn;
 
   const exportRef = useRef(null);
@@ -221,6 +223,18 @@ export default function App() {
           regenerate
             ? prev.map((t) =>
                 t.id === turnId ? { ...t, status: "error", error: "Please sign in to continue." } : t
+              )
+            : prev.filter((t) => t.id !== turnId)
+        );
+        return;
+      }
+
+      if (isLimitReached(res)) {
+        await reportLimitFromResponse(res, reportLimitReached);
+        setConversation((prev) =>
+          regenerate
+            ? prev.map((t) =>
+                t.id === turnId ? { ...t, status: "error", error: "Daily free limit reached." } : t
               )
             : prev.filter((t) => t.id !== turnId)
         );
@@ -473,6 +487,7 @@ export default function App() {
       )}
 
       <AuthModal />
+      <UpgradeWall />
       <ContactAdminModal open={contactAdminOpen} onClose={() => setContactAdminOpen(false)} />
     </div>
   );

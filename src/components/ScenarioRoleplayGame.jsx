@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { LANGUAGES, QUIZ_TARGET_LANGUAGES } from "langmighty-shared";
 import { useAuthGate } from "../context/AuthGateContext.jsx";
-import { apiFetch } from "../lib/apiClient.js";
+import { apiFetch, isLimitReached, reportLimitFromResponse } from "../lib/apiClient.js";
 import { LANGUAGE_TO_SPEECH_LOCALE } from "../readAloudData.js";
 import { isSpeechRecognitionSupported, listenOnce } from "../utils/speechRecognition.js";
 
@@ -49,13 +49,14 @@ export default function ScenarioRoleplayGame({ onExit }) {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [rejected, setRejected] = useState(false);
+  // null | "auth" | "limit"
+  const [rejected, setRejected] = useState(null);
   const [report, setReport] = useState(null);
   const [reportError, setReportError] = useState(null);
   const [listening, setListening] = useState(false);
   const [micError, setMicError] = useState(null);
   const bottomRef = useRef(null);
-  const { reportAuthRequired, getAuthHeaders } = useAuthGate();
+  const { reportAuthRequired, reportLimitReached, getAuthHeaders } = useAuthGate();
   const speechSupported = isSpeechRecognitionSupported();
 
   useEffect(() => {
@@ -89,7 +90,7 @@ export default function ScenarioRoleplayGame({ onExit }) {
 
   async function runTurn(userText) {
     setIsSubmitting(true);
-    setRejected(false);
+    setRejected(null);
 
     const history = messages.filter((m) => m.status === "done").map((m) => ({ role: m.role, content: turnContent(m) }));
 
@@ -115,7 +116,14 @@ export default function ScenarioRoleplayGame({ onExit }) {
 
       if (res.status === 401) {
         reportAuthRequired();
-        setRejected(true);
+        setRejected("auth");
+        setMessages((prev) => prev.filter((m) => m.id !== assistantId && m.id !== userMessage?.id));
+        return;
+      }
+
+      if (isLimitReached(res)) {
+        await reportLimitFromResponse(res, reportLimitReached);
+        setRejected("limit");
         setMessages((prev) => prev.filter((m) => m.id !== assistantId && m.id !== userMessage?.id));
         return;
       }
@@ -148,7 +156,7 @@ export default function ScenarioRoleplayGame({ onExit }) {
     setMessages([]);
     setReport(null);
     setReportError(null);
-    setRejected(false);
+    setRejected(null);
     setPhase("playing");
   }
 
@@ -171,7 +179,7 @@ export default function ScenarioRoleplayGame({ onExit }) {
     if (isSubmitting) return;
     setIsSubmitting(true);
     setReportError(null);
-    setRejected(false);
+    setRejected(null);
 
     const history = messages.filter((m) => m.status === "done").map((m) => ({ role: m.role, content: turnContent(m) }));
 
@@ -185,7 +193,13 @@ export default function ScenarioRoleplayGame({ onExit }) {
 
       if (res.status === 401) {
         reportAuthRequired();
-        setRejected(true);
+        setRejected("auth");
+        return;
+      }
+
+      if (isLimitReached(res)) {
+        await reportLimitFromResponse(res, reportLimitReached);
+        setRejected("limit");
         return;
       }
 
@@ -208,7 +222,7 @@ export default function ScenarioRoleplayGame({ onExit }) {
     setMessages([]);
     setReport(null);
     setReportError(null);
-    setRejected(false);
+    setRejected(null);
     setPhase("setup");
   }
 
@@ -361,7 +375,9 @@ export default function ScenarioRoleplayGame({ onExit }) {
 
       {rejected && (
         <p className="mt-3 text-center text-sm text-amber-600 dark:text-amber-400">
-          Your session expired — sign in to keep chatting.
+          {rejected === "limit"
+            ? "You've reached today's free chat limit."
+            : "Your session expired — sign in to keep chatting."}
         </p>
       )}
       {reportError && <p className="mt-3 text-center text-sm text-red-600 dark:text-red-400">{reportError}</p>}
