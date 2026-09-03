@@ -3,6 +3,7 @@ import { getRedis } from "./_lib/redisCache.js";
 import { requireSignedIn } from "./_lib/creditGate.js";
 import { checkAndConsumeUsage } from "./_lib/usageLimits.js";
 import { isAdminUser } from "./_lib/adminAuth.js";
+import { getUserTier } from "./_lib/subscription.js";
 
 // Maps each `type` to its Redis key and the response field name gameplay code
 // expects. Sentence-shaped types all respond under "sentences" regardless of
@@ -48,7 +49,8 @@ async function handlePlayCheck(req, res) {
     return;
   }
 
-  const usage = await checkAndConsumeUsage(authResult.user.id, "game", res, gameId);
+  const tier = await getUserTier(authResult.user.id);
+  const usage = await checkAndConsumeUsage(authResult.user.id, "game", res, { subKey: gameId, tier });
   if (!usage) return;
   res.status(200).json(usage);
 }

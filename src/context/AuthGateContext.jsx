@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { apiFetch } from "../lib/apiClient.js";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient.js";
 
 const PENDING_OPT_IN_KEY = "langlearn_pending_marketing_opt_in";
@@ -54,6 +55,11 @@ export function AuthGateProvider({ children }) {
   const [authView, setAuthView] = useState(null);
   // null | { feature: "translate" | "chat" | "game", limit: number }
   const [limitReached, setLimitReached] = useState(null);
+  // 'free' | 'pro' | 'premium' — mirrors api/_lib/subscription.js's getUserTier,
+  // fetched via my-purchases (subscriptions has no client-readable RLS
+  // policies — service-role only — so this can't be a direct Supabase query
+  // the way streak above is).
+  const [tier, setTier] = useState("free");
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -120,6 +126,34 @@ export function AuthGateProvider({ children }) {
     };
   }, [session?.user?.id]);
 
+  // Piggybacks on the same "everything about this signed-in user" endpoint
+  // PdfStoreView already calls (see CLAUDE.md on my-purchases) rather than a
+  // dedicated status route. Exposed as refreshTier so SubscribeView can call
+  // it right after a successful subscribe/cancel instead of waiting for the
+  // next sign-in event to pick up the new tier.
+  async function refreshTier() {
+    const userId = session?.user?.id;
+    if (!userId || !isSupabaseConfigured) {
+      setTier("free");
+      return;
+    }
+    try {
+      const authHeaders = await getAuthHeaders();
+      const res = await apiFetch("/api/pdf-store/my-purchases", { headers: authHeaders });
+      if (!res.ok) return;
+      const data = await res.json();
+      setTier(data.subscription?.tier || "free");
+    } catch {
+      // Fails open — keep showing whatever tier is already set rather than
+      // blocking on a network hiccup.
+    }
+  }
+
+  useEffect(() => {
+    refreshTier();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id]);
+
   async function saveProfileOnSignIn(user) {
     const pending = localStorage.getItem(PENDING_OPT_IN_KEY);
     if (pending === null) return; // profile already saved for this browser, nothing pending
@@ -150,11 +184,12 @@ export function AuthGateProvider({ children }) {
 
   // Same idea as reportAuthRequired, for the other server-enforced gate: call
   // this when a request comes back 429 LIMIT_REACHED (see api/_lib/
-  // usageLimits.js) so the upgrade prompt appears. There's no paid tier to
-  // upgrade to yet — for now this just surfaces that the free daily cap was
-  // hit.
-  function reportLimitReached(feature, limit) {
-    setLimitReached({ feature, limit });
+  // usageLimits.js) so the upgrade prompt appears. `tier` (the caller's
+  // current plan) lets UpgradeWall decide whether there's actually something
+  // higher to upsell — a Premium user hitting their own cap has nothing to
+  // upgrade to.
+  function reportLimitReached(feature, limit, tier) {
+    setLimitReached({ feature, limit, tier: tier || "free" });
   }
 
   function dismissLimitReached() {
@@ -258,6 +293,8 @@ export function AuthGateProvider({ children }) {
         limitReached,
         reportLimitReached,
         dismissLimitReached,
+        tier,
+        refreshTier,
         signInWithGoogle,
         signUpWithEmail,
         signInWithEmail,

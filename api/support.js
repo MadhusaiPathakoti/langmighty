@@ -5,6 +5,7 @@ import { getSignedInUser, getClientIp } from "./_lib/creditGate.js";
 import { getRedis } from "./_lib/redisCache.js";
 import { requireAdmin } from "./_lib/adminAuth.js";
 import { sendAdminNotificationEmail } from "./_lib/resend.js";
+import { getUserTier } from "./_lib/subscription.js";
 
 // Single action-dispatch endpoint (not one file per route) rather than the
 // api/support/ folder this started as — Vercel's Hobby plan caps a
@@ -102,6 +103,10 @@ async function handleSubmit(req, res, supabaseAdmin, body) {
   }
 
   const user = await getSignedInUser(req, supabaseAdmin);
+  // Premium perk: bumped priority in the admin inbox (see handleList's
+  // ordering below). A signed-out reporter (getSignedInUser returns null —
+  // "I can't sign in" must still work) has no tier to check, so stays normal.
+  const priority = user ? ((await getUserTier(user.id)) === "premium" ? "high" : "normal") : "normal";
 
   const { data: ticket, error: insertErr } = await supabaseAdmin
     .from("support_tickets")
@@ -111,6 +116,7 @@ async function handleSubmit(req, res, supabaseAdmin, body) {
       subject: trimmedSubject,
       message: trimmedMessage,
       attachments: safeAttachments,
+      priority,
     })
     .select("id")
     .single();
@@ -145,7 +151,10 @@ async function handleSubmit(req, res, supabaseAdmin, body) {
 async function handleList(supabaseAdmin, res) {
   const { data, error } = await supabaseAdmin
     .from("support_tickets")
-    .select("id, reporter_email, subject, message, attachments, status, created_at")
+    .select("id, reporter_email, subject, message, attachments, status, priority, created_at")
+    // "high" sorts before "normal" ascending (h < n) — this is what actually
+    // puts Premium tickets first, not a typo; ties broken by newest first.
+    .order("priority", { ascending: true })
     .order("created_at", { ascending: false });
   if (error) throw error;
 
@@ -171,6 +180,7 @@ async function handleList(supabaseAdmin, res) {
         subject: ticket.subject,
         message: ticket.message,
         status: ticket.status,
+        priority: ticket.priority,
         createdAt: ticket.created_at,
         attachments: signedAttachments,
       };

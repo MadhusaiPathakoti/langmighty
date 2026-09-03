@@ -13,5 +13,5 @@ export function isLimitReached(res) {
 
 export async function reportLimitFromResponse(res, reportLimitReached) {
   const data = await res.json().catch(() => ({}));
-  reportLimitReached(data.feature, data.limit);
+  reportLimitReached(data.feature, data.limit, data.tier);
 }

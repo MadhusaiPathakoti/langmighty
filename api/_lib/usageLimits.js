@@ -1,16 +1,15 @@
 import { getRedis } from "./redisCache.js";
 
-// Free-tier daily caps. One place to retune — no subscription tiers exist yet,
-// so every signed-in user is metered against these same numbers. A later
-// tier-aware version of this file can branch on the caller's plan without
-// touching any call site, since they only ever call checkAndConsumeUsage.
-// "game" is per individual game (see the `subKey` param below), not a shared
-// pool across all 8 Playground games — a limit of 1 means each game can be
-// entered once per day, not "1 play total across the whole Playground."
+// Daily caps per tier. One place to retune. "game" is per individual game
+// (see the `subKey` param below), not a shared pool across all 8 Playground
+// games — a limit of 1 means each game can be entered once per day, not
+// "1 play total across the whole Playground." `free` also covers admins'
+// callers that never reach this function at all — see isAdminUser in
+// _lib/adminAuth.js, which bypasses usage limits entirely, unrelated to tier.
 const LIMITS = {
-  translate: 5,
-  chat: 5,
-  game: 1,
+  free: { translate: 5, chat: 5, game: 1 },
+  pro: { translate: 15, chat: 15, game: 3 },
+  premium: { translate: 25, chat: 25, game: 6 },
 };
 
 const USAGE_KEY_TTL_SECONDS = 60 * 60 * 24 * 2; // 2 days — outlives the UTC day it's counting
@@ -41,9 +40,11 @@ async function recordLimitHit(redis, feature) {
 //
 // `subKey` meters a narrower bucket than the whole feature — e.g. game-content
 // passes the specific game id, since each of the 8 Playground games has its
-// own once-per-day cap rather than sharing one pool.
-export async function checkAndConsumeUsage(userId, feature, res, subKey = null) {
-  const limit = LIMITS[feature];
+// own once-per-day cap rather than sharing one pool. `tier` (from
+// _lib/subscription.js's getUserTier) picks which row of LIMITS applies —
+// callers default to 'free' when they haven't looked up a tier at all.
+export async function checkAndConsumeUsage(userId, feature, res, { subKey = null, tier = "free" } = {}) {
+  const limit = (LIMITS[tier] || LIMITS.free)[feature];
   const redis = getRedis();
 
   if (!redis) {
@@ -64,6 +65,7 @@ export async function checkAndConsumeUsage(userId, feature, res, subKey = null) 
         code: "LIMIT_REACHED",
         feature,
         limit,
+        tier,
       });
       return null;
     }

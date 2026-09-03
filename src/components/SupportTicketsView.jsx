@@ -83,15 +83,22 @@ export default function SupportTicketsView() {
                 {ticket.reporterEmail} · {formatDate(ticket.createdAt)}
               </p>
             </div>
-            <span
-              className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${
-                ticket.status === "open"
-                  ? "bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300"
-                  : "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300"
-              }`}
-            >
-              {ticket.status === "open" ? "Open" : "Resolved"}
-            </span>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {ticket.priority === "high" && (
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300">
+                  Premium
+                </span>
+              )}
+              <span
+                className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${
+                  ticket.status === "open"
+                    ? "bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300"
+                    : "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300"
+                }`}
+              >
+                {ticket.status === "open" ? "Open" : "Resolved"}
+              </span>
+            </div>
           </div>
 
           <p className="mt-2 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{ticket.message}</p>

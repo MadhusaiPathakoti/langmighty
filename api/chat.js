@@ -3,6 +3,7 @@ import { applyCors } from "./_lib/cors.js";
 import { requireSignedIn } from "./_lib/creditGate.js";
 import { checkAndConsumeUsage } from "./_lib/usageLimits.js";
 import { isAdminUser } from "./_lib/adminAuth.js";
+import { getUserTier } from "./_lib/subscription.js";
 
 const GEMINI_MODEL = "gemini-3.5-flash-lite";
 const MAX_HISTORY_TURNS = 16;
@@ -538,7 +539,8 @@ export default async function handler(req, res) {
   const authResult = await requireSignedIn(req, res);
   if (!authResult) return;
   if (authResult.signedIn && !(await isAdminUser(authResult.user.id))) {
-    if (!(await checkAndConsumeUsage(authResult.user.id, "chat", res))) return;
+    const tier = await getUserTier(authResult.user.id);
+    if (!(await checkAndConsumeUsage(authResult.user.id, "chat", res, { tier }))) return;
   }
 
   const apiKey = process.env.GEMINI_API_KEY;

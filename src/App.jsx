@@ -14,6 +14,7 @@ import PdfStoreView from "./components/PdfStoreView.jsx";
 import PlaygroundView from "./components/PlaygroundView.jsx";
 import RoadmapView from "./components/RoadmapView.jsx";
 import SignInWall from "./components/SignInWall.jsx";
+import SubscribeView from "./components/SubscribeView.jsx";
 import TranslatePreferences from "./components/TranslatePreferences.jsx";
 import TypewriterText from "./components/TypewriterText.jsx";
 import UpgradeWall from "./components/UpgradeWall.jsx";
@@ -50,7 +51,7 @@ const ROADMAP_LANGUAGE_KEY = "langlearn_roadmap_language";
 // round-trip a signed-out visitor has to go through before reaching the
 // store — same reasoning as VIEW_KEY above.
 const SHARED_PDF_KEY = "langlearn_shared_pdf_id";
-const VALID_VIEWS = ["landing", "chat", "ai-chat", "voice-assistant", "roadmap", "playground", "pdf-store"];
+const VALID_VIEWS = ["landing", "chat", "ai-chat", "voice-assistant", "roadmap", "playground", "pdf-store", "subscribe"];
 
 function loadView() {
   const saved = sessionStorage.getItem(VIEW_KEY);
@@ -379,6 +380,7 @@ export default function App() {
         onNavigateRoadmap={handleNavigateRoadmap}
         onNavigatePlayground={() => setView("playground")}
         onNavigatePdfStore={() => setView("pdf-store")}
+        onNavigateSubscribe={() => setView("subscribe")}
         onOpenContactAdmin={() => setContactAdminOpen(true)}
         theme={theme}
         onToggleTheme={toggleTheme}
@@ -400,6 +402,8 @@ export default function App() {
         <PlaygroundView />
       ) : view === "pdf-store" ? (
         <PdfStoreView highlightPdfId={sharedPdfId} onHighlightConsumed={clearSharedPdfId} />
+      ) : view === "subscribe" ? (
+        <SubscribeView />
       ) : (
         <>
           <div className="relative z-10 flex-1 overflow-y-auto px-4 sm:px-6 py-6">
@@ -487,7 +491,7 @@ export default function App() {
       )}
 
       <AuthModal />
-      <UpgradeWall />
+      <UpgradeWall onUpgrade={() => setView("subscribe")} />
       <ContactAdminModal open={contactAdminOpen} onClose={() => setContactAdminOpen(false)} />
     </div>
   );

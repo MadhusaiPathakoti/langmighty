@@ -36,6 +36,10 @@ async function prepareApiRequest(req, res) {
     const chunks = [];
     for await (const chunk of req) chunks.push(chunk);
     const raw = Buffer.concat(chunks).toString("utf-8");
+    // Preserved alongside the parsed body — api/subscriptions.js's webhook
+    // path needs the exact raw bytes to verify Razorpay's HMAC signature,
+    // which a re-serialized req.body wouldn't reliably reproduce.
+    req.rawBody = raw;
     req.body = raw ? JSON.parse(raw) : {};
   } catch {
     req.body = {};
@@ -159,6 +163,30 @@ function localApiPlugin() {
         ]);
 
         const { default: handler } = await server.ssrLoadModule(`/api/pdf-store/${sub}.js`);
+        await handler(req, res);
+      });
+
+      server.middlewares.use("/api/subscriptions", async (req, res) => {
+        if (req.method !== "POST") {
+          res.statusCode = 405;
+          res.end();
+          return;
+        }
+        await prepareApiRequest(req, res);
+
+        injectEnv([
+          "VITE_SUPABASE_URL",
+          "SUPABASE_SERVICE_ROLE_KEY",
+          "RAZORPAY_KEY_ID",
+          "RAZORPAY_KEY_SECRET",
+          "RAZORPAY_WEBHOOK_SECRET",
+          "RAZORPAY_PRO_PLAN_ID",
+          "RAZORPAY_PREMIUM_PLAN_ID",
+          "UPSTASH_REDIS_REST_URL",
+          "UPSTASH_REDIS_REST_TOKEN",
+        ]);
+
+        const { default: handler } = await server.ssrLoadModule("/api/subscriptions.js");
         await handler(req, res);
       });
 

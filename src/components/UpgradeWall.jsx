@@ -12,14 +12,16 @@ const UNITS = {
 };
 
 function buildMessage(feature, limit) {
-  // Each Playground game has its own once-per-day play, not a shared pool
-  // (see GAME_IDS/subKey in api/game-content.js) — other games are still
-  // free, so this reads differently than the translate/chat daily-count copy.
-  if (feature === "game") return "You've already played this game today — other games are still free to try.";
-
   const unit = UNITS[feature];
-  if (!unit || !limit) return "You've reached today's free limit.";
+  if (!unit || !limit) return "You've reached today's limit.";
   const label = limit === 1 ? unit.singular : unit.plural;
+
+  // Each Playground game has its own once-(or a few times-)per-day play, not
+  // a shared pool (see GAME_IDS/subKey in api/game-content.js) — other games
+  // are still available, so this reads differently than the translate/chat
+  // daily-count copy.
+  if (feature === "game") return `You've used today's ${limit} free ${label} of this game — other games are still available.`;
+
   return `You've used today's ${limit} free ${label}/day.`;
 }
 
@@ -27,12 +29,20 @@ function buildMessage(feature, limit) {
 // usageLimits.js) — a dismissible modal rather than SignInWall's full-view
 // block, since hitting a daily cap shouldn't trap the visitor away from the
 // rest of the app the way being signed out does.
-export default function UpgradeWall() {
+export default function UpgradeWall({ onUpgrade }) {
   const { limitReached, dismissLimitReached } = useAuthGate();
 
   if (!limitReached) return null;
 
   const message = buildMessage(limitReached.feature, limitReached.limit);
+  // Premium is the top tier — nothing left to upsell, so this becomes a
+  // plain "come back tomorrow" notice instead of a pitch.
+  const canUpgrade = limitReached.tier !== "premium";
+
+  function handlePrimaryAction() {
+    if (canUpgrade) onUpgrade?.();
+    dismissLimitReached();
+  }
 
   return createPortal(
     <div
@@ -45,21 +55,29 @@ export default function UpgradeWall() {
       >
         <LmLogo className="w-14 h-14 mx-auto mb-4" />
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-          Come back tomorrow, or upgrade
+          {canUpgrade ? "Come back tomorrow, or upgrade" : "Come back tomorrow"}
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-          {message}{" "}
-          {limitReached.feature === "game"
-            ? "This one resets tomorrow — paid plans with higher limits are coming soon."
-            : "Your free limit resets tomorrow — paid plans with higher limits are coming soon."}
+          {message} {canUpgrade ? "Upgrade for a higher daily limit, or it resets tomorrow." : "Your limit resets tomorrow."}
         </p>
-        <button
-          type="button"
-          onClick={dismissLimitReached}
-          className="w-full rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2.5 text-sm transition-colors"
-        >
-          Got it
-        </button>
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={handlePrimaryAction}
+            className="w-full rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2.5 text-sm transition-colors"
+          >
+            {canUpgrade ? "View plans" : "Got it"}
+          </button>
+          {canUpgrade && (
+            <button
+              type="button"
+              onClick={dismissLimitReached}
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 font-medium px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              Maybe later
+            </button>
+          )}
+        </div>
       </div>
     </div>,
     document.body

@@ -16,11 +16,12 @@ export default function NavBar({
   onNavigateRoadmap,
   onNavigatePlayground,
   onNavigatePdfStore,
+  onNavigateSubscribe,
   onOpenContactAdmin,
   theme,
   onToggleTheme,
 }) {
-  const { isSignedIn, userEmail, signOut, openAuthModal } = useAuthGate();
+  const { isSignedIn, userEmail, tier, signOut, openAuthModal } = useAuthGate();
   const [roadmapMenuOpen, setRoadmapMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
@@ -73,14 +74,28 @@ export default function NavBar({
             <button
               type="button"
               onClick={() => setAccountMenuOpen((o) => !o)}
-              title={userEmail}
+              title={tier === "free" ? userEmail : `${userEmail} — Mighty ${tier === "premium" ? "Premium" : "Pro"}`}
               aria-haspopup="true"
               aria-expanded={accountMenuOpen}
               aria-label="Account menu"
-              className="w-8 h-8 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold
-                         flex items-center justify-center transition-colors"
+              className={`relative w-8 h-8 rounded-full text-white text-sm font-semibold
+                         flex items-center justify-center transition-colors ${
+                           tier === "premium"
+                             ? "bg-gradient-to-br from-amber-400 to-amber-600 ring-2 ring-amber-300 dark:ring-amber-500"
+                             : tier === "pro"
+                               ? "bg-gradient-to-br from-indigo-500 to-purple-600 ring-2 ring-indigo-300 dark:ring-indigo-500"
+                               : "bg-indigo-600 hover:bg-indigo-700"
+                         }`}
             >
               {userEmail?.charAt(0).toUpperCase() || "?"}
+              {tier !== "free" && (
+                <span
+                  className="absolute -top-1.5 -right-1.5 text-xs leading-none rounded-full bg-white dark:bg-gray-900 w-4 h-4 flex items-center justify-center shadow"
+                  aria-hidden="true"
+                >
+                  {tier === "premium" ? "👑" : "⭐"}
+                </span>
+              )}
             </button>
 
             {accountMenuOpen && (
@@ -94,6 +109,16 @@ export default function NavBar({
                 >
                   {userEmail}
                 </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAccountMenuOpen(false);
+                    onNavigateSubscribe();
+                  }}
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  Plans & billing
+                </button>
                 <button
                   type="button"
                   onClick={() => {

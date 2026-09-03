@@ -220,10 +220,10 @@ export default function PdfStoreView({ highlightPdfId, onHighlightConsumed }) {
 
   async function handleViewPassword(item) {
     const authHeaders = await getAuthHeaders();
-    const res = await apiFetch("/api/pdf-store/view-password", {
+    const res = await apiFetch("/api/pdf-store/purchase", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeaders },
-      body: JSON.stringify({ pdfId: item.id }),
+      body: JSON.stringify({ action: "view-password", pdfId: item.id }),
     });
     const data = await res.json();
     if (res.ok) {
@@ -236,10 +236,10 @@ export default function PdfStoreView({ highlightPdfId, onHighlightConsumed }) {
   async function handleDownloadSubmit(item) {
     setDownloadError(null);
     const authHeaders = await getAuthHeaders();
-    const res = await apiFetch("/api/pdf-store/download", {
+    const res = await apiFetch("/api/pdf-store/purchase", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeaders },
-      body: JSON.stringify({ pdfId: item.id, password: downloadPassword }),
+      body: JSON.stringify({ action: "download", pdfId: item.id, password: downloadPassword }),
     });
     const data = await res.json();
     if (!res.ok) {
