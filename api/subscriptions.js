@@ -189,7 +189,11 @@ async function handleClientAction(req, res, supabaseAdmin) {
     }
   } catch (err) {
     console.error(`subscriptions handler error (action=${action}):`, err);
-    res.status(500).json({ error: err.message || "Something went wrong." });
+    // The razorpay SDK's own errors aren't standard Error instances — they're
+    // shaped like { statusCode, error: { description, code } }, with no
+    // top-level .message — so err.message alone silently swallows the real
+    // reason (e.g. an invalid plan_id) behind the generic fallback below.
+    res.status(500).json({ error: err.message || err.error?.description || "Something went wrong." });
   }
 }
 
