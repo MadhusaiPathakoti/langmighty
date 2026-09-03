@@ -55,11 +55,13 @@ export function AuthGateProvider({ children }) {
   const [authView, setAuthView] = useState(null);
   // null | { feature: "translate" | "chat" | "game", limit: number }
   const [limitReached, setLimitReached] = useState(null);
-  // 'free' | 'pro' | 'premium' — mirrors api/_lib/subscription.js's getUserTier,
-  // fetched via my-purchases (subscriptions has no client-readable RLS
-  // policies — service-role only — so this can't be a direct Supabase query
-  // the way streak above is).
-  const [tier, setTier] = useState("free");
+  // null (not yet loaded) | 'free' | 'pro' | 'premium' — mirrors
+  // api/_lib/subscription.js's getUserTier, fetched via my-purchases
+  // (subscriptions has no client-readable RLS policies — service-role only —
+  // so this can't be a direct Supabase query the way streak above is).
+  // Starts null rather than defaulting to 'free' so nothing briefly renders
+  // "you're on Free" as fact before the real tier has actually loaded.
+  const [tier, setTier] = useState(null);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;

@@ -74,7 +74,11 @@ export default function NavBar({
             <button
               type="button"
               onClick={() => setAccountMenuOpen((o) => !o)}
-              title={tier === "free" ? userEmail : `${userEmail} — Mighty ${tier === "premium" ? "Premium" : "Pro"}`}
+              title={
+                tier === "pro" || tier === "premium"
+                  ? `${userEmail} — Mighty ${tier === "premium" ? "Premium" : "Pro"}`
+                  : userEmail
+              }
               aria-haspopup="true"
               aria-expanded={accountMenuOpen}
               aria-label="Account menu"
@@ -88,7 +92,7 @@ export default function NavBar({
                          }`}
             >
               {userEmail?.charAt(0).toUpperCase() || "?"}
-              {tier !== "free" && (
+              {(tier === "pro" || tier === "premium") && (
                 <span
                   className="absolute -top-1.5 -right-1.5 text-xs leading-none rounded-full bg-white dark:bg-gray-900 w-4 h-4 flex items-center justify-center shadow"
                   aria-hidden="true"

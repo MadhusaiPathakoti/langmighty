@@ -50,7 +50,10 @@ function loadRazorpayScript() {
 export default function SubscribeView() {
   const { isSignedIn, getAuthHeaders, openAuthModal, refreshTier } = useAuthGate();
 
-  const [currentTier, setCurrentTier] = useState("free");
+  // null (not yet loaded) | "free" | "pro" | "premium" — starts null so the
+  // Free card doesn't briefly render as "Current plan" before the real
+  // subscription status has actually loaded (see isCurrent below).
+  const [currentTier, setCurrentTier] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [busyTier, setBusyTier] = useState(null);
@@ -252,7 +255,7 @@ export default function SubscribeView() {
           })}
         </div>
 
-        {currentTier !== "free" && (
+        {(currentTier === "pro" || currentTier === "premium") && (
           <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
             Switching plans isn't automatic yet — cancel your current plan first, then subscribe to the other one.
           </p>
