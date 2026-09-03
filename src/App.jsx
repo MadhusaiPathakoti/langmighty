@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import AdminPdfUploadView from "./components/AdminPdfUploadView.jsx";
 import AiChatView from "./components/AiChatView.jsx";
 import { apiFetch } from "./lib/apiClient.js";
 import AuthModal from "./components/AuthModal.jsx";
@@ -51,7 +52,17 @@ const ROADMAP_LANGUAGE_KEY = "langlearn_roadmap_language";
 // round-trip a signed-out visitor has to go through before reaching the
 // store — same reasoning as VIEW_KEY above.
 const SHARED_PDF_KEY = "langlearn_shared_pdf_id";
-const VALID_VIEWS = ["landing", "chat", "ai-chat", "voice-assistant", "roadmap", "playground", "pdf-store", "subscribe"];
+const VALID_VIEWS = [
+  "landing",
+  "chat",
+  "ai-chat",
+  "voice-assistant",
+  "roadmap",
+  "playground",
+  "pdf-store",
+  "subscribe",
+  "admin",
+];
 
 function loadView() {
   const saved = sessionStorage.getItem(VIEW_KEY);
@@ -381,6 +392,7 @@ export default function App() {
         onNavigatePlayground={() => setView("playground")}
         onNavigatePdfStore={() => setView("pdf-store")}
         onNavigateSubscribe={() => setView("subscribe")}
+        onNavigateAdmin={() => setView("admin")}
         onOpenContactAdmin={() => setContactAdminOpen(true)}
         theme={theme}
         onToggleTheme={toggleTheme}
@@ -404,6 +416,8 @@ export default function App() {
         <PdfStoreView highlightPdfId={sharedPdfId} onHighlightConsumed={clearSharedPdfId} />
       ) : view === "subscribe" ? (
         <SubscribeView />
+      ) : view === "admin" ? (
+        <AdminPdfUploadView onBack={() => setView("pdf-store")} onUploaded={() => setView("pdf-store")} />
       ) : (
         <>
           <div className="relative z-10 flex-1 overflow-y-auto px-4 sm:px-6 py-6">

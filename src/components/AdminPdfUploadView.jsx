@@ -3,6 +3,9 @@ import { INPUT_LANGUAGES } from "langmighty-shared";
 import { apiFetch } from "../lib/apiClient.js";
 import { useAuthGate } from "../context/AuthGateContext.jsx";
 import { supabase } from "../lib/supabaseClient.js";
+import AdminOverviewView from "./AdminOverviewView.jsx";
+import AdminSubscriptionsView from "./AdminSubscriptionsView.jsx";
+import AdminUsersView from "./AdminUsersView.jsx";
 import ManagePdfsView from "./ManagePdfsView.jsx";
 import PdfPreviewPagePicker, { evenSpread } from "./PdfPreviewPagePicker.jsx";
 import SupportTicketsView from "./SupportTicketsView.jsx";
@@ -35,7 +38,8 @@ export default function AdminPdfUploadView({ onBack, onUploaded }) {
   // page-picker step instead of finalizing immediately.
   const [pickingPages, setPickingPages] = useState(null);
   const [selectedPages, setSelectedPages] = useState([]);
-  const [tab, setTab] = useState("upload"); // "upload" | "manage" | "support"
+  // "overview" | "users" | "subscriptions" | "upload" | "manage" | "support"
+  const [tab, setTab] = useState("overview");
 
   function handleFormSubmit(e) {
     e.preventDefault();
@@ -140,7 +144,7 @@ export default function AdminPdfUploadView({ onBack, onUploaded }) {
 
   return (
     <div className="relative z-10 flex-1 overflow-y-auto px-4 sm:px-6 py-6">
-      <div className="max-w-lg mx-auto space-y-4">
+      <div className="max-w-3xl mx-auto space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Admin</h1>
           <button
@@ -153,12 +157,48 @@ export default function AdminPdfUploadView({ onBack, onUploaded }) {
           </button>
         </div>
 
-        <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800">
+        <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800 overflow-x-auto flex-nowrap">
+          <button
+            type="button"
+            onClick={() => setTab("overview")}
+            disabled={submitting}
+            className={`flex-shrink-0 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
+              tab === "overview"
+                ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            }`}
+          >
+            Overview
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("users")}
+            disabled={submitting}
+            className={`flex-shrink-0 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
+              tab === "users"
+                ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            }`}
+          >
+            Users
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("subscriptions")}
+            disabled={submitting}
+            className={`flex-shrink-0 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
+              tab === "subscriptions"
+                ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            }`}
+          >
+            Subscriptions
+          </button>
           <button
             type="button"
             onClick={() => setTab("upload")}
             disabled={submitting}
-            className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
+            className={`flex-shrink-0 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
               tab === "upload"
                 ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
                 : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
@@ -170,7 +210,7 @@ export default function AdminPdfUploadView({ onBack, onUploaded }) {
             type="button"
             onClick={() => setTab("manage")}
             disabled={submitting}
-            className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
+            className={`flex-shrink-0 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
               tab === "manage"
                 ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
                 : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
@@ -182,7 +222,7 @@ export default function AdminPdfUploadView({ onBack, onUploaded }) {
             type="button"
             onClick={() => setTab("support")}
             disabled={submitting}
-            className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
+            className={`flex-shrink-0 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
               tab === "support"
                 ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
                 : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
@@ -192,11 +232,14 @@ export default function AdminPdfUploadView({ onBack, onUploaded }) {
           </button>
         </div>
 
+        {tab === "overview" && <AdminOverviewView />}
+        {tab === "users" && <AdminUsersView />}
+        {tab === "subscriptions" && <AdminSubscriptionsView />}
         {tab === "manage" && <ManagePdfsView />}
         {tab === "support" && <SupportTicketsView />}
 
         {tab === "upload" && (
-        <form onSubmit={handleFormSubmit} className="space-y-4">
+        <form onSubmit={handleFormSubmit} className="max-w-lg space-y-4">
           <div>
             <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Title</label>
             <input

@@ -62,6 +62,10 @@ export function AuthGateProvider({ children }) {
   // Starts null rather than defaulting to 'free' so nothing briefly renders
   // "you're on Free" as fact before the real tier has actually loaded.
   const [tier, setTier] = useState(null);
+  // Piggybacked onto the same my-purchases fetch as tier below (see
+  // refreshTier) rather than a second network call — drives the "Admin
+  // dashboard" entry in NavBar's account menu.
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -137,6 +141,7 @@ export function AuthGateProvider({ children }) {
     const userId = session?.user?.id;
     if (!userId || !isSupabaseConfigured) {
       setTier("free");
+      setIsAdmin(false);
       return;
     }
     try {
@@ -145,9 +150,10 @@ export function AuthGateProvider({ children }) {
       if (!res.ok) return;
       const data = await res.json();
       setTier(data.subscription?.tier || "free");
+      setIsAdmin(Boolean(data.isAdmin));
     } catch {
-      // Fails open — keep showing whatever tier is already set rather than
-      // blocking on a network hiccup.
+      // Fails open — keep showing whatever tier/admin state is already set
+      // rather than blocking on a network hiccup.
     }
   }
 
@@ -297,6 +303,7 @@ export function AuthGateProvider({ children }) {
         dismissLimitReached,
         tier,
         refreshTier,
+        isAdmin,
         signInWithGoogle,
         signUpWithEmail,
         signInWithEmail,

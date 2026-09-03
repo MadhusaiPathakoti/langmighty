@@ -17,11 +17,12 @@ export default function NavBar({
   onNavigatePlayground,
   onNavigatePdfStore,
   onNavigateSubscribe,
+  onNavigateAdmin,
   onOpenContactAdmin,
   theme,
   onToggleTheme,
 }) {
-  const { isSignedIn, userEmail, tier, signOut, openAuthModal } = useAuthGate();
+  const { isSignedIn, userEmail, tier, isAdmin, signOut, openAuthModal } = useAuthGate();
   const [roadmapMenuOpen, setRoadmapMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
@@ -113,6 +114,18 @@ export default function NavBar({
                 >
                   {userEmail}
                 </p>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAccountMenuOpen(false);
+                      onNavigateAdmin();
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  >
+                    Admin dashboard
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => {

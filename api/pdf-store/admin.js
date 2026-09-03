@@ -3,6 +3,7 @@ import { PDFDocument } from "pdf-lib";
 import { applyCors } from "../_lib/cors.js";
 import { getSupabaseAdmin } from "../_lib/supabaseAdmin.js";
 import { requireAdmin } from "../_lib/adminAuth.js";
+import { TIER_PRICES_PAISE, invalidateTierCache } from "../_lib/subscription.js";
 
 const ORIGINALS_BUCKET = "pdf-store-originals";
 const PREVIEW_BUCKET = "pdf-store-previews";
@@ -356,6 +357,208 @@ async function handleDelete(supabaseAdmin, body, res) {
   res.status(200).json({ ok: true });
 }
 
+async function handleOverviewStats(supabaseAdmin, res) {
+  const [{ data: activeSubs, error: subsErr }, { data: paidPurchases, error: purchasesErr }, ticketsResult] =
+    await Promise.all([
+      supabaseAdmin.from("subscriptions").select("tier").eq("status", "active"),
+      supabaseAdmin.from("pdf_store_purchases").select("pdf_id, pdf_store_items(price_paise)").eq("status", "paid"),
+      supabaseAdmin.from("support_tickets").select("id", { count: "exact", head: true }).eq("status", "open"),
+    ]);
+  if (subsErr) throw subsErr;
+  if (purchasesErr) throw purchasesErr;
+  if (ticketsResult.error) throw ticketsResult.error;
+
+  const subscriberCounts = { pro: 0, premium: 0 };
+  for (const row of activeSubs || []) {
+    if (row.tier === "pro" || row.tier === "premium") subscriberCounts[row.tier] += 1;
+  }
+  const mrrPaise = subscriberCounts.pro * TIER_PRICES_PAISE.pro + subscriberCounts.premium * TIER_PRICES_PAISE.premium;
+  const pdfRevenuePaise = (paidPurchases || []).reduce((sum, row) => sum + (row.pdf_store_items?.price_paise || 0), 0);
+
+  // Best-effort — listUsers() is capped at 1000 here rather than paginated to
+  // completion, so this undercounts past that many total users. Fine at this
+  // app's current scale; revisit if the user base grows past it.
+  let newSignups7d = 0;
+  try {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    if (error) throw error;
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    newSignups7d = (data?.users || []).filter((u) => new Date(u.created_at).getTime() >= cutoff).length;
+  } catch (err) {
+    console.error("overview-stats: listUsers error:", err);
+  }
+
+  res.status(200).json({
+    subscriberCounts,
+    mrrPaise,
+    pdfRevenuePaise,
+    openTickets: ticketsResult.count || 0,
+    newSignups7d,
+  });
+}
+
+async function handleListUsers(supabaseAdmin, body, res) {
+  const search = typeof body.search === "string" ? body.search.trim() : "";
+  let query = supabaseAdmin.from("profiles").select("id, email, is_admin").order("email", { ascending: true }).limit(50);
+  if (search) query = query.ilike("email", `%${search}%`);
+
+  const { data: profiles, error: profilesErr } = await query;
+  if (profilesErr) throw profilesErr;
+
+  const ids = (profiles || []).map((p) => p.id);
+  const subsByUser = {};
+  if (ids.length > 0) {
+    const { data: subs, error: subsErr } = await supabaseAdmin
+      .from("subscriptions")
+      .select("id, user_id, tier, razorpay_subscription_id")
+      .in("user_id", ids)
+      .eq("status", "active");
+    if (subsErr) throw subsErr;
+    for (const row of subs || []) subsByUser[row.user_id] = row;
+  }
+
+  // No bulk "get these N users by id" admin API — bounded to ≤50 (the list
+  // limit above) so this stays cheap even done one at a time in parallel.
+  const createdAtById = {};
+  await Promise.all(
+    ids.map(async (id) => {
+      try {
+        const { data, error } = await supabaseAdmin.auth.admin.getUserById(id);
+        if (error) throw error;
+        createdAtById[id] = data.user?.created_at || null;
+      } catch (err) {
+        console.error(`list-users: getUserById(${id}) failed:`, err);
+        createdAtById[id] = null;
+      }
+    })
+  );
+
+  const users = (profiles || []).map((p) => {
+    const sub = subsByUser[p.id];
+    return {
+      id: p.id,
+      email: p.email,
+      isAdmin: Boolean(p.is_admin),
+      tier: sub?.tier || "free",
+      isComp: Boolean(sub?.razorpay_subscription_id?.startsWith("comp_")),
+      subscriptionId: sub?.id || null,
+      createdAt: createdAtById[p.id] || null,
+    };
+  });
+
+  res.status(200).json({ users });
+}
+
+async function handleListSubscriptions(supabaseAdmin, body, res) {
+  const { status, tier } = body;
+  let query = supabaseAdmin
+    .from("subscriptions")
+    .select("id, user_id, tier, status, razorpay_subscription_id, created_at, current_period_end")
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (status) query = query.eq("status", status);
+  if (tier) query = query.eq("tier", tier);
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  // subscriptions.user_id references auth.users, not profiles — no FK
+  // PostgREST can embed a profiles(email) join through, so email is
+  // resolved with its own query and merged in JS instead.
+  const userIds = [...new Set((data || []).map((row) => row.user_id))];
+  const emailById = {};
+  if (userIds.length > 0) {
+    const { data: profiles, error: profilesErr } = await supabaseAdmin.from("profiles").select("id, email").in("id", userIds);
+    if (profilesErr) throw profilesErr;
+    for (const p of profiles || []) emailById[p.id] = p.email;
+  }
+
+  const subscriptions = (data || []).map((row) => ({
+    id: row.id,
+    email: emailById[row.user_id] || row.user_id,
+    tier: row.tier,
+    status: row.status,
+    isComp: Boolean(row.razorpay_subscription_id?.startsWith("comp_")),
+    createdAt: row.created_at,
+    currentPeriodEnd: row.current_period_end,
+  }));
+
+  res.status(200).json({ subscriptions });
+}
+
+async function handleGrantComp(supabaseAdmin, body, res) {
+  const { userId, tier } = body;
+  if (!userId || (tier !== "pro" && tier !== "premium")) {
+    res.status(400).json({ error: "Missing userId or invalid tier." });
+    return;
+  }
+
+  // Same one-active-subscription-per-user guard as api/subscriptions.js's
+  // handleCreate — also backstopped by the subscriptions_one_active_per_user
+  // partial unique index.
+  const { data: existing, error: existingErr } = await supabaseAdmin
+    .from("subscriptions")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .maybeSingle();
+  if (existingErr) throw existingErr;
+  if (existing) {
+    res.status(400).json({ error: "This user already has an active subscription." });
+    return;
+  }
+
+  // No real Razorpay object — this never touches billing, matching the
+  // "comp_" prefix revoke-comp below relies on to stay safe.
+  const { error: insertErr } = await supabaseAdmin.from("subscriptions").insert({
+    user_id: userId,
+    tier,
+    razorpay_subscription_id: `comp_${crypto.randomUUID()}`,
+    status: "active",
+  });
+  if (insertErr) throw insertErr;
+
+  await invalidateTierCache(userId);
+  res.status(200).json({ ok: true });
+}
+
+async function handleRevokeComp(supabaseAdmin, body, res) {
+  const { subscriptionId } = body;
+  if (!subscriptionId) {
+    res.status(400).json({ error: "Missing subscriptionId." });
+    return;
+  }
+
+  const { data: row, error: rowErr } = await supabaseAdmin
+    .from("subscriptions")
+    .select("id, user_id, razorpay_subscription_id")
+    .eq("id", subscriptionId)
+    .maybeSingle();
+  if (rowErr) throw rowErr;
+  if (!row) {
+    res.status(404).json({ error: "Subscription not found." });
+    return;
+  }
+  // Safety rail: only a comp'd row (see grant-comp above) can be revoked
+  // this way. A real, Razorpay-backed subscription must be cancelled
+  // through Razorpay itself (the Subscribe page's own cancel action) —
+  // flipping this row to cancelled without also calling Razorpay would
+  // leave the two out of sync while the subscriber keeps getting billed.
+  if (!row.razorpay_subscription_id?.startsWith("comp_")) {
+    res.status(400).json({ error: "This is a real subscription, not a comp — it can't be revoked from here." });
+    return;
+  }
+
+  const { error: updateErr } = await supabaseAdmin
+    .from("subscriptions")
+    .update({ status: "cancelled", updated_at: new Date().toISOString() })
+    .eq("id", subscriptionId);
+  if (updateErr) throw updateErr;
+
+  await invalidateTierCache(row.user_id);
+  res.status(200).json({ ok: true });
+}
+
 export default async function handler(req, res) {
   if (applyCors(req, res)) return;
 
@@ -402,6 +605,21 @@ export default async function handler(req, res) {
         return;
       case "delete":
         await handleDelete(supabaseAdmin, body, res);
+        return;
+      case "overview-stats":
+        await handleOverviewStats(supabaseAdmin, res);
+        return;
+      case "list-users":
+        await handleListUsers(supabaseAdmin, body, res);
+        return;
+      case "list-subscriptions":
+        await handleListSubscriptions(supabaseAdmin, body, res);
+        return;
+      case "grant-comp":
+        await handleGrantComp(supabaseAdmin, body, res);
+        return;
+      case "revoke-comp":
+        await handleRevokeComp(supabaseAdmin, body, res);
         return;
       default:
         res.status(400).json({ error: "Unknown action." });

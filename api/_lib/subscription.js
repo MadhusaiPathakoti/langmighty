@@ -6,6 +6,12 @@ export const PLAN_IDS = {
   premium: process.env.RAZORPAY_PREMIUM_PLAN_ID,
 };
 
+// Mirrors the amounts scripts/seedSubscriptionPlans.mjs used to create the
+// Razorpay Plans — used for the admin Overview's MRR figure, which doesn't
+// need a live Razorpay API round-trip for something that only changes when
+// someone deliberately reprices a plan.
+export const TIER_PRICES_PAISE = { pro: 9900, premium: 24900 };
+
 const TIER_CACHE_TTL_SECONDS = 300; // 5 min — bounds how stale a just-activated/cancelled tier can be
 
 async function fetchTier(supabaseAdmin, userId) {

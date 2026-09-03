@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { INPUT_LANGUAGES } from "langmighty-shared";
 import { apiFetch } from "../lib/apiClient.js";
 import { useAuthGate } from "../context/AuthGateContext.jsx";
-import AdminPdfUploadView from "./AdminPdfUploadView.jsx";
 import OfferCountdownBanner from "./OfferCountdownBanner.jsx";
 
 const RAZORPAY_CHECKOUT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
@@ -37,7 +36,6 @@ function loadRazorpayScript() {
 export default function PdfStoreView({ highlightPdfId, onHighlightConsumed }) {
   const { isSignedIn, getAuthHeaders, openAuthModal } = useAuthGate();
 
-  const [showAdmin, setShowAdmin] = useState(false);
   const [fromFilter, setFromFilter] = useState("");
   const [toFilter, setToFilter] = useState("");
   const [items, setItems] = useState([]);
@@ -48,7 +46,6 @@ export default function PdfStoreView({ highlightPdfId, onHighlightConsumed }) {
   const cardRefs = useRef({});
 
   const [purchasedIds, setPurchasedIds] = useState(new Set());
-  const [isAdmin, setIsAdmin] = useState(false);
 
   const [buyingId, setBuyingId] = useState(null);
   const [revealed, setRevealed] = useState(null); // { title, password }
@@ -56,7 +53,6 @@ export default function PdfStoreView({ highlightPdfId, onHighlightConsumed }) {
   const [downloadPassword, setDownloadPassword] = useState("");
   const [downloadError, setDownloadError] = useState(null);
   const [viewedPasswords, setViewedPasswords] = useState({}); // pdfId -> password
-  const [catalogRefreshKey, setCatalogRefreshKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -80,7 +76,7 @@ export default function PdfStoreView({ highlightPdfId, onHighlightConsumed }) {
     return () => {
       cancelled = true;
     };
-  }, [fromFilter, toFilter, catalogRefreshKey]);
+  }, [fromFilter, toFilter]);
 
   // Scrolls to and briefly highlights the item a share link pointed at, once
   // the catalog has actually loaded (a matching ref won't exist before the
@@ -125,7 +121,6 @@ export default function PdfStoreView({ highlightPdfId, onHighlightConsumed }) {
   async function refreshPurchases() {
     if (!isSignedIn) {
       setPurchasedIds(new Set());
-      setIsAdmin(false);
       return;
     }
     const authHeaders = await getAuthHeaders();
@@ -133,7 +128,6 @@ export default function PdfStoreView({ highlightPdfId, onHighlightConsumed }) {
     if (!res.ok) return;
     const data = await res.json();
     setPurchasedIds(new Set((data.purchases || []).map((p) => p.pdfId)));
-    setIsAdmin(Boolean(data.isAdmin));
   }
 
   useEffect(() => {
@@ -251,36 +245,10 @@ export default function PdfStoreView({ highlightPdfId, onHighlightConsumed }) {
     setDownloadPassword("");
   }
 
-  if (showAdmin) {
-    return (
-      <AdminPdfUploadView
-        onBack={() => {
-          setShowAdmin(false);
-          setCatalogRefreshKey((k) => k + 1);
-        }}
-        onUploaded={() => {
-          setShowAdmin(false);
-          setCatalogRefreshKey((k) => k + 1);
-        }}
-      />
-    );
-  }
-
   return (
     <div className="relative z-10 flex-1 overflow-y-auto px-4 sm:px-6 py-6">
       <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">PDF Store</h1>
-          {isAdmin && (
-            <button
-              type="button"
-              onClick={() => setShowAdmin(true)}
-              className="rounded-lg border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-medium px-3 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-            >
-              Admin
-            </button>
-          )}
-        </div>
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">PDF Store</h1>
 
         <OfferCountdownBanner />
 
