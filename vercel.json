@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/pdf-store/verify-payment.js": {
+    "api/pdf-store/checkout.js": {
       "includeFiles": "node_modules/muhammara/**",
       "maxDuration": 30
     }

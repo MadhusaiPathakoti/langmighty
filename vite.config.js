@@ -190,6 +190,20 @@ function localApiPlugin() {
         await handler(req, res);
       });
 
+      server.middlewares.use("/api/ambassadors", async (req, res) => {
+        if (req.method !== "POST") {
+          res.statusCode = 405;
+          res.end();
+          return;
+        }
+        await prepareApiRequest(req, res);
+
+        injectEnv(["VITE_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]);
+
+        const { default: handler } = await server.ssrLoadModule("/api/ambassadors.js");
+        await handler(req, res);
+      });
+
       server.middlewares.use("/api/support", async (req, res) => {
         if (req.method !== "POST") {
           res.statusCode = 405;

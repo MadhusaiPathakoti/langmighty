@@ -76,11 +76,23 @@ async function handleCreate(supabaseAdmin, user, body, res) {
     notes: { userId: user.id, tier },
   });
 
+  // Copies whatever ambassador (if any) this user was attributed to at
+  // signup (see api/ambassadors.js's apply-referral) onto the sale itself —
+  // this one line is the entire "sale recorded against the ambassador
+  // automatically" mechanism; nothing else needs to know attribution exists.
+  const { data: profile, error: profileErr } = await supabaseAdmin
+    .from("profiles")
+    .select("referred_by_ambassador_id")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (profileErr) throw profileErr;
+
   const { error: insertErr } = await supabaseAdmin.from("subscriptions").insert({
     user_id: user.id,
     tier,
     razorpay_subscription_id: subscription.id,
     status: "created",
+    referred_by_ambassador_id: profile?.referred_by_ambassador_id || null,
   });
   if (insertErr) throw insertErr;
 

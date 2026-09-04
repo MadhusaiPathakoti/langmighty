@@ -3,6 +3,7 @@ import { apiFetch } from "../lib/apiClient.js";
 import { isSupabaseConfigured, supabase } from "../lib/supabaseClient.js";
 
 const PENDING_OPT_IN_KEY = "langlearn_pending_marketing_opt_in";
+const PENDING_REFERRAL_CODE_KEY = "langlearn_pending_referral_code";
 const STREAK_KEY = "langlearn_streak";
 
 function todayKey() {
@@ -76,6 +77,7 @@ export function AuthGateProvider({ children }) {
       setSession(newSession);
       if (event === "SIGNED_IN" && newSession?.user) {
         void saveProfileOnSignIn(newSession.user);
+        void applyPendingReferralCode(newSession.access_token);
       }
       // Supabase parses the recovery link's URL fragment on load and fires this event
       // instead of a normal SIGNED_IN — that's our signal to show the "set a new
@@ -172,6 +174,26 @@ export function AuthGateProvider({ children }) {
       marketing_opt_in: pending === "true",
     });
     localStorage.removeItem(PENDING_OPT_IN_KEY);
+  }
+
+  // Deliberately separate from saveProfileOnSignIn above — that one early-
+  // returns when there's no pending marketing opt-in (e.g. a returning
+  // user), which would otherwise skip this too. A pending referral code
+  // (see App.jsx's `?ref=` effect) isn't tied to that flag at all, so this
+  // runs independently on every SIGNED_IN event.
+  async function applyPendingReferralCode(accessToken) {
+    const code = localStorage.getItem(PENDING_REFERRAL_CODE_KEY);
+    if (!code || !accessToken) return;
+    localStorage.removeItem(PENDING_REFERRAL_CODE_KEY); // one attempt only, never retried
+    try {
+      await apiFetch("/api/ambassadors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ action: "apply-referral", referralCode: code }),
+      });
+    } catch {
+      // Best-effort — a missed attribution isn't worth surfacing to the user.
+    }
   }
 
   const isSignedIn = Boolean(session?.user);

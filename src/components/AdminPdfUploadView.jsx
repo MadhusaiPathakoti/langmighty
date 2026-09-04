@@ -3,6 +3,7 @@ import { INPUT_LANGUAGES } from "langmighty-shared";
 import { apiFetch } from "../lib/apiClient.js";
 import { useAuthGate } from "../context/AuthGateContext.jsx";
 import { supabase } from "../lib/supabaseClient.js";
+import AdminAmbassadorsView from "./AdminAmbassadorsView.jsx";
 import AdminOverviewView from "./AdminOverviewView.jsx";
 import AdminSubscriptionsView from "./AdminSubscriptionsView.jsx";
 import AdminUsersView from "./AdminUsersView.jsx";
@@ -38,7 +39,7 @@ export default function AdminPdfUploadView({ onBack, onUploaded }) {
   // page-picker step instead of finalizing immediately.
   const [pickingPages, setPickingPages] = useState(null);
   const [selectedPages, setSelectedPages] = useState([]);
-  // "overview" | "users" | "subscriptions" | "upload" | "manage" | "support"
+  // "overview" | "users" | "subscriptions" | "ambassadors" | "upload" | "manage" | "support"
   const [tab, setTab] = useState("overview");
 
   function handleFormSubmit(e) {
@@ -196,6 +197,18 @@ export default function AdminPdfUploadView({ onBack, onUploaded }) {
           </button>
           <button
             type="button"
+            onClick={() => setTab("ambassadors")}
+            disabled={submitting}
+            className={`flex-shrink-0 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
+              tab === "ambassadors"
+                ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+                : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            }`}
+          >
+            Ambassadors
+          </button>
+          <button
+            type="button"
             onClick={() => setTab("upload")}
             disabled={submitting}
             className={`flex-shrink-0 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
@@ -235,6 +248,7 @@ export default function AdminPdfUploadView({ onBack, onUploaded }) {
         {tab === "overview" && <AdminOverviewView />}
         {tab === "users" && <AdminUsersView />}
         {tab === "subscriptions" && <AdminSubscriptionsView />}
+        {tab === "ambassadors" && <AdminAmbassadorsView />}
         {tab === "manage" && <ManagePdfsView />}
         {tab === "support" && <SupportTicketsView />}
 

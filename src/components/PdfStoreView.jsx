@@ -144,10 +144,10 @@ export default function PdfStoreView({ highlightPdfId, onHighlightConsumed }) {
     setBuyingId(item.id);
     try {
       const authHeaders = await getAuthHeaders();
-      const res = await apiFetch("/api/pdf-store/create-order", {
+      const res = await apiFetch("/api/pdf-store/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders },
-        body: JSON.stringify({ pdfId: item.id }),
+        body: JSON.stringify({ action: "create-order", pdfId: item.id }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -188,10 +188,11 @@ export default function PdfStoreView({ highlightPdfId, onHighlightConsumed }) {
   async function handleVerify(item, response) {
     try {
       const authHeaders = await getAuthHeaders();
-      const res = await apiFetch("/api/pdf-store/verify-payment", {
+      const res = await apiFetch("/api/pdf-store/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({
+          action: "verify-payment",
           pdfId: item.id,
           razorpay_order_id: response.razorpay_order_id,
           razorpay_payment_id: response.razorpay_payment_id,

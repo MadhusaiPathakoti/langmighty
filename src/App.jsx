@@ -52,6 +52,12 @@ const ROADMAP_LANGUAGE_KEY = "langlearn_roadmap_language";
 // round-trip a signed-out visitor has to go through before reaching the
 // store — same reasoning as VIEW_KEY above.
 const SHARED_PDF_KEY = "langlearn_shared_pdf_id";
+// Set from a referral link's `?ref=` param (see the effect below) and read
+// back by AuthGateContext.jsx's saveProfileOnSignIn to attribute this signup
+// to an ambassador. localStorage (not sessionStorage), matching the pending
+// marketing-opt-in flag it's applied alongside — both need to survive the
+// Google OAuth redirect round-trip before landing back in that same effect.
+const PENDING_REFERRAL_CODE_KEY = "langlearn_pending_referral_code";
 const VALID_VIEWS = [
   "landing",
   "chat",
@@ -182,6 +188,17 @@ export default function App() {
     setSharedPdfId(null);
     sessionStorage.removeItem(SHARED_PDF_KEY);
   }
+
+  // Referral links (e.g. `https://langmighty.in/?ref=<code>`) — stash the
+  // code rather than applying it immediately, since the visitor may not be
+  // signed in yet. AuthGateContext.jsx's saveProfileOnSignIn applies it (and
+  // clears the key) once they actually sign in.
+  useEffect(() => {
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (!ref) return;
+    localStorage.setItem(PENDING_REFERRAL_CODE_KEY, ref);
+    window.history.replaceState({}, "", window.location.pathname);
+  }, []);
 
   // CTAs on the standalone SEO landing pages (src/pages/seo/*, e.g.
   // /english-to-telugu-translator) link here as `?start=<view>` with an
