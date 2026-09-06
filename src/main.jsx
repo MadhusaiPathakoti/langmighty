@@ -8,6 +8,10 @@ import AiTutorLandingPage from "./pages/seo/AiTutorLandingPage.jsx";
 import LearnLanguageLandingPage from "./pages/seo/LearnLanguageLandingPage.jsx";
 import TranslatorLandingPage from "./pages/seo/TranslatorLandingPage.jsx";
 import { LANGUAGE_KEYS, TRANSLATOR_PAIRS } from "./pages/seo/seoContent.js";
+import ContactUsPage from "./pages/legal/ContactUsPage.jsx";
+import PrivacyPolicyPage from "./pages/legal/PrivacyPolicyPage.jsx";
+import RefundPolicyPage from "./pages/legal/RefundPolicyPage.jsx";
+import TermsPage from "./pages/legal/TermsPage.jsx";
 import "./index.css";
 
 // The checkout bridge is a standalone page for the mobile app's Razorpay
@@ -38,6 +42,10 @@ if (window.location.pathname === "/checkout") {
               <Route key={key} path={`/learn-${key}-online`} element={<LearnLanguageLandingPage languageKey={key} />} />
             ))}
             <Route path="/ai-language-tutor" element={<AiTutorLandingPage />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="/terms-and-conditions" element={<TermsPage />} />
+            <Route path="/refund-policy" element={<RefundPolicyPage />} />
+            <Route path="/contact-us" element={<ContactUsPage />} />
             {/* Everything else — including "/" — is App.jsx's own view-switcher,
                 unchanged from before routing was introduced. */}
             <Route path="*" element={<App />} />

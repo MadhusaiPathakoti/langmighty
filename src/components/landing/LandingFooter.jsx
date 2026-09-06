@@ -75,6 +75,21 @@ export default function LandingFooter() {
           © {new Date().getFullYear()} LangMighty. Built for learning Indian languages.
         </p>
       </div>
+
+      <div className="max-w-6xl mx-auto mt-4 pt-4 border-t border-gray-100 dark:border-gray-900 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+        <a href="/privacy-policy" className="hover:text-indigo-600 dark:hover:text-indigo-400">
+          Privacy Policy
+        </a>
+        <a href="/terms-and-conditions" className="hover:text-indigo-600 dark:hover:text-indigo-400">
+          Terms & Conditions
+        </a>
+        <a href="/refund-policy" className="hover:text-indigo-600 dark:hover:text-indigo-400">
+          Refund & Cancellation Policy
+        </a>
+        <a href="/contact-us" className="hover:text-indigo-600 dark:hover:text-indigo-400">
+          Contact Us
+        </a>
+      </div>
     </footer>
   );
 }
