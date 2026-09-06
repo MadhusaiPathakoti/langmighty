@@ -31,12 +31,22 @@ export default function SeoPageShell({ ctaTo, ctaLabel = "Try LangMighty Now →
       <CulturalBackground />
       <div className="relative z-10">
         <nav className="sticky top-0 z-30 flex items-center justify-between gap-4 px-4 sm:px-6 py-3 border-b border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm pt-[calc(0.75rem+env(safe-area-inset-top))]">
-          <Link to="/" className="flex items-center gap-2 group shrink-0">
-            <LmLogo className="w-8 h-8 group-hover:scale-105 transition-transform" />
-            <span className="font-bold text-lg bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
-              LangMighty
-            </span>
-          </Link>
+          <div className="flex items-center gap-3 shrink-0">
+            <Link
+              to="/"
+              aria-label="Go to home"
+              title="Go to home"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              ←
+            </Link>
+            <Link to="/" className="flex items-center gap-2 group">
+              <LmLogo className="w-8 h-8 group-hover:scale-105 transition-transform" />
+              <span className="font-bold text-lg bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
+                LangMighty
+              </span>
+            </Link>
+          </div>
           <div className="flex items-center gap-2 shrink-0">
             <ThemeToggle theme={theme} onToggle={() => setTheme((t) => (t === "dark" ? "light" : "dark"))} />
             <Link
