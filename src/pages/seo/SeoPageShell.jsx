@@ -27,7 +27,7 @@ export default function SeoPageShell({ ctaTo, ctaLabel = "Try LangMighty Now →
   }, [theme]);
 
   return (
-    <div className="min-h-dvh bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+    <div className="h-dvh overflow-y-auto bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
       <CulturalBackground />
       <div className="relative z-10">
         <nav className="sticky top-0 z-30 flex items-center justify-between gap-4 px-4 sm:px-6 py-3 border-b border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm pt-[calc(0.75rem+env(safe-area-inset-top))]">
