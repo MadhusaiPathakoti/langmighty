@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import useDocumentMeta from "../../hooks/useDocumentMeta.js";
 import SeoPageShell from "../seo/SeoPageShell.jsx";
 
@@ -15,7 +16,13 @@ export default function LegalPageShell({ path, title, updated, children }) {
   return (
     <SeoPageShell ctaTo="/" ctaLabel="Go to LangMighty →">
       <h1 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100">{title}</h1>
-      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Last updated: {updated}</p>
+      <Link
+        to="/"
+        className="mt-3 inline-flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+      >
+        ← Go to home
+      </Link>
+      <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Last updated: {updated}</p>
       <div className="mt-8 space-y-6 text-gray-700 dark:text-gray-300 leading-relaxed [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-gray-900 dark:[&_h2]:text-gray-100 [&_h2]:mt-8 [&_h2]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1 [&_a]:text-indigo-600 dark:[&_a]:text-indigo-400 [&_a]:underline">
         {children}
       </div>
