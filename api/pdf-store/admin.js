@@ -486,6 +486,74 @@ async function handleListSubscriptions(supabaseAdmin, body, res) {
   res.status(200).json({ subscriptions });
 }
 
+// Permanently removes a user's account. `admin` is the caller (from
+// requireAdmin) — used only to block self-deletion. Guards against the two
+// ways this could go badly wrong: nuking your own admin session, or leaving
+// other rows dangling with a foreign key that has no ON DELETE CASCADE
+// (subscriptions/pdf_store_purchases/ambassadors all `references auth.users`
+// with no cascade — see the *-setup.sql files under supabase/). Support
+// tickets are detached (user_id set null) rather than deleted, so the ticket
+// history/inbox survives the account going away.
+async function handleDeleteUser(supabaseAdmin, body, res, admin) {
+  const { userId } = body;
+  if (!userId) {
+    res.status(400).json({ error: "Missing userId." });
+    return;
+  }
+  if (userId === admin.id) {
+    res.status(400).json({ error: "You can't delete your own account." });
+    return;
+  }
+
+  const { data: profile, error: profileErr } = await supabaseAdmin
+    .from("profiles")
+    .select("id, is_admin")
+    .eq("id", userId)
+    .maybeSingle();
+  if (profileErr) throw profileErr;
+  if (!profile) {
+    res.status(404).json({ error: "User not found." });
+    return;
+  }
+  if (profile.is_admin) {
+    res.status(400).json({ error: "Admin accounts can't be deleted from here — remove admin access first." });
+    return;
+  }
+
+  const { count: ambassadorCount, error: ambassadorCheckErr } = await supabaseAdmin
+    .from("ambassadors")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+  if (ambassadorCheckErr) throw ambassadorCheckErr;
+  if (ambassadorCount > 0) {
+    res.status(409).json({
+      error: "This user is an ambassador — other accounts may be attributed to them. Remove them from Ambassadors first.",
+    });
+    return;
+  }
+
+  const { error: subsErr } = await supabaseAdmin.from("subscriptions").delete().eq("user_id", userId);
+  if (subsErr) throw subsErr;
+
+  const { error: purchasesErr } = await supabaseAdmin.from("pdf_store_purchases").delete().eq("user_id", userId);
+  if (purchasesErr) throw purchasesErr;
+
+  const { error: ticketsErr } = await supabaseAdmin
+    .from("support_tickets")
+    .update({ user_id: null })
+    .eq("user_id", userId);
+  if (ticketsErr) throw ticketsErr;
+
+  const { error: profileDeleteErr } = await supabaseAdmin.from("profiles").delete().eq("id", userId);
+  if (profileDeleteErr) throw profileDeleteErr;
+
+  const { error: authDeleteErr } = await supabaseAdmin.auth.admin.deleteUser(userId);
+  if (authDeleteErr) throw authDeleteErr;
+
+  await invalidateTierCache(userId);
+  res.status(200).json({ ok: true });
+}
+
 async function handleGrantComp(supabaseAdmin, body, res) {
   const { userId, tier } = body;
   if (!userId || (tier !== "pro" && tier !== "premium")) {
@@ -620,6 +688,9 @@ export default async function handler(req, res) {
         return;
       case "revoke-comp":
         await handleRevokeComp(supabaseAdmin, body, res);
+        return;
+      case "delete-user":
+        await handleDeleteUser(supabaseAdmin, body, res, admin);
         return;
       default:
         res.status(400).json({ error: "Unknown action." });
