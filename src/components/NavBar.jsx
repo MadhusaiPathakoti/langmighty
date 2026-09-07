@@ -66,12 +66,7 @@ export default function NavBar({
           right edge via ml-auto), tail end of the single desktop row. */}
       <div className="flex items-center gap-1 flex-wrap justify-end order-2 sm:order-3 ml-auto sm:ml-0">
         {isSignedIn ? (
-          <div
-            className="relative"
-            ref={accountMenuRef}
-            onMouseEnter={() => setAccountMenuOpen(true)}
-            onMouseLeave={() => setAccountMenuOpen(false)}
-          >
+          <div className="relative" ref={accountMenuRef}>
             <button
               type="button"
               onClick={() => setAccountMenuOpen((o) => !o)}
