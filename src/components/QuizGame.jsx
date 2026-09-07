@@ -23,7 +23,7 @@ function loadQuizLanguage() {
   return saved === "mixed" || QUIZ_TARGET_LANGUAGES.includes(saved) ? saved : "mixed";
 }
 
-export default function QuizGame({ onExit }) {
+export default function QuizGame({ onExit, onPlayAgain }) {
   const [targetLanguage, setTargetLanguage] = useState(loadQuizLanguage);
   const [categoryKeys, setCategoryKeys] = useState(() => loadQuizCategories(QUIZ_CATEGORIES_KEY));
   // Phrase ids used in the round(s) just played — passed as excludeIds so a replay
@@ -76,7 +76,8 @@ export default function QuizGame({ onExit }) {
     setAnsweredCorrectly(false);
   }
 
-  function handleRestart() {
+  async function handleRestart() {
+    if (onPlayAgain && !(await onPlayAgain())) return;
     startNewQuiz(targetLanguage, categoryKeys);
   }
 

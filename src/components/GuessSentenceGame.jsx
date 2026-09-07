@@ -14,7 +14,7 @@ function loadGuessSentenceLanguage() {
   return saved === "mixed" || QUIZ_TARGET_LANGUAGES.includes(saved) ? saved : "mixed";
 }
 
-export default function GuessSentenceGame({ onExit }) {
+export default function GuessSentenceGame({ onExit, onPlayAgain }) {
   const [targetLanguage, setTargetLanguage] = useState(loadGuessSentenceLanguage);
   // Sentence ids used in the round(s) just played — passed as excludeIds so a
   // replay prefers fresh sentences over immediately reshowing the same ones.
@@ -56,7 +56,8 @@ export default function GuessSentenceGame({ onExit }) {
     setAnsweredCorrectly(false);
   }
 
-  function handleRestart() {
+  async function handleRestart() {
+    if (onPlayAgain && !(await onPlayAgain())) return;
     startNewQuiz(targetLanguage);
   }
 

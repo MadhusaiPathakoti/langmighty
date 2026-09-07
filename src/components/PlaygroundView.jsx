@@ -74,16 +74,14 @@ export default function PlaygroundView() {
   const [enteringGame, setEnteringGame] = useState(null);
   const { reportAuthRequired, reportLimitReached, getAuthHeaders } = useAuthGate();
 
-  // Consumes one daily "play" credit (api/game-content.js's POST branch) before
-  // entering a game — the natural single choke point, since every game beyond
-  // this reads its content once and replays it entirely client-side (see
-  // CLAUDE.md game-content notes). Fails open on a network error rather than
-  // blocking play over a transient hiccup — the server still enforces the real
-  // cap on every call, so this is only ever a UX shortcut, same principle as
-  // the sign-in gate in App.jsx.
-  async function handleSelectGame(gameId) {
-    if (enteringGame) return;
-    setEnteringGame(gameId);
+  // Consumes one daily "play" credit (api/game-content.js's POST branch) —
+  // called both when first entering a game from the list below and again from
+  // each game's own "Play again" button (passed down as onPlayAgain), since
+  // restarting a finished round is another full play, not a continuation.
+  // Fails open on a network error rather than blocking play over a transient
+  // hiccup — the server still enforces the real cap on every call, so this is
+  // only ever a UX shortcut, same principle as the sign-in gate in App.jsx.
+  async function checkPlayCredit(gameId) {
     try {
       const authHeaders = await getAuthHeaders();
       const res = await apiFetch("/api/game-content", {
@@ -94,18 +92,26 @@ export default function PlaygroundView() {
 
       if (res.status === 401) {
         reportAuthRequired();
-        return;
+        return false;
       }
 
       if (isLimitReached(res)) {
         await reportLimitFromResponse(res, reportLimitReached);
-        return;
+        return false;
       }
 
-      setActiveGame(gameId);
+      return true;
     } catch (err) {
       console.error("Playground play-limit check failed, allowing entry:", err);
-      setActiveGame(gameId);
+      return true;
+    }
+  }
+
+  async function handleSelectGame(gameId) {
+    if (enteringGame) return;
+    setEnteringGame(gameId);
+    try {
+      if (await checkPlayCredit(gameId)) setActiveGame(gameId);
     } finally {
       setEnteringGame(null);
     }
@@ -128,12 +134,24 @@ export default function PlaygroundView() {
               {game.emoji} {game.title}
             </h2>
           )}
-          {activeGame === "quiz" && <QuizGame onExit={() => setActiveGame(null)} />}
-          {activeGame === "word-match" && <WordMatchGame onExit={() => setActiveGame(null)} />}
-          {activeGame === "speed-translate" && <SpeedTranslateGame onExit={() => setActiveGame(null)} />}
-          {activeGame === "listen-guess" && <ListenGuessGame onExit={() => setActiveGame(null)} />}
-          {activeGame === "word-chain" && <WordChainGame onExit={() => setActiveGame(null)} />}
-          {activeGame === "guess-sentence" && <GuessSentenceGame onExit={() => setActiveGame(null)} />}
+          {activeGame === "quiz" && (
+            <QuizGame onExit={() => setActiveGame(null)} onPlayAgain={() => checkPlayCredit(activeGame)} />
+          )}
+          {activeGame === "word-match" && (
+            <WordMatchGame onExit={() => setActiveGame(null)} onPlayAgain={() => checkPlayCredit(activeGame)} />
+          )}
+          {activeGame === "speed-translate" && (
+            <SpeedTranslateGame onExit={() => setActiveGame(null)} onPlayAgain={() => checkPlayCredit(activeGame)} />
+          )}
+          {activeGame === "listen-guess" && (
+            <ListenGuessGame onExit={() => setActiveGame(null)} onPlayAgain={() => checkPlayCredit(activeGame)} />
+          )}
+          {activeGame === "word-chain" && (
+            <WordChainGame onExit={() => setActiveGame(null)} onPlayAgain={() => checkPlayCredit(activeGame)} />
+          )}
+          {activeGame === "guess-sentence" && (
+            <GuessSentenceGame onExit={() => setActiveGame(null)} onPlayAgain={() => checkPlayCredit(activeGame)} />
+          )}
           {activeGame === "read-aloud" && <ReadAloudGame onExit={() => setActiveGame(null)} />}
           {activeGame === "roleplay" && <ScenarioRoleplayGame onExit={() => setActiveGame(null)} />}
         </div>

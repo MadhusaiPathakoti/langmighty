@@ -29,7 +29,7 @@ function shuffledIndices(count) {
   return shuffle(Array.from({ length: count }, (_, i) => i));
 }
 
-export default function WordMatchGame({ onExit }) {
+export default function WordMatchGame({ onExit, onPlayAgain }) {
   const [targetLanguage, setTargetLanguage] = useState(loadWordMatchLanguage);
   const [categoryKeys, setCategoryKeys] = useState(() => loadQuizCategories(WORDMATCH_CATEGORIES_KEY));
   // Phrase ids used in the round(s) just played — passed as excludeIds so a replay
@@ -87,7 +87,8 @@ export default function WordMatchGame({ onExit }) {
     setMistakes(0);
   }
 
-  function handleRestart() {
+  async function handleRestart() {
+    if (onPlayAgain && !(await onPlayAgain())) return;
     startNewRound(targetLanguage, categoryKeys);
   }
 

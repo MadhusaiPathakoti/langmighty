@@ -22,7 +22,7 @@ function loadWordChainDifficulty() {
   return WORD_CHAIN_DIFFICULTIES.some((d) => d.key === saved) ? saved : "easy";
 }
 
-export default function WordChainGame({ onExit }) {
+export default function WordChainGame({ onExit, onPlayAgain }) {
   const [targetLanguage, setTargetLanguage] = useState(loadWordChainLanguage);
   const [difficulty, setDifficulty] = useState(loadWordChainDifficulty);
   // Sentence ids used in the round just played — passed as excludeIds so a replay
@@ -80,7 +80,8 @@ export default function WordChainGame({ onExit }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetLanguage, difficulty, allSentences]);
 
-  function handleRestart() {
+  async function handleRestart() {
+    if (onPlayAgain && !(await onPlayAgain())) return;
     startNewRound(pool, recentIdsRef.current);
   }
 

@@ -27,7 +27,7 @@ function loadSpeedLanguage() {
   return saved === "mixed" || QUIZ_TARGET_LANGUAGES.includes(saved) ? saved : "mixed";
 }
 
-export default function SpeedTranslateGame({ onExit }) {
+export default function SpeedTranslateGame({ onExit, onPlayAgain }) {
   const [targetLanguage, setTargetLanguage] = useState(loadSpeedLanguage);
   const [categoryKeys, setCategoryKeys] = useState(() => loadQuizCategories(SPEED_CATEGORIES_KEY));
   // Phrase ids used in the round just played — passed as excludeIds so a replay
@@ -83,6 +83,14 @@ export default function SpeedTranslateGame({ onExit }) {
     setFeedback(null);
     setWrongAnswers([]);
     setPhase("playing");
+  }
+
+  // Only the finished-screen "Play again" restarts a completed round — the
+  // "Start" button on the ready screen is the same play already credited when
+  // the game was entered from the Playground list, so it must not re-check.
+  async function handlePlayAgain() {
+    if (onPlayAgain && !(await onPlayAgain())) return;
+    startRound();
   }
 
   function handleLanguageChange(language) {
@@ -200,7 +208,7 @@ export default function SpeedTranslateGame({ onExit }) {
           <div className="mt-6 flex justify-center gap-3">
             <button
               type="button"
-              onClick={startRound}
+              onClick={handlePlayAgain}
               className="rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 text-sm transition-colors"
             >
               Play again

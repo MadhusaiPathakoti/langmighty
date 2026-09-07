@@ -35,7 +35,7 @@ function difficultyPool(language, categories, difficultyKey, phrases) {
   return bucketPhrasesByDifficulty(getPhrasesForCategories(categories, phrases), language)[difficultyKey];
 }
 
-export default function ListenGuessGame({ onExit }) {
+export default function ListenGuessGame({ onExit, onPlayAgain }) {
   const [targetLanguage, setTargetLanguage] = useState(loadListenLanguage);
   const [categoryKeys, setCategoryKeys] = useState(() => loadQuizCategories(LISTEN_CATEGORIES_KEY));
   const [difficulty, setDifficulty] = useState(loadListenDifficulty);
@@ -115,7 +115,8 @@ export default function ListenGuessGame({ onExit }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allPhrases]);
 
-  function handleRestart() {
+  async function handleRestart() {
+    if (onPlayAgain && !(await onPlayAgain())) return;
     startNewRound(targetLanguage, categoryKeys, difficulty);
   }
 
