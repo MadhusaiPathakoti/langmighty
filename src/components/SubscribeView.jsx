@@ -5,11 +5,13 @@ import { useAuthGate } from "../context/AuthGateContext.jsx";
 const RAZORPAY_CHECKOUT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
 
 // Mirrors the tier table in api/_lib/usageLimits.js's LIMITS — kept here as
-// display copy since the frontend never calls that endpoint directly. The
-// actual amount Razorpay charges is set once in the Plan itself (see
-// scripts/seedSubscriptionPlans.mjs) and always matches `price` below —
-// `originalPrice` is a display-only anchor price, not a real discount applied
-// anywhere server-side.
+// display copy since the frontend never calls that endpoint directly. `price`
+// below is only the pre-load fallback: the component overrides it with the
+// live admin-set price (see livePrices below) once /api/subscriptions'
+// get-prices action responds — that's the actual amount Razorpay charges
+// (see api/pdf-store/admin.js's update-subscription-price and
+// _lib/subscription.js's getActivePlan). `originalPrice` is a display-only
+// anchor price, not a real discount applied anywhere server-side.
 const PLANS = [
   {
     tier: "free",
@@ -116,6 +118,30 @@ export default function SubscribeView() {
   const [celebrateTier, setCelebrateTier] = useState(null);
   // Index of the open FAQ accordion row, or null if all are collapsed.
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
+  // null (not yet loaded, or the fetch failed) | { pro: rupees, premium: rupees } —
+  // overrides PLANS' hardcoded `price` once the admin-set price loads, so a
+  // reprice (see Admin > Subscriptions) shows up here without a redeploy.
+  // Public endpoint — no auth headers, since this page is visible signed out.
+  const [livePrices, setLivePrices] = useState(null);
+  const plans = PLANS.map((p) => (livePrices?.[p.tier] ? { ...p, price: livePrices[p.tier] } : p));
+
+  useEffect(() => {
+    let cancelled = false;
+    apiFetch("/api/subscriptions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "get-prices" }),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.prices) return;
+        setLivePrices({ pro: data.prices.pro / 100, premium: data.prices.premium / 100 });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function refreshStatus() {
     if (!isSignedIn) {
@@ -258,7 +284,7 @@ export default function SubscribeView() {
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 items-stretch">
-          {PLANS.map((plan) => {
+          {plans.map((plan) => {
             const isCurrent = currentTier === plan.tier;
             const isPaid = plan.tier !== "free";
             return (

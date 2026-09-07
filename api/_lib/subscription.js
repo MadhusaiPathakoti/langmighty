@@ -12,6 +12,33 @@ export const PLAN_IDS = {
 // someone deliberately reprices a plan.
 export const TIER_PRICES_PAISE = { pro: 9900, premium: 24900 };
 
+// Reads the currently-active Razorpay plan for a tier — the subscription_plans
+// table (see supabase/subscription-plans-setup.sql) takes over from the
+// RAZORPAY_PRO_PLAN_ID/RAZORPAY_PREMIUM_PLAN_ID env vars the moment an admin
+// changes that tier's price for the first time (api/pdf-store/admin.js's
+// update-subscription-price). Until then this is a no-op, falling back to the
+// env var + the hardcoded TIER_PRICES_PAISE mirror below.
+export async function getActivePlan(supabaseAdmin, tier) {
+  const { data, error } = await supabaseAdmin
+    .from("subscription_plans")
+    .select("razorpay_plan_id, price_paise")
+    .eq("tier", tier)
+    .maybeSingle();
+  if (error) throw error;
+  if (data) return { planId: data.razorpay_plan_id, pricePaise: data.price_paise };
+  return { planId: PLAN_IDS[tier], pricePaise: TIER_PRICES_PAISE[tier] };
+}
+
+// Current display/MRR price for both tiers at once — same DB-row-with-
+// fallback shape as getActivePlan, just for both tiers in one query. Used by
+// the Subscribe page's pricing cards and the admin Overview's MRR estimate.
+export async function getTierPricesPaise(supabaseAdmin) {
+  const { data, error } = await supabaseAdmin.from("subscription_plans").select("tier, price_paise");
+  if (error) throw error;
+  const overrides = Object.fromEntries((data || []).map((row) => [row.tier, row.price_paise]));
+  return { pro: overrides.pro ?? TIER_PRICES_PAISE.pro, premium: overrides.premium ?? TIER_PRICES_PAISE.premium };
+}
+
 const TIER_CACHE_TTL_SECONDS = 300; // 5 min — bounds how stale a just-activated/cancelled tier can be
 
 async function fetchTier(supabaseAdmin, userId) {

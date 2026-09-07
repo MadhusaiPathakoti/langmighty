@@ -4,7 +4,7 @@ import { applyCors } from "./_lib/cors.js";
 import { getSupabaseAdmin } from "./_lib/supabaseAdmin.js";
 import { getSignedInUser } from "./_lib/creditGate.js";
 import { getRazorpay } from "./_lib/razorpay.js";
-import { PLAN_IDS, invalidateTierCache } from "./_lib/subscription.js";
+import { getActivePlan, getTierPricesPaise, invalidateTierCache } from "./_lib/subscription.js";
 
 // Routes on whether X-Razorpay-Signature is present (see handler() at the
 // bottom) rather than being a separate file — api/ is already at Vercel
@@ -43,7 +43,7 @@ async function handleCreate(supabaseAdmin, user, body, res) {
     res.status(400).json({ error: "tier must be 'pro' or 'premium'." });
     return;
   }
-  const planId = PLAN_IDS[tier];
+  const { planId } = await getActivePlan(supabaseAdmin, tier);
   if (!planId) {
     res.status(500).json({ error: `Server is missing the Razorpay plan id for "${tier}".` });
     return;
@@ -171,10 +171,28 @@ async function handleCancel(supabaseAdmin, user, res) {
   res.status(200).json({ ok: true });
 }
 
+async function handleGetPrices(supabaseAdmin, res) {
+  const prices = await getTierPricesPaise(supabaseAdmin);
+  res.status(200).json({ prices });
+}
+
 async function handleClientAction(req, res, supabaseAdmin) {
   const { action, ...body } = req.body || {};
   if (!action) {
     res.status(400).json({ error: "Missing action." });
+    return;
+  }
+
+  // Public — the Subscribe page's pricing cards are visible to signed-out
+  // visitors too (sign-in is only required to actually subscribe), so this
+  // can't sit behind the getSignedInUser gate below like every other action.
+  if (action === "get-prices") {
+    try {
+      await handleGetPrices(supabaseAdmin, res);
+    } catch (err) {
+      console.error("subscriptions handler error (action=get-prices):", err);
+      res.status(500).json({ error: "Could not load prices." });
+    }
     return;
   }
 

@@ -3,7 +3,8 @@ import { PDFDocument } from "pdf-lib";
 import { applyCors } from "../_lib/cors.js";
 import { getSupabaseAdmin } from "../_lib/supabaseAdmin.js";
 import { requireAdmin } from "../_lib/adminAuth.js";
-import { TIER_PRICES_PAISE, invalidateTierCache } from "../_lib/subscription.js";
+import { getRazorpay } from "../_lib/razorpay.js";
+import { getTierPricesPaise, invalidateTierCache } from "../_lib/subscription.js";
 
 const ORIGINALS_BUCKET = "pdf-store-originals";
 const PREVIEW_BUCKET = "pdf-store-previews";
@@ -372,7 +373,8 @@ async function handleOverviewStats(supabaseAdmin, res) {
   for (const row of activeSubs || []) {
     if (row.tier === "pro" || row.tier === "premium") subscriberCounts[row.tier] += 1;
   }
-  const mrrPaise = subscriberCounts.pro * TIER_PRICES_PAISE.pro + subscriberCounts.premium * TIER_PRICES_PAISE.premium;
+  const tierPrices = await getTierPricesPaise(supabaseAdmin);
+  const mrrPaise = subscriberCounts.pro * tierPrices.pro + subscriberCounts.premium * tierPrices.premium;
   const pdfRevenuePaise = (paidPurchases || []).reduce((sum, row) => sum + (row.pdf_store_items?.price_paise || 0), 0);
 
   // Best-effort — listUsers() is capped at 1000 here rather than paginated to
@@ -554,6 +556,52 @@ async function handleDeleteUser(supabaseAdmin, body, res, admin) {
   res.status(200).json({ ok: true });
 }
 
+async function handleListPlanPrices(supabaseAdmin, res) {
+  const prices = await getTierPricesPaise(supabaseAdmin);
+  res.status(200).json({ prices });
+}
+
+const SUBSCRIPTION_TIER_NAMES = { pro: "Mighty Pro", premium: "Mighty Premium" };
+
+// "Changing" a subscription tier's price can't edit the existing Razorpay
+// Plan — Razorpay fixes a Plan's amount at creation time — so this creates a
+// brand-new Plan at the new amount and points future subscriptions at it (see
+// _lib/subscription.js's getActivePlan). Anyone already subscribed keeps
+// billing at their original plan's price until they cancel and resubscribe;
+// Razorpay has no in-place amount change for a live subscription either, so
+// this matches how Razorpay itself works rather than working around it.
+async function handleUpdateSubscriptionPrice(supabaseAdmin, body, res) {
+  const { tier, pricePaise } = body;
+  if (tier !== "pro" && tier !== "premium") {
+    res.status(400).json({ error: "tier must be 'pro' or 'premium'." });
+    return;
+  }
+  const amount = Math.round(Number(pricePaise));
+  if (!Number.isFinite(amount) || amount <= 0) {
+    res.status(400).json({ error: "Invalid price." });
+    return;
+  }
+
+  const razorpay = getRazorpay();
+  if (!razorpay) {
+    res.status(500).json({ error: "Server is missing Razorpay configuration." });
+    return;
+  }
+
+  const plan = await razorpay.plans.create({
+    period: "monthly",
+    interval: 1,
+    item: { name: SUBSCRIPTION_TIER_NAMES[tier], amount, currency: "INR" },
+  });
+
+  const { error } = await supabaseAdmin
+    .from("subscription_plans")
+    .upsert({ tier, razorpay_plan_id: plan.id, price_paise: amount, updated_at: new Date().toISOString() });
+  if (error) throw error;
+
+  res.status(200).json({ ok: true, planId: plan.id });
+}
+
 async function handleGrantComp(supabaseAdmin, body, res) {
   const { userId, tier } = body;
   if (!userId || (tier !== "pro" && tier !== "premium")) {
@@ -692,12 +740,21 @@ export default async function handler(req, res) {
       case "delete-user":
         await handleDeleteUser(supabaseAdmin, body, res, admin);
         return;
+      case "list-plan-prices":
+        await handleListPlanPrices(supabaseAdmin, res);
+        return;
+      case "update-subscription-price":
+        await handleUpdateSubscriptionPrice(supabaseAdmin, body, res);
+        return;
       default:
         res.status(400).json({ error: "Unknown action." });
         return;
     }
   } catch (err) {
     console.error(`admin handler error (action=${action}):`, err);
-    res.status(500).json({ error: err.message || "Something went wrong." });
+    // update-subscription-price can throw the Razorpay SDK's own error shape
+    // ({ statusCode, error: { description } }, no top-level .message) — same
+    // fallback chain as api/subscriptions.js's handler uses for that reason.
+    res.status(500).json({ error: err.message || err.error?.description || "Something went wrong." });
   }
 }
