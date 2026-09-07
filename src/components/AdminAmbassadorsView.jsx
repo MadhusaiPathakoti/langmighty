@@ -18,6 +18,7 @@ export default function AdminAmbassadorsView() {
   const [customCode, setCustomCode] = useState("");
   const [creating, setCreating] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
+  const [confirmRemoveId, setConfirmRemoveId] = useState(null);
 
   async function loadAmbassadors() {
     setLoading(true);
@@ -83,6 +84,30 @@ export default function AdminAmbassadorsView() {
       setAmbassadors((prev) => prev.map((a) => (a.id === ambassador.id ? { ...a, status: nextStatus } : a)));
     } catch (err) {
       setError(err.message || "Could not update this ambassador.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  // Detaches every profile/subscription attributed to this ambassador (past
+  // referral credit is discarded, not preserved) and deletes their row — the
+  // only way to clear the "This user is an ambassador" guard that otherwise
+  // blocks deleting their account from Admin > Users.
+  async function removeAmbassador(ambassador) {
+    setBusyId(ambassador.id);
+    try {
+      const authHeaders = await getAuthHeaders();
+      const res = await apiFetch("/api/ambassadors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({ action: "remove", ambassadorId: ambassador.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not remove this ambassador.");
+      setConfirmRemoveId(null);
+      setAmbassadors((prev) => prev.filter((a) => a.id !== ambassador.id));
+    } catch (err) {
+      setError(err.message || "Could not remove this ambassador.");
     } finally {
       setBusyId(null);
     }
@@ -170,8 +195,44 @@ export default function AdminAmbassadorsView() {
                   >
                     {a.status === "active" ? "Disable" : "Enable"}
                   </button>
+                  <button
+                    type="button"
+                    disabled={busyId === a.id}
+                    onClick={() => setConfirmRemoveId(a.id)}
+                    className="text-xs rounded-lg border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 px-2 py-1 hover:bg-red-50 dark:hover:bg-red-950 disabled:opacity-60 transition-colors"
+                  >
+                    Remove
+                  </button>
                 </div>
               </div>
+
+              {confirmRemoveId === a.id && (
+                <div className="mt-2 rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950 px-3 py-2 flex items-center justify-between gap-3">
+                  <p className="text-xs text-red-700 dark:text-red-300">
+                    Remove {a.email} as an ambassador? Their {a.referralCount} referred signup
+                    {a.referralCount === 1 ? "" : "s"} will no longer be attributed to them.
+                  </p>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      type="button"
+                      disabled={busyId === a.id}
+                      onClick={() => removeAmbassador(a)}
+                      className="text-xs rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium px-2.5 py-1 disabled:opacity-60 transition-colors"
+                    >
+                      {busyId === a.id ? "Removing…" : "Yes, remove"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busyId === a.id}
+                      onClick={() => setConfirmRemoveId(null)}
+                      className="text-xs rounded-lg border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 px-2.5 py-1 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-60 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="mt-2 flex items-center gap-2">
                 <code className="flex-1 truncate text-xs bg-gray-100 dark:bg-gray-800 rounded-lg px-2 py-1.5 text-gray-600 dark:text-gray-300">
                   {window.location.origin}/?ref={a.referralCode}

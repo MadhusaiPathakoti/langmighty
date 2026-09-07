@@ -133,6 +133,39 @@ async function handleSetStatus(supabaseAdmin, body, res) {
   res.status(200).json({ ok: true });
 }
 
+// Removing an ambassador is the only way to clear api/pdf-store/admin.js's
+// handleDeleteUser guard (it refuses to delete a user who still has an
+// ambassadors row, since other accounts may be attributed to them). Rather
+// than blocking here too, past attribution is deliberately discarded —
+// detach every profile/subscription that points at this ambassador (both
+// `referred_by_ambassador_id` columns have no ON DELETE CASCADE, so deleting
+// the row first would otherwise fail with a foreign key violation) and then
+// delete the ambassadors row itself.
+async function handleRemove(supabaseAdmin, body, res) {
+  const { ambassadorId } = body;
+  if (!ambassadorId) {
+    res.status(400).json({ error: "Missing ambassadorId." });
+    return;
+  }
+
+  const { error: profilesErr } = await supabaseAdmin
+    .from("profiles")
+    .update({ referred_by_ambassador_id: null })
+    .eq("referred_by_ambassador_id", ambassadorId);
+  if (profilesErr) throw profilesErr;
+
+  const { error: subsErr } = await supabaseAdmin
+    .from("subscriptions")
+    .update({ referred_by_ambassador_id: null })
+    .eq("referred_by_ambassador_id", ambassadorId);
+  if (subsErr) throw subsErr;
+
+  const { error: deleteErr } = await supabaseAdmin.from("ambassadors").delete().eq("id", ambassadorId);
+  if (deleteErr) throw deleteErr;
+
+  res.status(200).json({ ok: true });
+}
+
 // Best-effort attribution — never surfaces an error for an unknown/disabled
 // code, a self-referral attempt, or a user who's already attributed (first
 // referral wins, for the life of the account). A brand-new signed-in user
@@ -175,7 +208,7 @@ async function handleApplyReferral(supabaseAdmin, user, body, res) {
   res.status(200).json({ ok: true });
 }
 
-const ADMIN_ACTIONS = new Set(["create", "list", "set-status"]);
+const ADMIN_ACTIONS = new Set(["create", "list", "set-status", "remove"]);
 
 export default async function handler(req, res) {
   if (applyCors(req, res)) return;
@@ -212,6 +245,9 @@ export default async function handler(req, res) {
         return;
       case "set-status":
         await handleSetStatus(supabaseAdmin, body, res);
+        return;
+      case "remove":
+        await handleRemove(supabaseAdmin, body, res);
         return;
       case "apply-referral": {
         const user = await getSignedInUser(req, supabaseAdmin);
